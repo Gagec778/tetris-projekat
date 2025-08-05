@@ -10,16 +10,42 @@ const ROWS = 18;
 const mainGameWrapper = document.getElementById('main-game-wrapper');
 let BLOCK_SIZE;
 
+// ----------------------------------------------
+// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (ISPRAVLJENA)
+// ----------------------------------------------
 function setCanvasSize() {
+    // Izračunava veličinu bloka na osnovu ŠIRINE
     const containerWidth = mainGameWrapper.clientWidth;
-    BLOCK_SIZE = Math.floor(containerWidth / COLS);
+    const blockSizeFromWidth = Math.floor(containerWidth / COLS);
+    
+    // Izračunava veličinu bloka na osnovu VISINE
+    // Moramo oduzeti visinu ostalih elemenata (score, next block, dugme za pauzu)
+    const infoSectionHeight = document.getElementById('info-section').clientHeight;
+    const pauseButtonHeight = document.getElementById('pause-button').clientHeight;
+    const totalVerticalPadding = parseInt(window.getComputedStyle(mainGameWrapper).paddingTop) + parseInt(window.getComputedStyle(mainGameWrapper).paddingBottom);
+    
+    const availableHeight = mainGameWrapper.clientHeight - infoSectionHeight - pauseButtonHeight - totalVerticalPadding;
+    const blockSizeFromHeight = Math.floor(availableHeight / ROWS);
+    
+    // Uzimamo manju vrednost kako bismo osigurali da igra stane i po širini i po visini
+    BLOCK_SIZE = Math.min(blockSizeFromWidth, blockSizeFromHeight);
 
+    // Ograničavamo maksimalnu veličinu bloka na 35px
     if (BLOCK_SIZE > 35) {
         BLOCK_SIZE = 35;
     }
 
+    // Postavljamo nove dimenzije kanvasa
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
+
+    // Prilagođavamo i canvas za sledeći blok
+    const nextBlockContainerSize = Math.floor(BLOCK_SIZE * 3.5); 
+    nextBlockCanvas.width = nextBlockContainerSize;
+    nextBlockCanvas.height = nextBlockContainerSize;
+    
+    draw();
+    drawNextPiece();
 }
 
 setCanvasSize();
@@ -152,10 +178,10 @@ function drawPiece(piece, context, blockSizeOverride = null) {
     let drawX = piece.x;
     let drawY = piece.y;
     if (context === nextBlockCtx) {
-        const pieceWidth = piece.shape[0].length * currentBlockSize;
-        const pieceHeight = piece.shape.length * currentBlockSize;
-        drawX = (context.canvas.width - pieceWidth) / (2 * currentBlockSize);
-        drawY = (context.canvas.height - pieceHeight) / (2 * currentBlockSize);
+        const pieceWidth = piece.shape[0].length * (currentBlockSize / 2);
+        const pieceHeight = piece.shape.length * (currentBlockSize / 2);
+        drawX = (context.canvas.width - pieceWidth) / (2 * (currentBlockSize / 2));
+        drawY = (context.canvas.height - pieceHeight) / (2 * (currentBlockSize / 2));
     }
 
     for (let r = 0; r < piece.shape.length; r++) {
@@ -171,8 +197,28 @@ function drawPiece(piece, context, blockSizeOverride = null) {
     }
 }
 
+
 function drawNextPiece() {
-    drawPiece(nextPiece, nextBlockCtx, BLOCK_SIZE / 2);
+    const nextBlockSize = BLOCK_SIZE / 2;
+    nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
+    
+    const pieceWidth = nextPiece.shape[0].length * nextBlockSize;
+    const pieceHeight = nextPiece.shape.length * nextBlockSize;
+    
+    const startX = (nextBlockCanvas.width - pieceWidth) / 2;
+    const startY = (nextBlockCanvas.height - pieceHeight) / 2;
+
+    for (let r = 0; r < nextPiece.shape.length; r++) {
+        for (let c = 0; c < nextPiece.shape[r].length; c++) {
+            if (nextPiece.shape[r][c]) {
+                nextBlockCtx.fillStyle = nextPiece.color;
+                nextBlockCtx.fillRect(startX + c * nextBlockSize, startY + r * nextBlockSize, nextBlockSize, nextBlockSize);
+                nextBlockCtx.strokeStyle = '#222';
+                nextBlockCtx.lineWidth = 1;
+                nextBlockCtx.strokeRect(startX + c * nextBlockSize, startY + r * nextBlockSize, nextBlockSize, nextBlockSize);
+            }
+        }
+    }
 }
 
 function drawBoard() {
@@ -293,7 +339,7 @@ function checkLines() {
             r++;
             clearSound.currentTime = 0;
             if (clearSound.readyState >= 2) {
-                 clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
+                clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
             }
         }
     }
