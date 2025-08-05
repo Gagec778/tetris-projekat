@@ -147,6 +147,71 @@ function initDOMAndEventListeners() {
     updateAssistsDisplay();
     
     setTheme('classic');
+    
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchMoveX = 0;
+    let touchMoveY = 0;
+    let touchStartTime = 0;
+    let isDragging = false;
+    const DRAG_THRESHOLD = 15;
+    const HARD_DROP_THRESHOLD = 100;
+
+    canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (gameOver || isPaused || !currentPiece) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchMoveX = touchStartX;
+        touchMoveY = touchStartY;
+        touchStartTime = new Date().getTime();
+        isDragging = false;
+    });
+
+    canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (gameOver || isPaused || !currentPiece) return;
+
+        const newTouchMoveX = e.touches[0].clientX;
+        const newTouchMoveY = e.touches[0].clientY;
+        const diffX = newTouchMoveX - touchMoveX;
+        const diffY = newTouchMoveY - touchMoveY;
+
+        if (Math.abs(diffX) > BLOCK_SIZE) {
+            if (diffX > 0) {
+                if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
+            } else {
+                if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
+            }
+            touchMoveX = newTouchMoveX;
+            isDragging = true;
+            draw();
+        }
+        
+        if (diffY > BLOCK_SIZE) {
+            if (isValidMove(0, 1, currentPiece.shape)) currentPiece.y++;
+            touchMoveY = newTouchMoveY;
+            isDragging = true;
+            draw();
+        }
+    });
+
+    canvas.addEventListener('touchend', e => {
+        if (gameOver || isPaused || !currentPiece) return;
+        const touchEndTime = new Date().getTime();
+        const touchDuration = touchEndTime - touchStartTime;
+        const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+        const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+
+        if (touchDuration < 250 && dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD) {
+            rotatePiece();
+            draw();
+        }
+        else if (touchDuration < 250 && dy > HARD_DROP_THRESHOLD) {
+            dropPiece();
+            draw();
+        }
+    });
 }
 
 function initBoard() {
@@ -297,7 +362,6 @@ function drawNextPiece() {
         }
     }
 }
-
 
 function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
