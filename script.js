@@ -625,7 +625,6 @@ function startGame() {
     
     initBoard();
     setCanvasSize();
-    generateNewPiece();
     
     score = 0;
     combo = 0;
@@ -637,8 +636,12 @@ function startGame() {
     
     gameOver = false;
     isPaused = false;
+    isAnimating = false;
     pauseButton.textContent = "PAUSE";
+    dropInterval = 1000;
     
+    generateNewPiece();
+
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     animationFrameId = requestAnimationFrame(gameLoop);
     
@@ -688,6 +691,9 @@ function setTheme(themeName) {
     localStorage.setItem('theme', themeName);
     
     setCanvasSize();
+    if (!gameOver && !isPaused) {
+      draw();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
