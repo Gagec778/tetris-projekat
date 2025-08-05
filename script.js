@@ -89,7 +89,8 @@ let board = [];
 let currentPiece;
 let nextPiece;
 let score = 0;
-let gameOver = false;
+let gameOver = true; // Promena: Postavljeno na true dok se ne pokrene
+let gameStarted = false;
 
 let dropInterval = 1000;
 let lastDropTime = 0;
@@ -117,6 +118,7 @@ const gameOverScreen = document.getElementById('game-over-screen');
 const scoreDisplay = document.getElementById('score-display');
 const finalScoreDisplay = document.getElementById('final-score');
 const comboDisplay = document.getElementById('combo-display');
+const controlsDiv = document.getElementById('controls');
 
 const startButton = document.getElementById('start-button');
 const restartButton = document.getElementById('restart-button');
@@ -126,6 +128,7 @@ let currentPieceIndex;
 let nextPieceIndex;
 
 function initBoard() {
+    board = [];
     for (let r = 0; r < ROWS; r++) {
         board[r] = [];
         for (let c = 0; c < COLS; c++) {
@@ -646,7 +649,7 @@ function startGame() {
 }
 
 function togglePause() {
-    if (gameOver || isAnimating) return;
+    if (gameOver || isAnimating || !gameStarted) return;
     isPaused = !isPaused;
     if (isPaused) {
         cancelAnimationFrame(animationFrameId);
@@ -713,6 +716,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     updateAssistsDisplay();
     startScreen.classList.add('show');
+    gameOver = true; // Osiguravamo da se ne pokreće automatski
+    gameStarted = false;
 });
 
 document.addEventListener('keydown', e => {
