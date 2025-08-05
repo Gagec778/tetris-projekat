@@ -1,18 +1,7 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const nextBlockCanvas = document.getElementById('nextBlockCanvas');
-const nextBlockCtx = nextBlockCanvas.getContext('2d');
-
-const COLS = 10;
-const ROWS = 18;
-
-let BLOCK_SIZE;
-
 let isAnimating = false;
 let linesToClear = [];
 let animationStart = 0;
 const animationDuration = 200;
-
 let lastClearWasSpecial = false;
 
 const THEMES = {
@@ -38,12 +27,45 @@ const THEMES = {
 
 const T_SHAPE_INDEX = 5;
 
+let canvas, ctx, nextBlockCanvas, nextBlockCtx;
+let COLS, ROWS, BLOCK_SIZE;
+
+const TETROMINOES = [
+    [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+    [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
+    [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
+    [[1, 1], [1, 1]],
+    [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
+    [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+    [[1, 1, 0], [0, 1, 1], [0, 0, 0]]
+];
+
+let board = [];
+let currentPiece, nextPiece;
+let score = 0;
+let gameOver = true;
+let isPaused = false;
+let combo = 0;
+let assists = 0;
+let bestScore = 0;
+let nextAssistReward = 5000;
+
+let dropInterval = 1000;
+let lastDropTime = 0;
+let animationFrameId;
+let currentPieceIndex, nextPieceIndex;
+let COLORS;
+let currentTheme;
+
+let dropSound, clearSound, rotateSound, gameOverSound;
+let startScreen, gameOverScreen, scoreDisplay, finalScoreDisplay, comboDisplay, startButton, restartButton, themeSwitcher, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton;
+
 function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
-    const containerWidth = mainGameWrapper.clientWidth - 20; // 20px padding
+    const containerWidth = mainGameWrapper.clientWidth - 20;
     const blockSizeFromWidth = Math.floor(containerWidth / COLS);
     
-    const gameAreaHeight = window.innerHeight - 250; // Approksimacija za UI elemente
+    const gameAreaHeight = window.innerHeight - 250;
     const blockSizeFromHeight = Math.floor(gameAreaHeight / ROWS);
     
     BLOCK_SIZE = Math.min(blockSizeFromWidth, blockSizeFromHeight);
@@ -58,8 +80,8 @@ function setCanvasSize() {
 
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
-
-    const nextBlockContainerSize = Math.floor(BLOCK_SIZE * 4);
+    
+    const nextBlockContainerSize = nextBlockCanvas.parentElement.clientWidth;
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
     
@@ -69,58 +91,63 @@ function setCanvasSize() {
     }
 }
 
-window.addEventListener('resize', setCanvasSize);
+function initDOMAndEventListeners() {
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    nextBlockCanvas = document.getElementById('nextBlockCanvas');
+    nextBlockCtx = nextBlockCanvas.getContext('2d');
+    
+    COLS = 10;
+    ROWS = 18;
 
-let COLORS;
-const TETROMINOES = [
-    [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
-    [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
-    [[1, 1], [1, 1]],
-    [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
-    [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
-    [[1, 1, 0], [0, 1, 1], [0, 0, 0]]
-];
+    dropSound = document.getElementById('dropSound');
+    clearSound = document.getElementById('clearSound');
+    rotateSound = document.getElementById('rotateSound');
+    gameOverSound = document.getElementById('gameOverSound');
 
-let board = [];
-let currentPiece;
-let nextPiece;
-let score = 0;
-let gameOver = true;
+    startScreen = document.getElementById('start-screen');
+    gameOverScreen = document.getElementById('game-over-screen');
+    scoreDisplay = document.getElementById('score-display');
+    finalScoreDisplay = document.getElementById('final-score');
+    comboDisplay = document.getElementById('combo-display');
+    startButton = document.getElementById('start-button');
+    restartButton = document.getElementById('restart-button');
+    pauseButton = document.getElementById('pause-button');
+    assistsContainer = document.getElementById('assists-container');
+    assistsCountDisplay = document.getElementById('assists-count');
+    bestScoreDisplay = document.getElementById('best-score-display');
+    
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', startGame);
+    pauseButton.addEventListener('click', togglePause);
+    
+    document.addEventListener('keydown', handleKeydown);
+    window.addEventListener('resize', setCanvasSize);
+    
+    assistsContainer.addEventListener('click', () => {
+        if (gameOver || isPaused) return;
+        useAssist();
+    });
 
-let dropInterval = 1000;
-let lastDropTime = 0;
-let animationFrameId;
+    setCanvasSize();
+    
+    const storedBestScore = localStorage.getItem('bestScore');
+    if (storedBestScore) {
+        bestScore = parseInt(storedBestScore, 10);
+        bestScoreDisplay.textContent = `BEST: ${bestScore}`;
+    }
 
-let combo = 0;
-
-let bestScore = 0;
-let isPaused = false;
-let assists = 0;
-
-let nextAssistReward = 5000;
-
-const assistsContainer = document.getElementById('assists-container');
-const assistsCountDisplay = document.getElementById('assists-count');
-const bestScoreDisplay = document.getElementById('best-score-display');
-const pauseButton = document.getElementById('pause-button');
-
-const dropSound = document.getElementById('dropSound');
-const clearSound = document.getElementById('clearSound');
-const rotateSound = document.getElementById('rotateSound');
-const gameOverSound = document.getElementById('gameOverSound');
-
-const startScreen = document.getElementById('start-screen');
-const gameOverScreen = document.getElementById('game-over-screen');
-const scoreDisplay = document.getElementById('score-display');
-const finalScoreDisplay = document.getElementById('final-score');
-const comboDisplay = document.getElementById('combo-display');
-const startButton = document.getElementById('start-button');
-const restartButton = document.getElementById('restart-button');
-const themeSwitcher = document.getElementById('theme-switcher');
-
-let currentPieceIndex;
-let nextPieceIndex;
+    const storedAssists = localStorage.getItem('assists');
+    if (storedAssists) {
+        assists = parseInt(storedAssists, 10);
+    } else {
+        assists = 0;
+        localStorage.setItem('assists', 0);
+    }
+    updateAssistsDisplay();
+    
+    setTheme('classic');
+}
 
 function initBoard() {
     board = [];
@@ -171,44 +198,14 @@ function generateNewPiece() {
     }
 }
 
-function drawBlock(x, y, color, context = ctx) {
+function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
     if (!context) return;
     const lightColor = lightenColor(color, 20);
     const darkColor = darkenColor(color, 20);
 
-    const blockSize = (context === nextBlockCtx) ? BLOCK_SIZE * (nextBlockCanvas.width/ (TETROMINOES[nextPieceIndex][0].length * BLOCK_SIZE)) : BLOCK_SIZE;
-
     context.fillStyle = color;
     context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
-
-    context.fillStyle = lightColor;
-    context.beginPath();
-    context.moveTo(x * blockSize, y * blockSize);
-    context.lineTo((x + 1) * blockSize, y * blockSize);
-    context.lineTo((x + 1) * blockSize - 2, y * blockSize + 2);
-    context.lineTo(x * blockSize + 2, y * blockSize + 2);
-    context.lineTo(x * blockSize + 2, (y + 1) * blockSize - 2);
-    context.lineTo(x * blockSize, (y + 1) * blockSize);
-    context.closePath();
-    context.fill();
-
-    context.fillStyle = darkColor;
-    context.beginPath();
-    context.moveTo((x + 1) * blockSize, (y + 1) * blockSize);
-    context.lineTo((x + 1) * blockSize, y * blockSize);
-    context.lineTo((x + 1) * blockSize - 2, y * blockSize + 2);
-    context.lineTo((x + 1) * blockSize - 2, (y + 1) * blockSize - 2);
-    context.closePath();
-    context.fill();
-    context.beginPath();
-    context.moveTo((x + 1) * blockSize, (y + 1) * blockSize);
-    context.lineTo(x * blockSize, (y + 1) * blockSize);
-    context.lineTo(x * blockSize + 2, (y + 1) * blockSize - 2);
-    context.lineTo((x + 1) * blockSize - 2, (y + 1) * blockSize - 2);
-    context.closePath();
-    context.fill();
-
-    context.strokeStyle = '#222';
+    context.strokeStyle = darkenColor(color, 40);
     context.lineWidth = 1;
     context.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
 }
@@ -237,7 +234,6 @@ function darkenColor(color, amount) {
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-
 function drawGhostPiece() {
     if (!currentPiece) return;
     let ghostY = currentPiece.y;
@@ -245,7 +241,7 @@ function drawGhostPiece() {
         ghostY++;
     }
 
-    ctx.globalAlpha = 0.1;
+    ctx.globalAlpha = 0.3;
     
     for (let r = 0; r < currentPiece.shape.length; r++) {
         for (let c = 0; c < currentPiece.shape[r].length; c++) {
@@ -253,9 +249,6 @@ function drawGhostPiece() {
                 const color = currentPiece.color;
                 ctx.fillStyle = color;
                 ctx.fillRect((currentPiece.x + c) * BLOCK_SIZE, (ghostY + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 2;
-                ctx.strokeRect((currentPiece.x + c) * BLOCK_SIZE, (ghostY + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
             }
         }
     }
@@ -263,34 +256,52 @@ function drawGhostPiece() {
 }
 
 function drawNextPiece() {
-    if (nextPieceIndex === undefined) {
+    if (!nextPiece) {
         nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
         return;
     }
-    const nextShape = TETROMINOES[nextPieceIndex];
-    const nextColor = COLORS[nextPieceIndex];
+    const nextShape = nextPiece.shape;
+    const nextColor = nextPiece.color;
     
-    const pieceWidth = nextShape[0].length * BLOCK_SIZE;
-    const pieceHeight = nextShape.length * BLOCK_SIZE;
-    
-    const scale = Math.min(nextBlockCanvas.width / pieceWidth, nextBlockCanvas.height / pieceHeight);
-    const scaledBlockSize = BLOCK_SIZE * scale;
-    
-    const startX = (nextBlockCanvas.width - pieceWidth * scale) / 2;
-    const startY = (nextBlockCanvas.height - pieceHeight * scale) / 2;
-
     nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
+    
+    let shapeWidth = 0;
+    for (let r = 0; r < nextShape.length; r++) {
+        let rowWidth = 0;
+        for (let c = 0; c < nextShape[r].length; c++) {
+            if (nextShape[r][c]) {
+                rowWidth = c + 1;
+            }
+        }
+        if (rowWidth > shapeWidth) {
+            shapeWidth = rowWidth;
+        }
+    }
+    const shapeHeight = nextShape.length;
+
+    const scaleFactor = Math.min(nextBlockCanvas.width / (shapeWidth * BLOCK_SIZE), nextBlockCanvas.height / (shapeHeight * BLOCK_SIZE));
+    const nextBlockSize = BLOCK_SIZE * scaleFactor;
+    
+    const offsetX = (nextBlockCanvas.width - shapeWidth * nextBlockSize) / 2;
+    const offsetY = (nextBlockCanvas.height - shapeHeight * nextBlockSize) / 2;
+
     for (let r = 0; r < nextShape.length; r++) {
         for (let c = 0; c < nextShape[r].length; c++) {
             if (nextShape[r][c]) {
                 nextBlockCtx.fillStyle = nextColor;
-                nextBlockCtx.fillRect(startX + c * scaledBlockSize, startY + r * scaledBlockSize, scaledBlockSize, scaledBlockSize);
+                nextBlockCtx.fillRect(offsetX + c * nextBlockSize, offsetY + r * nextBlockSize, nextBlockSize, nextBlockSize);
+                nextBlockCtx.strokeStyle = darkenColor(nextColor, 40);
+                nextBlockCtx.lineWidth = 1;
+                nextBlockCtx.strokeRect(offsetX + c * nextBlockSize, offsetY + r * nextBlockSize, nextBlockSize, nextBlockSize);
             }
         }
     }
 }
 
+
 function drawBoard() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
             if (board[r][c]) {
@@ -299,6 +310,14 @@ function drawBoard() {
                 ctx.fillStyle = THEMES[currentTheme].boardBackground;
                 ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
             }
+        }
+    }
+    
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
         }
     }
 }
@@ -689,24 +708,7 @@ function setTheme(themeName) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const storedBestScore = localStorage.getItem('bestScore');
-    if (storedBestScore) {
-        bestScore = parseInt(storedBestScore, 10);
-        bestScoreDisplay.textContent = `BEST: ${storedBestScore}`;
-    }
-
-    const storedAssists = localStorage.getItem('assists');
-    if (storedAssists) {
-        assists = parseInt(storedAssists, 10);
-    } else {
-        assists = 0;
-        localStorage.setItem('assists', 0);
-    }
-    updateAssistsDisplay();
-});
-
-document.addEventListener('keydown', e => {
+function handleKeydown(e) {
     if (gameOver || isPaused || isAnimating || !currentPiece) return;
     switch (e.key) {
         case 'ArrowLeft':
@@ -733,85 +735,6 @@ document.addEventListener('keydown', e => {
             break;
     }
     draw();
-});
-
-startButton.addEventListener('click', startGame);
-restartButton.addEventListener('click', startGame);
-pauseButton.addEventListener('click', togglePause);
-if (themeSwitcher) {
-    themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
 }
 
-if (assistsContainer) {
-    assistsContainer.addEventListener('click', () => {
-        if (gameOver || isPaused) return;
-        useAssist();
-    });
-}
-
-let touchStartX = 0;
-let touchStartY = 0;
-let touchMoveX = 0;
-let touchMoveY = 0;
-let touchStartTime = 0;
-let isDragging = false;
-const DRAG_THRESHOLD = 15;
-const HARD_DROP_THRESHOLD = 100;
-
-canvas.addEventListener('touchstart', e => {
-    e.preventDefault();
-    if (gameOver || isPaused || !currentPiece) return;
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    touchMoveX = touchStartX;
-    touchMoveY = touchStartY;
-    touchStartTime = new Date().getTime();
-    isDragging = false;
-});
-
-canvas.addEventListener('touchmove', e => {
-    e.preventDefault();
-    if (gameOver || isPaused || !currentPiece) return;
-
-    const newTouchMoveX = e.touches[0].clientX;
-    const newTouchMoveY = e.touches[0].clientY;
-    const diffX = newTouchMoveX - touchMoveX;
-    const diffY = newTouchMoveY - touchMoveY;
-
-    if (Math.abs(diffX) > BLOCK_SIZE) {
-        if (diffX > 0) {
-            if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
-        } else {
-            if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
-        }
-        touchMoveX = newTouchMoveX;
-        isDragging = true;
-        draw();
-    }
-    
-    if (diffY > BLOCK_SIZE) {
-        if (isValidMove(0, 1, currentPiece.shape)) currentPiece.y++;
-        touchMoveY = newTouchMoveY;
-        isDragging = true;
-        draw();
-    }
-});
-
-canvas.addEventListener('touchend', e => {
-    if (gameOver || isPaused || !currentPiece) return;
-    const touchEndTime = new Date().getTime();
-    const touchDuration = touchEndTime - touchStartTime;
-    const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
-    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
-
-    if (touchDuration < 250 && dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD) {
-        rotatePiece();
-        draw();
-    }
-    else if (touchDuration < 250 && dy > HARD_DROP_THRESHOLD) {
-        dropPiece();
-        draw();
-    }
-});
-
-setCanvasSize();
+document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
