@@ -45,7 +45,7 @@ const THEMES = {
 const T_SHAPE_INDEX = 5; // Indeks T bloka u TETROMINOES nizu
 
 // ----------------------------------------------
-// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (ISPRAVLJENA)
+// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (POPRAVLJENA)
 // ----------------------------------------------
 function setCanvasSize() {
     if (!mainGameWrapper) return;
@@ -73,8 +73,11 @@ function setCanvasSize() {
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
     
-    draw();
-    drawNextPiece();
+    // VAŽNO: Nakon promene veličine, ponovo crtamo sve
+    if (!gameOver && !isPaused) {
+        draw();
+        drawNextPiece();
+    }
 }
 
 window.addEventListener('resize', setCanvasSize);
@@ -159,6 +162,8 @@ function initBoard() {
 }
 
 function createCurrentPiece() {
+    if (currentPieceIndex === undefined) return; // PROVERA
+    
     const shape = TETROMINOES[currentPieceIndex];
     const color = COLORS[currentPieceIndex];
     const pieceWidth = shape[0].length;
@@ -196,52 +201,51 @@ function generateNewPiece() {
     }
 }
 
-// ----------------------------------------------
-// NOVE FUNKCIJE ZA 3D IZGLED I GHOST PIECE
-// ----------------------------------------------
-function drawBlock(x, y, color) {
+function drawBlock(x, y, color, context = ctx) {
+    if (!context) return;
     const lightColor = lightenColor(color, 20);
     const darkColor = darkenColor(color, 20);
 
+    const blockSize = (context === nextBlockCtx) ? BLOCK_SIZE / 2 : BLOCK_SIZE;
+
     // Lice bloka
-    ctx.fillStyle = color;
-    ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    context.fillStyle = color;
+    context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
 
     // Gornja i leva ivica
-    ctx.fillStyle = lightColor;
-    ctx.beginPath();
-    ctx.moveTo(x * BLOCK_SIZE, y * BLOCK_SIZE);
-    ctx.lineTo((x + 1) * BLOCK_SIZE, y * BLOCK_SIZE);
-    ctx.lineTo((x + 1) * BLOCK_SIZE - 2, y * BLOCK_SIZE + 2);
-    ctx.lineTo(x * BLOCK_SIZE + 2, y * BLOCK_SIZE + 2);
-    ctx.lineTo(x * BLOCK_SIZE + 2, (y + 1) * BLOCK_SIZE - 2);
-    ctx.lineTo(x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-    ctx.closePath();
-    ctx.fill();
+    context.fillStyle = lightColor;
+    context.beginPath();
+    context.moveTo(x * blockSize, y * blockSize);
+    context.lineTo((x + 1) * blockSize, y * blockSize);
+    context.lineTo((x + 1) * blockSize - 2, y * blockSize + 2);
+    context.lineTo(x * blockSize + 2, y * blockSize + 2);
+    context.lineTo(x * blockSize + 2, (y + 1) * blockSize - 2);
+    context.lineTo(x * blockSize, (y + 1) * blockSize);
+    context.closePath();
+    context.fill();
 
     // Donja i desna ivica
-    ctx.fillStyle = darkColor;
-    ctx.beginPath();
-    ctx.moveTo((x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-    ctx.lineTo((x + 1) * BLOCK_SIZE, y * BLOCK_SIZE);
-    ctx.lineTo((x + 1) * BLOCK_SIZE - 2, y * BLOCK_SIZE + 2);
-    ctx.lineTo((x + 1) * BLOCK_SIZE - 2, (y + 1) * BLOCK_SIZE - 2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo((x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-    ctx.lineTo(x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-    ctx.lineTo(x * BLOCK_SIZE + 2, (y + 1) * BLOCK_SIZE - 2);
-    ctx.lineTo((x + 1) * BLOCK_SIZE - 2, (y + 1) * BLOCK_SIZE - 2);
-    ctx.closePath();
-    ctx.fill();
+    context.fillStyle = darkColor;
+    context.beginPath();
+    context.moveTo((x + 1) * blockSize, (y + 1) * blockSize);
+    context.lineTo((x + 1) * blockSize, y * blockSize);
+    context.lineTo((x + 1) * blockSize - 2, y * blockSize + 2);
+    context.lineTo((x + 1) * blockSize - 2, (y + 1) * blockSize - 2);
+    context.closePath();
+    context.fill();
+    context.beginPath();
+    context.moveTo((x + 1) * blockSize, (y + 1) * blockSize);
+    context.lineTo(x * blockSize, (y + 1) * blockSize);
+    context.lineTo(x * blockSize + 2, (y + 1) * blockSize - 2);
+    context.lineTo((x + 1) * blockSize - 2, (y + 1) * blockSize - 2);
+    context.closePath();
+    context.fill();
 
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    context.strokeStyle = '#222';
+    context.lineWidth = 1;
+    context.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
 }
 
-// Pomoćne funkcije za 3D efekte
 function lightenColor(color, amount) {
     let r = parseInt(color.substring(1, 3), 16);
     let g = parseInt(color.substring(3, 5), 16);
@@ -268,6 +272,7 @@ function darkenColor(color, amount) {
 
 
 function drawGhostPiece() {
+    if (!currentPiece) return;
     let ghostY = currentPiece.y;
     while (isValidMove(0, 1, currentPiece.shape, ghostY)) {
         ghostY++;
@@ -309,11 +314,7 @@ function drawNextPiece() {
     for (let r = 0; r < nextShape.length; r++) {
         for (let c = 0; c < nextShape[r].length; c++) {
             if (nextShape[r][c]) {
-                nextBlockCtx.fillStyle = nextColor;
-                nextBlockCtx.fillRect(startX + c * nextBlockSize, startY + r * nextBlockSize, nextBlockSize, nextBlockSize);
-                nextBlockCtx.strokeStyle = '#222';
-                nextBlockCtx.lineWidth = 1;
-                nextBlockCtx.strokeRect(startX + c * nextBlockSize, startY + r * nextBlockSize, nextBlockSize, nextBlockSize);
+                drawBlock(startX/nextBlockSize + c, startY/nextBlockSize + r, nextColor, nextBlockCtx);
             }
         }
     }
@@ -347,6 +348,7 @@ function drawCurrentPiece() {
 }
 
 function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y) {
+    if (!currentPiece) return false;
     for (let r = 0; r < newShape.length; r++) {
         for (let c = 0; c < newShape[r].length; c++) {
             if (newShape[r][c]) {
@@ -367,6 +369,7 @@ function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y) {
 }
 
 function rotatePiece() {
+    if (!currentPiece) return;
     const originalShape = currentPiece.shape;
     const N = originalShape.length;
     const newShape = Array(N).fill(0).map(() => Array(N).fill(0));
@@ -397,6 +400,7 @@ function rotatePiece() {
 }
 
 function dropPiece() {
+    if (!currentPiece) return;
     while (isValidMove(0, 1, currentPiece.shape)) {
         currentPiece.y++;
     }
@@ -406,6 +410,7 @@ function dropPiece() {
 }
 
 function mergePiece() {
+    if (!currentPiece) return;
     for (let r = 0; r < currentPiece.shape.length; r++) {
         for (let c = 0; c < currentPiece.shape[r].length; c++) {
             if (currentPiece.shape[r][c]) {
@@ -420,14 +425,9 @@ function mergePiece() {
     checkLines();
 }
 
-// ----------------------------------------------
-// POBOLJŠANA LOGIKA ZA BODOVANJE I ANIMACIJU
-// ----------------------------------------------
 function isTSpin() {
     if (currentPieceIndex !== T_SHAPE_INDEX) return false;
 
-    // Proverava se da li je T-blok okružen blokovima na tri od četiri ugla.
-    // Nije savršena implementacija, ali je dobra osnova.
     let filledCorners = 0;
     const corners = [
         { x: currentPiece.x, y: currentPiece.y },
@@ -467,14 +467,12 @@ function checkLines() {
         let isSpecial = false;
         if (isTSpin()) {
             isSpecial = true;
-            // T-Spin se priznaje bez obzira na broj obrisanih linija
-            // ali se najčešće kombinuje sa 1 ili 2 linije.
         } else if (linesToClear.length === 4) {
             isSpecial = true;
         }
 
         if (lastClearWasSpecial && isSpecial) {
-            updateScore(linesToClear.length, true, isTSpin()); // Back-to-Back bonus
+            updateScore(linesToClear.length, true, isTSpin());
             lastClearWasSpecial = true;
         } else {
             updateScore(linesToClear.length, false, isTSpin());
@@ -566,7 +564,6 @@ function animateLineClear() {
     const progress = elapsed / animationDuration;
     
     if (progress >= 1) {
-        // Završetak animacije, sada ukloni linije
         isAnimating = false;
         linesToClear.sort((a, b) => b - a);
         for (const r of linesToClear) {
@@ -575,12 +572,13 @@ function animateLineClear() {
         }
         linesToClear = [];
         generateNewPiece();
+        // Važno: Moramo ponovo pokrenuti glavni game loop nakon završetka animacije
+        gameInterval = setInterval(gameLoop, dropInterval);
         return;
     }
 
-    draw(); // Nacrtaj tablu u njenom trenutnom stanju
+    draw();
 
-    // Crtaj animaciju "eksplozije" na linijama koje se brišu
     for (const r of linesToClear) {
         for (let c = 0; c < COLS; c++) {
             if (board[r][c]) {
@@ -593,7 +591,7 @@ function animateLineClear() {
             }
         }
     }
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(animateLineClear);
 }
 
 function draw() {
@@ -671,7 +669,7 @@ function startGame() {
 }
 
 function togglePause() {
-    if (gameOver) return;
+    if (gameOver || isAnimating) return;
     isPaused = !isPaused;
     if (isPaused) {
         clearInterval(gameInterval);
@@ -701,7 +699,7 @@ function useAssist() {
 function setTheme(themeName) {
     currentTheme = themeName;
     COLORS = THEMES[themeName].blockColors;
-    document.body.style.background = THEMES[themeName].background;
+    document.body.style.background = `linear-gradient(to bottom right, ${THEMES[themeName].background}, #16213e, #0f3460)`; // Popravljena linija
     document.documentElement.style.setProperty('--main-color', THEMES[themeName].lineColor);
     localStorage.setItem('theme', themeName);
     
@@ -727,6 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('assists', 0);
     }
     updateAssistsDisplay();
+    startScreen.classList.add('show');
 });
 
 document.addEventListener('keydown', e => {
@@ -768,7 +767,6 @@ assistsContainer.addEventListener('click', () => {
     useAssist();
 });
 
-// Kontrole na dodir ostaju iste, ali su prilagođene novom crtanju
 let touchStartX = 0;
 let touchStartY = 0;
 let touchMoveX = 0;
