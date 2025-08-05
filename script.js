@@ -1,4 +1,3 @@
-// Postavke platna
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const nextBlockCanvas = document.getElementById('nextBlockCanvas');
@@ -10,15 +9,12 @@ const ROWS = 18;
 const mainGameWrapper = document.getElementById('main-game-wrapper');
 let BLOCK_SIZE;
 
-// ----------------------------------------------
-// NOVE PROMENLJIVE ZA GAMEPLAY I IZGLED
-// ----------------------------------------------
-let isAnimating = false; // Za animaciju čišćenja linije
-let linesToClear = []; // Redovi koji čekaju na animaciju
+let isAnimating = false;
+let linesToClear = [];
 let animationStart = 0;
-const animationDuration = 200; // u milisekundama
+const animationDuration = 200;
 
-let lastClearWasSpecial = false; // Za Back-to-Back bonuse
+let lastClearWasSpecial = false;
 
 let currentTheme = 'classic';
 const THEMES = {
@@ -42,11 +38,8 @@ const THEMES = {
     }
 };
 
-const T_SHAPE_INDEX = 5; // Indeks T bloka u TETROMINOES nizu
+const T_SHAPE_INDEX = 5;
 
-// ----------------------------------------------
-// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (POPRAVLJENA)
-// ----------------------------------------------
 function setCanvasSize() {
     if (!mainGameWrapper) return;
 
@@ -73,7 +66,6 @@ function setCanvasSize() {
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
     
-    // VAŽNO: Nakon promene veličine, ponovo crtamo sve
     if (!gameOver && !isPaused) {
         draw();
         drawNextPiece();
@@ -84,34 +76,13 @@ window.addEventListener('resize', setCanvasSize);
 
 let COLORS;
 const TETROMINOES = [
-    // I
-    [[0, 0, 0, 0],
-     [1, 1, 1, 1],
-     [0, 0, 0, 0],
-     [0, 0, 0, 0]],
-    // J
-    [[1, 0, 0],
-     [1, 1, 1],
-     [0, 0, 0]],
-    // L
-    [[0, 0, 1],
-     [1, 1, 1],
-     [0, 0, 0]],
-    // O
-    [[1, 1],
-     [1, 1]],
-    // S
-    [[0, 1, 1],
-     [1, 1, 0],
-     [0, 0, 0]],
-    // T
-    [[0, 1, 0],
-     [1, 1, 1],
-     [0, 0, 0]],
-    // Z
-    [[1, 1, 0],
-     [0, 1, 1],
-     [0, 0, 0]]
+    [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+    [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
+    [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
+    [[1, 1], [1, 1]],
+    [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
+    [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+    [[1, 1, 0], [0, 1, 1], [0, 0, 0]]
 ];
 
 let board = [];
@@ -120,11 +91,9 @@ let nextPiece;
 let score = 0;
 let gameOver = false;
 
-// --- PROMENA: ZAMENA setInterval sa requestAnimationFrame ---
 let dropInterval = 1000;
 let lastDropTime = 0;
 let animationFrameId;
-// --- KRAJ PROMENE ---
 
 let combo = 0;
 
@@ -212,11 +181,9 @@ function drawBlock(x, y, color, context = ctx) {
 
     const blockSize = (context === nextBlockCtx) ? BLOCK_SIZE / 2 : BLOCK_SIZE;
 
-    // Lice bloka
     context.fillStyle = color;
     context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
 
-    // Gornja i leva ivica
     context.fillStyle = lightColor;
     context.beginPath();
     context.moveTo(x * blockSize, y * blockSize);
@@ -228,7 +195,6 @@ function drawBlock(x, y, color, context = ctx) {
     context.closePath();
     context.fill();
 
-    // Donja i desna ivica
     context.fillStyle = darkColor;
     context.beginPath();
     context.moveTo((x + 1) * blockSize, (y + 1) * blockSize);
@@ -405,7 +371,7 @@ function rotatePiece() {
 }
 
 function dropPiece() {
-    if (!currentPiece) return; // PROVERA DA LI POSTOJI BLOK
+    if (!currentPiece) return;
     while (isValidMove(0, 1, currentPiece.shape)) {
         currentPiece.y++;
     }
@@ -717,7 +683,7 @@ function useAssist() {
 function setTheme(themeName) {
     currentTheme = themeName;
     COLORS = THEMES[themeName].blockColors;
-    document.body.style.background = `linear-gradient(to bottom right, ${THEMES[themeName].background}, #16213e, #0f3460)`; // Popravljena linija
+    document.body.style.background = `linear-gradient(to bottom right, ${THEMES[themeName].background}, #16213e, #0f3460)`;
     document.documentElement.style.setProperty('--main-color', THEMES[themeName].lineColor);
     localStorage.setItem('theme', themeName);
     
