@@ -132,28 +132,36 @@ function initBoard() {
 }
 
 // ----------------------------------------------
+// NOVE POMOĆNE FUNKCIJE ZA KREIRANJE BLOKOVA
+// ----------------------------------------------
+function createNewPiece(shapeIndex) {
+    const shape = TETROMINOES[shapeIndex];
+    const color = COLORS[shapeIndex];
+    const pieceWidth = shape[0].length;
+    const startX = Math.floor((COLS - pieceWidth) / 2);
+    
+    return {
+        shape: shape,
+        color: color,
+        x: startX,
+        y: 0
+    };
+}
+
+// ----------------------------------------------
 // ISPRAVLJENA FUNKCIJA generateNewPiece()
 // ----------------------------------------------
 function generateNewPiece() {
-    // Proveravamo da li postoji 'nextPiece'
     if (nextPiece) {
-        // Ako postoji, promovišemo ga u 'currentPiece'
-        // i dodajemo mu ispravne početne koordinate za glavno platno
-        currentPiece = {
-            shape: nextPiece.shape,
-            color: nextPiece.color,
-            x: 3, // Ispravna centralna početna pozicija
-            y: 0
-        };
+        // Promovišemo 'nextPiece' u 'currentPiece'
+        // ali mu ponovo računamo ispravne koordinate
+        // umesto da uzmemo one za mali prozor
+        const randomIndex = TETROMINOES.findIndex(shape => shape === nextPiece.shape);
+        currentPiece = createNewPiece(randomIndex);
     } else {
-        // Ako ne postoji, generišemo prvi 'currentPiece'
+        // Generišemo prvi 'currentPiece'
         const randomIndex = Math.floor(Math.random() * TETROMINOES.length);
-        currentPiece = {
-            shape: TETROMINOES[randomIndex],
-            color: COLORS[randomIndex],
-            x: 3,
-            y: 0
-        };
+        currentPiece = createNewPiece(randomIndex);
     }
 
     // Sada generišemo novi 'nextPiece' za prikaz
