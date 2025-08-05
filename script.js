@@ -6,7 +6,6 @@ const nextBlockCtx = nextBlockCanvas.getContext('2d');
 const COLS = 10;
 const ROWS = 18;
 
-const mainGameWrapper = document.getElementById('main-game-wrapper');
 let BLOCK_SIZE;
 
 let isAnimating = false;
@@ -16,7 +15,6 @@ const animationDuration = 200;
 
 let lastClearWasSpecial = false;
 
-let currentTheme = 'classic';
 const THEMES = {
     'classic': {
         background: '#1a1a2e',
@@ -41,12 +39,11 @@ const THEMES = {
 const T_SHAPE_INDEX = 5;
 
 function setCanvasSize() {
-    if (!mainGameWrapper) return;
-
-    const containerWidth = mainGameWrapper.clientWidth;
+    const mainGameWrapper = document.getElementById('main-game-wrapper');
+    const containerWidth = mainGameWrapper.clientWidth - 20; // 20px padding
     const blockSizeFromWidth = Math.floor(containerWidth / COLS);
     
-    const gameAreaHeight = window.innerHeight - 150;
+    const gameAreaHeight = window.innerHeight - 250; // Approksimacija za UI elemente
     const blockSizeFromHeight = Math.floor(gameAreaHeight / ROWS);
     
     BLOCK_SIZE = Math.min(blockSizeFromWidth, blockSizeFromHeight);
@@ -102,7 +99,8 @@ let isPaused = false;
 let assists = 0;
 
 let nextAssistReward = 5000;
-const assistsContainer = document.querySelector('.assist-panel');
+
+const assistsContainer = document.getElementById('assists-container');
 const assistsCountDisplay = document.getElementById('assists-count');
 const bestScoreDisplay = document.getElementById('best-score-display');
 const pauseButton = document.getElementById('pause-button');
@@ -117,7 +115,6 @@ const gameOverScreen = document.getElementById('game-over-screen');
 const scoreDisplay = document.getElementById('score-display');
 const finalScoreDisplay = document.getElementById('final-score');
 const comboDisplay = document.getElementById('combo-display');
-
 const startButton = document.getElementById('start-button');
 const restartButton = document.getElementById('restart-button');
 const themeSwitcher = document.getElementById('theme-switcher');
@@ -179,7 +176,7 @@ function drawBlock(x, y, color, context = ctx) {
     const lightColor = lightenColor(color, 20);
     const darkColor = darkenColor(color, 20);
 
-    const blockSize = (context === nextBlockCtx) ? BLOCK_SIZE / 2 : BLOCK_SIZE;
+    const blockSize = (context === nextBlockCtx) ? BLOCK_SIZE * (nextBlockCanvas.width/ (TETROMINOES[nextPieceIndex][0].length * BLOCK_SIZE)) : BLOCK_SIZE;
 
     context.fillStyle = color;
     context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
@@ -270,22 +267,24 @@ function drawNextPiece() {
         nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
         return;
     }
-    const nextBlockSize = BLOCK_SIZE / 2;
-    nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
-    
     const nextShape = TETROMINOES[nextPieceIndex];
     const nextColor = COLORS[nextPieceIndex];
     
-    const pieceWidth = nextShape[0].length * nextBlockSize;
-    const pieceHeight = nextShape.length * nextBlockSize;
+    const pieceWidth = nextShape[0].length * BLOCK_SIZE;
+    const pieceHeight = nextShape.length * BLOCK_SIZE;
     
-    const startX = (nextBlockCanvas.width - pieceWidth) / 2;
-    const startY = (nextBlockCanvas.height - pieceHeight) / 2;
+    const scale = Math.min(nextBlockCanvas.width / pieceWidth, nextBlockCanvas.height / pieceHeight);
+    const scaledBlockSize = BLOCK_SIZE * scale;
+    
+    const startX = (nextBlockCanvas.width - pieceWidth * scale) / 2;
+    const startY = (nextBlockCanvas.height - pieceHeight * scale) / 2;
 
+    nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
     for (let r = 0; r < nextShape.length; r++) {
         for (let c = 0; c < nextShape[r].length; c++) {
             if (nextShape[r][c]) {
-                drawBlock(startX/nextBlockSize + c, startY/nextBlockSize + r, nextColor, nextBlockCtx);
+                nextBlockCtx.fillStyle = nextColor;
+                nextBlockCtx.fillRect(startX + c * scaledBlockSize, startY + r * scaledBlockSize, scaledBlockSize, scaledBlockSize);
             }
         }
     }
@@ -299,9 +298,6 @@ function drawBoard() {
             } else {
                 ctx.fillStyle = THEMES[currentTheme].boardBackground;
                 ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                ctx.strokeStyle = '#333';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
             }
         }
     }
@@ -510,9 +506,9 @@ function showComboMessage(type, comboCount) {
 
     if (message) {
         comboDisplay.textContent = message;
-        comboDisplay.classList.remove('hidden');
+        comboDisplay.style.display = 'block';
         setTimeout(() => {
-            comboDisplay.classList.add('hidden');
+            comboDisplay.style.display = 'none';
         }, 1500);
     }
 }
@@ -597,8 +593,8 @@ function endGame() {
         bestScoreDisplay.textContent = `BEST: ${bestScore}`;
     }
     
-    gameOverScreen.classList.remove('hidden');
-    pauseButton.classList.add('hidden');
+    gameOverScreen.style.display = 'flex';
+    pauseButton.style.display = 'none';
 }
 
 function startGame() {
@@ -620,9 +616,9 @@ function startGame() {
         console.error("Greška pri pokušaju inicijalizacije zvuka (verovatno autoplay blokiran):", e);
     }
     
-    startScreen.classList.add('hidden');
-    gameOverScreen.classList.add('hidden');
-    pauseButton.classList.remove('hidden');
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    pauseButton.style.display = 'block';
     
     initBoard();
     setCanvasSize();
@@ -694,10 +690,6 @@ function setTheme(themeName) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const storedTheme = localStorage.getItem('theme') || 'classic';
-    setTheme(storedTheme);
-    setCanvasSize();
-
     const storedBestScore = localStorage.getItem('bestScore');
     if (storedBestScore) {
         bestScore = parseInt(storedBestScore, 10);
@@ -746,7 +738,9 @@ document.addEventListener('keydown', e => {
 startButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
 pauseButton.addEventListener('click', togglePause);
-themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
+if (themeSwitcher) {
+    themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
+}
 
 if (assistsContainer) {
     assistsContainer.addEventListener('click', () => {
@@ -819,3 +813,5 @@ canvas.addEventListener('touchend', e => {
         draw();
     }
 });
+
+setCanvasSize();
