@@ -1,3 +1,4 @@
+// Postavke platna
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const nextBlockCanvas = document.getElementById('nextBlockCanvas');
@@ -9,12 +10,15 @@ const ROWS = 18;
 const mainGameWrapper = document.getElementById('main-game-wrapper');
 let BLOCK_SIZE;
 
-let isAnimating = false;
-let linesToClear = [];
+// ----------------------------------------------
+// NOVE PROMENLJIVE ZA GAMEPLAY I IZGLED
+// ----------------------------------------------
+let isAnimating = false; // Za animaciju čišćenja linije
+let linesToClear = []; // Redovi koji čekaju na animaciju
 let animationStart = 0;
-const animationDuration = 200;
+const animationDuration = 200; // u milisekundama
 
-let lastClearWasSpecial = false;
+let lastClearWasSpecial = false; // Za Back-to-Back bonuse
 
 let currentTheme = 'classic';
 const THEMES = {
@@ -38,8 +42,11 @@ const THEMES = {
     }
 };
 
-const T_SHAPE_INDEX = 5;
+const T_SHAPE_INDEX = 5; // Indeks T bloka u TETROMINOES nizu
 
+// ----------------------------------------------
+// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (POPRAVLJENA)
+// ----------------------------------------------
 function setCanvasSize() {
     if (!mainGameWrapper) return;
 
@@ -66,6 +73,7 @@ function setCanvasSize() {
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
     
+    // VAŽNO: Nakon promene veličine, ponovo crtamo sve
     if (!gameOver && !isPaused) {
         draw();
         drawNextPiece();
@@ -76,33 +84,56 @@ window.addEventListener('resize', setCanvasSize);
 
 let COLORS;
 const TETROMINOES = [
-    [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
-    [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
-    [[1, 1], [1, 1]],
-    [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
-    [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
-    [[1, 1, 0], [0, 1, 1], [0, 0, 0]]
+    // I
+    [[0, 0, 0, 0],
+     [1, 1, 1, 1],
+     [0, 0, 0, 0],
+     [0, 0, 0, 0]],
+    // J
+    [[1, 0, 0],
+     [1, 1, 1],
+     [0, 0, 0]],
+    // L
+    [[0, 0, 1],
+     [1, 1, 1],
+     [0, 0, 0]],
+    // O
+    [[1, 1],
+     [1, 1]],
+    // S
+    [[0, 1, 1],
+     [1, 1, 0],
+     [0, 0, 0]],
+    // T
+    [[0, 1, 0],
+     [1, 1, 1],
+     [0, 0, 0]],
+    // Z
+    [[1, 1, 0],
+     [0, 1, 1],
+     [0, 0, 0]]
 ];
 
 let board = [];
 let currentPiece;
 let nextPiece;
 let score = 0;
-let gameOver = true;
+let gameOver = false;
 
+// --- PROMENA: ZAMENA setInterval sa requestAnimationFrame ---
 let dropInterval = 1000;
 let lastDropTime = 0;
 let animationFrameId;
+// --- KRAJ PROMENE ---
 
 let combo = 0;
 
 let bestScore = 0;
 let isPaused = false;
-let assists = 0;
+let assists;
 
 let nextAssistReward = 5000;
-const assistsContainer = document.querySelector('.assist-panel');
+const assistsContainer = document.getElementById('assists-container');
 const assistsCountDisplay = document.getElementById('assists-count');
 const bestScoreDisplay = document.getElementById('best-score-display');
 const pauseButton = document.getElementById('pause-button');
@@ -116,6 +147,7 @@ const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 const scoreDisplay = document.getElementById('score-display');
 const finalScoreDisplay = document.getElementById('final-score');
+const controlsDiv = document.getElementById('controls');
 const comboDisplay = document.getElementById('combo-display');
 
 const startButton = document.getElementById('start-button');
@@ -126,7 +158,6 @@ let currentPieceIndex;
 let nextPieceIndex;
 
 function initBoard() {
-    board = [];
     for (let r = 0; r < ROWS; r++) {
         board[r] = [];
         for (let c = 0; c < COLS; c++) {
@@ -137,6 +168,7 @@ function initBoard() {
 
 function createCurrentPiece() {
     if (currentPieceIndex === undefined) return;
+    
     const shape = TETROMINOES[currentPieceIndex];
     const color = COLORS[currentPieceIndex];
     const pieceWidth = shape[0].length;
@@ -181,9 +213,11 @@ function drawBlock(x, y, color, context = ctx) {
 
     const blockSize = (context === nextBlockCtx) ? BLOCK_SIZE / 2 : BLOCK_SIZE;
 
+    // Lice bloka
     context.fillStyle = color;
     context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
 
+    // Gornja i leva ivica
     context.fillStyle = lightColor;
     context.beginPath();
     context.moveTo(x * blockSize, y * blockSize);
@@ -195,6 +229,7 @@ function drawBlock(x, y, color, context = ctx) {
     context.closePath();
     context.fill();
 
+    // Donja i desna ivica
     context.fillStyle = darkColor;
     context.beginPath();
     context.moveTo((x + 1) * blockSize, (y + 1) * blockSize);
@@ -319,8 +354,7 @@ function drawCurrentPiece() {
 }
 
 function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y) {
-    if (!board.length || !currentPiece) return false;
-    
+    if (!currentPiece) return false;
     for (let r = 0; r < newShape.length; r++) {
         for (let c = 0; c < newShape[r].length; c++) {
             if (newShape[r][c]) {
@@ -372,7 +406,7 @@ function rotatePiece() {
 }
 
 function dropPiece() {
-    if (!currentPiece) return;
+    if (!currentPiece) return; // PROVERA DA LI POSTOJI BLOK
     while (isValidMove(0, 1, currentPiece.shape)) {
         currentPiece.y++;
     }
@@ -390,9 +424,7 @@ function mergePiece() {
                     endGame();
                     return;
                 }
-                if (board[currentPiece.y + r]) {
-                   board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color;
-                }
+                board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color;
             }
         }
     }
@@ -458,6 +490,8 @@ function checkLines() {
             clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
         }
         
+        // ZAVRŠAVA FUNKCIJU BEZ GENERISANJA NOVOG BLOKA
+        // Novi blok će biti generisan nakon animacije.
         return; 
     } else {
         lastClearWasSpecial = false;
@@ -510,9 +544,9 @@ function showComboMessage(type, comboCount) {
 
     if (message) {
         comboDisplay.textContent = message;
-        comboDisplay.classList.remove('hidden');
+        comboDisplay.style.display = 'block';
         setTimeout(() => {
-            comboDisplay.classList.add('hidden');
+            comboDisplay.style.display = 'none';
         }, 1500);
     }
 }
@@ -523,14 +557,15 @@ function gameLoop(timestamp) {
     }
 
     if (isAnimating) {
+        // Kada je animacija aktivna, samo pozivamo nju i izlazimo
         animateLineClear(timestamp);
         return;
     }
     
     if (timestamp - lastDropTime > dropInterval) {
-        if (currentPiece && isValidMove(0, 1, currentPiece.shape)) {
+        if (isValidMove(0, 1, currentPiece.shape)) {
             currentPiece.y++;
-        } else if (currentPiece) {
+        } else {
             mergePiece();
         }
         lastDropTime = timestamp;
@@ -553,6 +588,7 @@ function animateLineClear(timestamp) {
         }
         linesToClear = [];
         generateNewPiece();
+        // SADA POKREĆEMO NOVI FRAME GLAVNE PETLJE
         animationFrameId = requestAnimationFrame(gameLoop);
         return;
     }
@@ -597,8 +633,9 @@ function endGame() {
         bestScoreDisplay.textContent = `BEST: ${bestScore}`;
     }
     
-    gameOverScreen.classList.remove('hidden');
-    pauseButton.classList.add('hidden');
+    gameOverScreen.classList.add('show');
+    controlsDiv.style.display = 'none';
+    pauseButton.style.display = 'none';
 }
 
 function startGame() {
@@ -620,12 +657,14 @@ function startGame() {
         console.error("Greška pri pokušaju inicijalizacije zvuka (verovatno autoplay blokiran):", e);
     }
     
-    startScreen.classList.add('hidden');
-    gameOverScreen.classList.add('hidden');
-    pauseButton.classList.remove('hidden');
+    startScreen.classList.remove('show');
+    gameOverScreen.classList.remove('show');
+    controlsDiv.style.display = 'flex';
+    pauseButton.style.display = 'block';
     
     initBoard();
     setCanvasSize();
+    generateNewPiece(); // POPRAVLJENO: Pozivamo generisanje bloka odmah na početku
     
     score = 0;
     combo = 0;
@@ -637,11 +676,8 @@ function startGame() {
     
     gameOver = false;
     isPaused = false;
-    isAnimating = false;
     pauseButton.textContent = "PAUSE";
-    dropInterval = 1000;
     
-    generateNewPiece();
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     animationFrameId = requestAnimationFrame(gameLoop);
     
@@ -661,8 +697,11 @@ function togglePause() {
 }
 
 function updateAssistsDisplay() {
-    if (assistsCountDisplay) {
-        assistsCountDisplay.textContent = assists;
+    assistsCountDisplay.textContent = assists;
+    if (assists > 0) {
+        assistsContainer.classList.add('has-assists');
+    } else {
+        assistsContainer.classList.remove('has-assists');
     }
 }
 
@@ -674,7 +713,7 @@ function useAssist() {
         localStorage.setItem('assists', assists);
         updateAssistsDisplay();
         
-        generateNewPiece();
+        generateNewPiece(); // POPRAVLJENO: Generišemo novi blok nakon čišćenja table
         
         draw();
     }
@@ -683,14 +722,11 @@ function useAssist() {
 function setTheme(themeName) {
     currentTheme = themeName;
     COLORS = THEMES[themeName].blockColors;
-    document.body.style.background = `linear-gradient(to bottom right, ${THEMES[themeName].background}, #16213e, #0f3460)`;
+    document.body.style.background = `linear-gradient(to bottom right, ${THEMES[themeName].background}, #16213e, #0f3460)`; // Popravljena linija
     document.documentElement.style.setProperty('--main-color', THEMES[themeName].lineColor);
     localStorage.setItem('theme', themeName);
     
     setCanvasSize();
-    if (!gameOver && !isPaused) {
-      draw();
-    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -701,7 +737,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const storedBestScore = localStorage.getItem('bestScore');
     if (storedBestScore) {
         bestScore = parseInt(storedBestScore, 10);
-        bestScoreDisplay.textContent = `BEST: ${storedBestScore}`;
+        bestScoreDisplay.textContent = `BEST: ${bestScore}`;
     }
 
     const storedAssists = localStorage.getItem('assists');
@@ -712,6 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('assists', 0);
     }
     updateAssistsDisplay();
+    startScreen.classList.add('show');
 });
 
 document.addEventListener('keydown', e => {
@@ -748,12 +785,10 @@ restartButton.addEventListener('click', startGame);
 pauseButton.addEventListener('click', togglePause);
 themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
 
-if (assistsContainer) {
-    assistsContainer.addEventListener('click', () => {
-        if (gameOver || isPaused) return;
-        useAssist();
-    });
-}
+assistsContainer.addEventListener('click', () => {
+    if (gameOver || isPaused) return;
+    useAssist();
+});
 
 let touchStartX = 0;
 let touchStartY = 0;
