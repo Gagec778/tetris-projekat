@@ -122,6 +122,10 @@ const comboDisplay = document.getElementById('combo-display');
 const startButton = document.getElementById('start-button');
 const restartButton = document.getElementById('restart-button');
 
+// NOVE PROMENLJIVE ZA ČUVANJE INDEKSA BLOKOVA
+let currentPieceIndex;
+let nextPieceIndex;
+
 function initBoard() {
     for (let r = 0; r < ROWS; r++) {
         board[r] = [];
@@ -134,13 +138,13 @@ function initBoard() {
 // ----------------------------------------------
 // NOVE POMOĆNE FUNKCIJE ZA KREIRANJE BLOKOVA
 // ----------------------------------------------
-function createNewPiece(shapeIndex) {
-    const shape = TETROMINOES[shapeIndex];
-    const color = COLORS[shapeIndex];
+function createCurrentPiece() {
+    const shape = TETROMINOES[currentPieceIndex];
+    const color = COLORS[currentPieceIndex];
     const pieceWidth = shape[0].length;
     const startX = Math.floor((COLS - pieceWidth) / 2);
     
-    return {
+    currentPiece = {
         shape: shape,
         color: color,
         x: startX,
@@ -149,26 +153,25 @@ function createNewPiece(shapeIndex) {
 }
 
 // ----------------------------------------------
-// ISPRAVLJENA FUNKCIJA generateNewPiece()
+// ISPRAVLJENA I POJEDNOSTAVLJENA FUNKCIJA generateNewPiece()
 // ----------------------------------------------
 function generateNewPiece() {
-    if (nextPiece) {
-        // Promovišemo 'nextPiece' u 'currentPiece'
-        // ali mu ponovo računamo ispravne koordinate
-        // umesto da uzmemo one za mali prozor
-        const randomIndex = TETROMINOES.findIndex(shape => shape === nextPiece.shape);
-        currentPiece = createNewPiece(randomIndex);
+    if (nextPieceIndex !== undefined) {
+        // Ako postoji sledeći blok, promovišemo ga
+        currentPieceIndex = nextPieceIndex;
     } else {
-        // Generišemo prvi 'currentPiece'
-        const randomIndex = Math.floor(Math.random() * TETROMINOES.length);
-        currentPiece = createNewPiece(randomIndex);
+        // Generišemo prvi blok na početku igre
+        currentPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
     }
+    
+    // Uvek kreiramo 'currentPiece' objekat sa pravilnim koordinatama
+    createCurrentPiece();
 
-    // Sada generišemo novi 'nextPiece' za prikaz
-    const nextRandomIndex = Math.floor(Math.random() * TETROMINOES.length);
+    // Generišemo novi indeks za sledeći blok
+    nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
     nextPiece = {
-        shape: TETROMINOES[nextRandomIndex],
-        color: COLORS[nextRandomIndex],
+        shape: TETROMINOES[nextPieceIndex],
+        color: COLORS[nextPieceIndex],
         x: 0, // Ove koordinate su samo za prikaz u malom prozoru
         y: 0
     };
@@ -224,23 +227,26 @@ function drawPiece(piece, context, blockSizeOverride = null) {
 // ISPRAVLJENA FUNKCIJA drawNextPiece()
 // ----------------------------------------------
 function drawNextPiece() {
-    if (!nextPiece) { // PROVERA KOJA SPREČAVA GREŠKU
+    if (nextPieceIndex === undefined) { // PROVERA KOJA SPREČAVA GREŠKU
         nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
         return;
     }
     const nextBlockSize = BLOCK_SIZE / 2;
     nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
     
-    const pieceWidth = nextPiece.shape[0].length * nextBlockSize;
-    const pieceHeight = nextPiece.shape.length * nextBlockSize;
+    const nextShape = TETROMINOES[nextPieceIndex];
+    const nextColor = COLORS[nextPieceIndex];
+    
+    const pieceWidth = nextShape[0].length * nextBlockSize;
+    const pieceHeight = nextShape.length * nextBlockSize;
     
     const startX = (nextBlockCanvas.width - pieceWidth) / 2;
     const startY = (nextBlockCanvas.height - pieceHeight) / 2;
 
-    for (let r = 0; r < nextPiece.shape.length; r++) {
-        for (let c = 0; c < nextPiece.shape[r].length; c++) {
-            if (nextPiece.shape[r][c]) {
-                nextBlockCtx.fillStyle = nextPiece.color;
+    for (let r = 0; r < nextShape.length; r++) {
+        for (let c = 0; c < nextShape[r].length; c++) {
+            if (nextShape[r][c]) {
+                nextBlockCtx.fillStyle = nextColor;
                 nextBlockCtx.fillRect(startX + c * nextBlockSize, startY + r * nextBlockSize, nextBlockSize, nextBlockSize);
                 nextBlockCtx.strokeStyle = '#222';
                 nextBlockCtx.lineWidth = 1;
