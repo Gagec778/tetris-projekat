@@ -4,10 +4,233 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tetris</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --main-color: #61dafb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom right, #1a1a2e, #16213e, #0f3460);
+            color: #fff;
+            overflow-x: hidden;
+            touch-action: none;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: var(--main-color);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+
+        #game-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        #left-panel, #right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            border: 1px solid var(--main-color);
+            box-shadow: 0 0 15px rgba(97, 218, 251, 0.3);
+            min-width: 200px;
+        }
+
+        #main-game-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            border: 3px solid var(--main-color);
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(97, 218, 251, 0.5);
+            display: block;
+            cursor: none;
+        }
+
+        #next-block-container {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--main-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        #next-block-container p {
+            margin-bottom: 5px;
+        }
+
+        #nextBlockCanvas {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: transparent;
+        }
+
+        #theme-panel {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--main-color);
+            text-align: center;
+        }
+
+        #theme-switcher {
+            width: 100%;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid var(--main-color);
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .score-panel {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--main-color);
+        }
+
+        .game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #fff;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 10;
+        }
+
+        .game-overlay.hidden {
+            display: none;
+        }
+
+        .game-overlay.show {
+            display: flex;
+        }
+
+        .game-overlay h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .game-overlay button {
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            background-color: var(--main-color);
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease-in-out, transform 0.1s;
+        }
+
+        .game-overlay button:hover {
+            background-color: #fff;
+        }
+
+        .game-overlay button:active {
+            transform: scale(0.98);
+        }
+
+        .assist-panel {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--main-color);
+            cursor: pointer;
+        }
+
+        .assist-panel:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        #pause-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 16px;
+            font-size: 1rem;
+            cursor: pointer;
+            background-color: rgba(97, 218, 251, 0.7);
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            z-index: 100;
+        }
+
+        #pause-button.hidden {
+            display: none;
+        }
+
+        #final-score {
+            margin-top: 10px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        #combo-display {
+            color: #ff9900;
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            animation: fade-in-out 1.5s forwards;
+            margin-top: 5px;
+        }
+
+        #combo-display.hidden {
+            display: none;
+        }
+
+        @keyframes fade-in-out {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
 </head>
 <body>
 
