@@ -119,8 +119,13 @@ let currentPiece;
 let nextPiece;
 let score = 0;
 let gameOver = false;
-let gameInterval;
-let dropInterval = 1000;
+
+// --- PROMENA: ZAMENA setInterval sa requestAnimationFrame ---
+let dropInterval = 1000; // Postavi na željenu početnu brzinu pada (1000ms = 1 sekunda)
+let lastDropTime = 0;
+let animationFrameId;
+// --- KRAJ PROMENE ---
+
 let combo = 0;
 
 let bestScore = 0;
@@ -162,7 +167,7 @@ function initBoard() {
 }
 
 function createCurrentPiece() {
-    if (currentPieceIndex === undefined) return; // PROVERA
+    if (currentPieceIndex === undefined) return;
     
     const shape = TETROMINOES[currentPieceIndex];
     const color = COLORS[currentPieceIndex];
@@ -278,7 +283,10 @@ function drawGhostPiece() {
         ghostY++;
     }
 
-    ctx.globalAlpha = 0.3;
+    // --- PROMENA: SMANJENA VREDNOST za providnost Ghost bloka ---
+    ctx.globalAlpha = 0.1;
+    // --- KRAJ PROMENE ---
+    
     for (let r = 0; r < currentPiece.shape.length; r++) {
         for (let c = 0; c < currentPiece.shape[r].length; c++) {
             if (currentPiece.shape[r][c]) {
@@ -483,7 +491,10 @@ function checkLines() {
         if (clearSound.readyState >= 2) {
             clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
         }
-
+        
+        // --- PROMENA: Pošto se animateLineClear poziva iz gameLoop-a, ne treba je ovde pokretati
+        // ali je potrebno osigurati da se ne generiše novi blok pre animacije.
+        return; 
     } else {
         lastClearWasSpecial = false;
         combo = 0;
@@ -542,25 +553,34 @@ function showComboMessage(type, comboCount) {
     }
 }
 
-
-function gameLoop() {
-    if (gameOver || isPaused) return;
-
-    if (isAnimating) {
-        animateLineClear();
+// --- PROMENA: gameLoop petlja i animacija su sređene ---
+function gameLoop(timestamp) {
+    if (gameOver || isPaused) {
         return;
     }
 
-    if (isValidMove(0, 1, currentPiece.shape)) {
-        currentPiece.y++;
-    } else {
-        mergePiece();
+    // Proverava da li je animacija aktivna
+    if (isAnimating) {
+        animateLineClear(timestamp);
+        return;
     }
+    
+    // Proveravamo da li je prošao dovoljan broj milisekundi za sledeći pad
+    if (timestamp - lastDropTime > dropInterval) {
+        if (isValidMove(0, 1, currentPiece.shape)) {
+            currentPiece.y++;
+        } else {
+            mergePiece();
+        }
+        lastDropTime = timestamp; // Resetujemo tajmer
+    }
+    
     draw();
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function animateLineClear() {
-    const elapsed = performance.now() - animationStart;
+function animateLineClear(timestamp) {
+    const elapsed = timestamp - animationStart;
     const progress = elapsed / animationDuration;
     
     if (progress >= 1) {
@@ -572,8 +592,8 @@ function animateLineClear() {
         }
         linesToClear = [];
         generateNewPiece();
-        // Važno: Moramo ponovo pokrenuti glavni game loop nakon završetka animacije
-        gameInterval = setInterval(gameLoop, dropInterval);
+        
+        // Nema potrebe da ponovo pokrećemo gameLoop, to se dešava u sledećem frame-u.
         return;
     }
 
@@ -593,6 +613,7 @@ function animateLineClear() {
     }
     requestAnimationFrame(animateLineClear);
 }
+// --- KRAJ PROMENE ---
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -603,7 +624,10 @@ function draw() {
 
 function endGame() {
     gameOver = true;
-    clearInterval(gameInterval);
+    // --- PROMENA: ZAMENA clearInterval sa cancelAnimationFrame ---
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    // --- KRAJ PROMENE ---
+    
     gameOverSound.currentTime = 0;
     if (gameOverSound.readyState >= 2) {
         gameOverSound.play().catch(e => console.error("Greška pri puštanju gameOverSounda:", e));
@@ -660,10 +684,11 @@ function startGame() {
     gameOver = false;
     isPaused = false;
     pauseButton.textContent = "PAUSE";
-    dropInterval = 1000;
     
-    if (gameInterval) clearInterval(gameInterval);
-    gameInterval = setInterval(gameLoop, dropInterval);
+    // --- PROMENA: Pokretanje gameLoop petlje sa requestAnimationFrame ---
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(gameLoop);
+    // --- KRAJ PROMENE ---
     
     draw();
 }
@@ -672,10 +697,14 @@ function togglePause() {
     if (gameOver || isAnimating) return;
     isPaused = !isPaused;
     if (isPaused) {
-        clearInterval(gameInterval);
+        // --- PROMENA: ZAMENA clearInterval sa cancelAnimationFrame ---
+        cancelAnimationFrame(animationFrameId);
+        // --- KRAJ PROMENE ---
         pauseButton.textContent = "RESUME";
     } else {
-        gameInterval = setInterval(gameLoop, dropInterval);
+        // --- PROMENA: ZAMENA setInterval sa requestAnimationFrame ---
+        animationFrameId = requestAnimationFrame(gameLoop);
+        // --- KRAJ PROMENE ---
         pauseButton.textContent = "PAUSE";
     }
 }
