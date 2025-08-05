@@ -6,9 +6,6 @@
     <title>PROJEKAT PUZZLE</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --main-color: #61dafb;
-        }
         body {
             font-family: 'Press Start 2P', cursive;
             background: linear-gradient(to bottom right, #1a1a2e, #16213e, #0f3460);
@@ -18,15 +15,14 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            overflow-y: auto;
+            overflow: hidden;
             padding: 5px;
             box-sizing: border-box;
-            transition: background-color 0.5s ease;
         }
 
         #main-game-wrapper {
             background-color: #2c313a;
-            border: 5px solid var(--main-color);
+            border: 5px solid #61dafb;
             border-radius: 15px;
             box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
             display: flex;
@@ -55,7 +51,7 @@
         #game-stats, #next-block-container {
             flex: 1;
             background-color: #1a1a2e;
-            border: 2px solid var(--main-color);
+            border: 2px solid #61dafb;
             border-radius: 8px;
             box-shadow: inset 0 0 8px rgba(97, 218, 251, 0.3);
             white-space: nowrap;
@@ -101,7 +97,7 @@
 
         canvas#gameCanvas {
             background-color: #000;
-            border: 3px solid var(--main-color);
+            border: 3px solid #61dafb;
             box-shadow: 0 0 15px rgba(97, 218, 251, 0.7);
             display: block;
             border-radius: 5px;
@@ -140,7 +136,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.9);
-            display: none;
+            display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -150,19 +146,11 @@
             font-family: 'Press Start 2P', cursive;
             padding: 15px;
             box-sizing: border-box;
-            transition: opacity 0.5s ease;
-            opacity: 0;
-            pointer-events: none;
         }
-        #start-screen.show, #game-over-screen.show {
-            display: flex;
-            opacity: 1;
-            pointer-events: all;
-        }
-        
+
         #start-screen h1, #game-over-screen h1 {
             font-size: 1.8em;
-            color: var(--main-color);
+            color: #61dafb;
             text-shadow: 0 0 10px rgba(97, 218, 251, 0.8);
             margin-bottom: 5px;
         }
@@ -204,72 +192,47 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 1001;
-            font-size: 2em;
-            color: #FFD700;
-            text-shadow: 0 0 10px #FFD700;
-            display: none;
+            font-size: 2.5em;
+            color: #fff;
+            text-shadow: 0 0 10px #61dafb;
+            text-align: center;
+            z-index: 10;
+            animation: fadeOut 1.5s forwards;
         }
-        #theme-switcher-container {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1002;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.7em;
-        }
-        #theme-switcher-container select {
-            background-color: #1a1a2e;
-            color: var(--main-color);
-            border: 2px solid var(--main-color);
-            border-radius: 5px;
-            padding: 5px;
-            font-family: 'Press Start 2P', cursive;
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.5);
+            }
         }
 
         #assists-container {
+            position: relative;
             cursor: pointer;
-            transition: all 0.2s ease;
+            user-select: none;
+            padding: 5px 0;
+            border: 2px dashed rgba(97, 218, 251, 0.3);
+            border-radius: 5px;
         }
-        #assists-container.has-assists {
-            border: 2px solid var(--main-color);
-            animation: pulse 1.5s infinite;
+        #assists-container:hover {
+            background-color: #4fa3d1;
         }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 5px rgba(97, 218, 251, 0.5); }
-            50% { box-shadow: 0 0 15px rgba(97, 218, 251, 1); }
-            100% { box-shadow: 0 0 5px rgba(97, 218, 251, 0.5); }
+        #assists-container:active {
+            transform: translateY(1px);
         }
-        /* Dodatni CSS za mobilne uređaje */
-        @media (max-width: 600px) {
-            #main-game-wrapper {
-                padding: 5px;
-                gap: 5px;
-            }
-            #info-section {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-            #game-stats, #next-block-container {
-                font-size: 0.7em;
-                padding: 3px;
-            }
-            #score-display, #assists-count, #best-score-display {
-                font-size: 0.7em;
-            }
-            #nextBlockCanvas {
-                width: 50px;
-                height: 50px;
-            }
-            #controls {
-                flex-direction: column;
-                gap: 10px;
-            }
+        #assists-container span {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-left: 5px;
+            display: inline-block;
+        }
+        .bomb-icon {
+            font-size: 1.5em;
+            display: inline-block;
         }
     </style>
 </head>
@@ -277,49 +240,44 @@
     <div id="main-game-wrapper">
         <div id="info-section">
             <div id="game-stats">
-                <span id="score-display">Score: 0</span>
-                <span id="best-score-display">BEST: 0</span>
-            </div>
-            <canvas id="gameCanvas"></canvas>
-            <div id="next-block-container">
-                <span>NEXT</span>
-                <canvas id="nextBlockCanvas"></canvas>
+                <div id="score-display">Score: 0</div>
+                <div id="best-score-display">BEST: 0</div>
                 <div id="assists-container">
-                    <span id="assists-label">BOMBE:</span>
-                    <span id="assists-count">0</span>
+                    <span class="bomb-icon">💣</span><span id="assists-count">0</span>
                 </div>
             </div>
-        </div>
-        <button id="pause-button">PAUSE</button>
-
-        <div id="start-screen" class="show">
-            <h1>PROJEKAT PUZZLE</h1>
-            <p>Pritisni Start za početak</p>
-            <button id="start-button">START</button>
-            <div id="theme-switcher-container">
-                <label for="theme-switcher">Tema:</label>
-                <select id="theme-switcher">
-                    <option value="classic">Klasična</option>
-                    <option value="dark">Tamna</option>
-                    <option value="forest">Šuma</option>
-                </select>
+            <div id="next-block-container">
+                Next:
+                <canvas id="nextBlockCanvas" width="80" height="80"></canvas>
             </div>
         </div>
-
-        <div id="game-over-screen">
-            <h1>Game Over</h1>
-            <span id="final-score">Your Score: 0</span>
-            <button id="restart-button">RESTART</button>
-        </div>
         
-        <div id="combo-display"></div>
+        <canvas id="gameCanvas"></canvas>
+        <button id="pause-button">PAUSE</button>
+        <div id="combo-display" style="display: none;"></div>
+        
+        <div id="controls" style="display: none;">
+        </div>
     </div>
-    
-    <audio id="dropSound" src="sounds/drop.mp3"></audio>
-    <audio id="clearSound" src="sounds/clear.mp3"></audio>
-    <audio id="rotateSound" src="sounds/rotate.mp3"></audio>
-    <audio id="gameOverSound" src="sounds/gameover.mp3"></audio>
-    
+
+    <div id="start-screen">
+        <h1>PROJEKAT PUZZLE</h1>
+        <p>Pritisni dugme da započneš igru!</p>
+        <button id="start-button">Pokreni Igru</button>
+    </div>
+
+    <div id="game-over-screen" style="display: none;">
+        <h1>GAME OVER!</h1>
+        <div id="final-score">Your Score: 0</div>
+        <button id="restart-button">Restart Game</button>
+    </div>
+
+    <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
+    <audio id="clearSound" src="sounds/clear.wav" preload="auto"></audio>
+    <audio id="rotateSound" src="sounds/rotate.wav" preload="auto"></audio>
+    <audio id="gameOverSound" src="sounds/gameover.wav" preload="auto"></audio>
+
     <script src="script.js"></script>
 </body>
 </html>
+
