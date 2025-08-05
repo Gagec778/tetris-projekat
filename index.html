@@ -230,6 +230,18 @@
             50% { opacity: 1; }
             100% { opacity: 0; }
         }
+
+        @media (max-width: 768px) {
+            #game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #left-panel, #right-panel {
+                width: 90%;
+                margin-top: 20px;
+            }
+        }
     </style>
 </head>
 <body>
