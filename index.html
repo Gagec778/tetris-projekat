@@ -18,7 +18,7 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            overflow-y: auto; /* Popravljeno: Omogućava skrolovanje ako je sadržaj prevelik */
             padding: 5px;
             box-sizing: border-box;
             transition: background-color 0.5s ease;
@@ -281,7 +281,7 @@
         </div>
         
         <canvas id="gameCanvas"></canvas>
-        <button id="pause-button">PAUSE</button>
+        <button id="pause-button" style="display: none;">PAUSE</button>
         <div id="combo-display" style="display: none;"></div>
         
         <div id="controls" style="display: none;">
