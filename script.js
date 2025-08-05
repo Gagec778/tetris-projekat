@@ -66,7 +66,6 @@ function setCanvasSize() {
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
     
-    // Provera da li je igra u toku pre iscrtavanja
     if (!gameOver && !isPaused) {
         draw();
         drawNextPiece();
@@ -90,7 +89,7 @@ let board = [];
 let currentPiece;
 let nextPiece;
 let score = 0;
-let gameOver = true; // Postavljeno na true na početku da se ne pokrene automatski
+let gameOver = true;
 
 let dropInterval = 1000;
 let lastDropTime = 0;
@@ -100,10 +99,10 @@ let combo = 0;
 
 let bestScore = 0;
 let isPaused = false;
-let assists;
+let assists = 0;
 
 let nextAssistReward = 5000;
-const assistsContainer = document.getElementById('assists-container');
+const assistsContainer = document.querySelector('.assist-panel');
 const assistsCountDisplay = document.getElementById('assists-count');
 const bestScoreDisplay = document.getElementById('best-score-display');
 const pauseButton = document.getElementById('pause-button');
@@ -118,7 +117,6 @@ const gameOverScreen = document.getElementById('game-over-screen');
 const scoreDisplay = document.getElementById('score-display');
 const finalScoreDisplay = document.getElementById('final-score');
 const comboDisplay = document.getElementById('combo-display');
-const controlsDiv = document.getElementById('controls');
 
 const startButton = document.getElementById('start-button');
 const restartButton = document.getElementById('restart-button');
@@ -321,8 +319,8 @@ function drawCurrentPiece() {
 }
 
 function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y) {
-    if (!board.length) return false;
-    if (!currentPiece) return false;
+    if (!board.length || !currentPiece) return false;
+    
     for (let r = 0; r < newShape.length; r++) {
         for (let c = 0; c < newShape[r].length; c++) {
             if (newShape[r][c]) {
@@ -392,7 +390,7 @@ function mergePiece() {
                     endGame();
                     return;
                 }
-                if (board[currentPiece.y + r]) { // Dodata provera
+                if (board[currentPiece.y + r]) {
                    board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color;
                 }
             }
@@ -512,9 +510,9 @@ function showComboMessage(type, comboCount) {
 
     if (message) {
         comboDisplay.textContent = message;
-        comboDisplay.style.display = 'block';
+        comboDisplay.classList.remove('hidden');
         setTimeout(() => {
-            comboDisplay.style.display = 'none';
+            comboDisplay.classList.add('hidden');
         }, 1500);
     }
 }
@@ -599,8 +597,8 @@ function endGame() {
         bestScoreDisplay.textContent = `BEST: ${bestScore}`;
     }
     
-    gameOverScreen.classList.add('show');
-    pauseButton.style.display = 'none';
+    gameOverScreen.classList.remove('hidden');
+    pauseButton.classList.add('hidden');
 }
 
 function startGame() {
@@ -622,9 +620,9 @@ function startGame() {
         console.error("Greška pri pokušaju inicijalizacije zvuka (verovatno autoplay blokiran):", e);
     }
     
-    startScreen.classList.remove('show');
-    gameOverScreen.classList.remove('show');
-    pauseButton.style.display = 'block';
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    pauseButton.classList.remove('hidden');
     
     initBoard();
     setCanvasSize();
@@ -644,7 +642,6 @@ function startGame() {
     dropInterval = 1000;
     
     generateNewPiece();
-
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     animationFrameId = requestAnimationFrame(gameLoop);
     
@@ -664,11 +661,8 @@ function togglePause() {
 }
 
 function updateAssistsDisplay() {
-    assistsCountDisplay.textContent = assists;
-    if (assists > 0) {
-        assistsContainer.classList.add('has-assists');
-    } else {
-        assistsContainer.classList.remove('has-assists');
+    if (assistsCountDisplay) {
+        assistsCountDisplay.textContent = assists;
     }
 }
 
@@ -707,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const storedBestScore = localStorage.getItem('bestScore');
     if (storedBestScore) {
         bestScore = parseInt(storedBestScore, 10);
-        bestScoreDisplay.textContent = `BEST: ${bestScore}`;
+        bestScoreDisplay.textContent = `BEST: ${storedBestScore}`;
     }
 
     const storedAssists = localStorage.getItem('assists');
@@ -718,7 +712,6 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('assists', 0);
     }
     updateAssistsDisplay();
-    startScreen.classList.add('show');
 });
 
 document.addEventListener('keydown', e => {
@@ -755,10 +748,12 @@ restartButton.addEventListener('click', startGame);
 pauseButton.addEventListener('click', togglePause);
 themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
 
-assistsContainer.addEventListener('click', () => {
-    if (gameOver || isPaused) return;
-    useAssist();
-});
+if (assistsContainer) {
+    assistsContainer.addEventListener('click', () => {
+        if (gameOver || isPaused) return;
+        useAssist();
+    });
+}
 
 let touchStartX = 0;
 let touchStartY = 0;
