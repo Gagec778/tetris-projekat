@@ -166,7 +166,8 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
 
-        const SWIPE_THRESHOLD = 30; // Minimalna distanca za prevlačenje
+        // Smanjena vrednost praga (threshold) za bolji odziv
+        const SWIPE_THRESHOLD = 15; 
         
         // Prevlačenje levo ili desno
         if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) {
