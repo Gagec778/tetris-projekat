@@ -166,8 +166,9 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
 
-        // Smanjena vrednost praga (threshold) za bolji odziv
-        const SWIPE_THRESHOLD = 15; 
+        // Fleksibilni prag za prevlačenje, baziran na veličini bloka.
+        // 0.75 puta veličina bloka omogućava responzivnije kontrole.
+        const SWIPE_THRESHOLD = BLOCK_SIZE * 0.75;
         
         // Prevlačenje levo ili desno
         if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) {
