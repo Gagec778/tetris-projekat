@@ -5,35 +5,29 @@ const nextBlockCanvas = document.getElementById('nextBlockCanvas');
 const nextBlockCtx = nextBlockCanvas.getContext('2d');
 
 const COLS = 10;
-const ROWS = 18; 
+const ROWS = 18;
 
 const mainGameWrapper = document.getElementById('main-game-wrapper');
 let BLOCK_SIZE;
 
 // ----------------------------------------------
-// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (ISPRAVLJENA, VERZIJA 2)
+// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (ISPRAVLJENA)
 // ----------------------------------------------
 function setCanvasSize() {
     if (!mainGameWrapper) return;
 
-    // Proračunavamo veličinu bloka na osnovu širine kontejnera
     const containerWidth = mainGameWrapper.clientWidth;
     const blockSizeFromWidth = Math.floor(containerWidth / COLS);
     
-    // Proračunavamo veličinu bloka na osnovu visine ekrana (minus header i footer)
-    // Oduzimamo fiksnu vrednost za info-sekciju i dugme kako bismo bili sigurni da sve staje
-    const gameAreaHeight = window.innerHeight - 150; // Oduzimamo oko 150px za sve ostale elemente
+    const gameAreaHeight = window.innerHeight - 150;
     const blockSizeFromHeight = Math.floor(gameAreaHeight / ROWS);
     
-    // Uzimamo manju vrednost kako bi igra uvek stala i po širini i po visini
     BLOCK_SIZE = Math.min(blockSizeFromWidth, blockSizeFromHeight);
 
-    // Ograničavamo maksimalnu veličinu bloka na 35px
     if (BLOCK_SIZE > 35) {
         BLOCK_SIZE = 35;
     }
     
-    // Osiguravamo da je BLOCK_SIZE barem 1, da ne bi došlo do grešaka
     if (BLOCK_SIZE < 1) {
         BLOCK_SIZE = 1;
     }
@@ -41,18 +35,17 @@ function setCanvasSize() {
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
 
-    // Prilagođavamo i canvas za sledeći blok
-    const nextBlockContainerSize = Math.floor(BLOCK_SIZE * 4); // Malo veći kako bi stalo sve
+    const nextBlockContainerSize = Math.floor(BLOCK_SIZE * 4);
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
-    
-    // Ponovno crtamo sve nakon promene veličine
-    draw();
-    drawNextPiece();
 }
 
-setCanvasSize();
-window.addEventListener('resize', setCanvasSize);
+// OBRISAN JE POZIV setCanvasSize() ODAVDE. SADA SE POZIVA SAMO KADA JE POTREBNO.
+window.addEventListener('resize', () => {
+    setCanvasSize();
+    draw(); // Dodatno crtanje nakon promene veličine
+    drawNextPiece();
+});
 
 const COLORS = [
     '#00FFFF', // I - Cyan
@@ -106,7 +99,7 @@ let combo = 0;
 
 let bestScore = 0;
 let isPaused = false;
-let assists; 
+let assists;
 
 let nextAssistReward = 5000;
 const assistsContainer = document.getElementById('assists-container');
@@ -155,7 +148,7 @@ function generateNewPiece() {
     nextPiece = {
         shape: TETROMINOES[nextRandomIndex],
         color: COLORS[nextRandomIndex],
-        x: 0, 
+        x: 0,
         y: 0
     };
 
@@ -174,7 +167,12 @@ function drawBlock(x, y, color) {
     ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 }
 
+// ----------------------------------------------
+// ISPRAVLJENA FUNKCIJA drawPiece()
+// ----------------------------------------------
 function drawPiece(piece, context, blockSizeOverride = null) {
+    if (!piece) return; // PROVERA KOJA SPREČAVA GREŠKU
+    
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
     const currentBlockSize = blockSizeOverride !== null ? blockSizeOverride : BLOCK_SIZE;
 
@@ -201,7 +199,14 @@ function drawPiece(piece, context, blockSizeOverride = null) {
 }
 
 
+// ----------------------------------------------
+// ISPRAVLJENA FUNKCIJA drawNextPiece()
+// ----------------------------------------------
 function drawNextPiece() {
+    if (!nextPiece) { // PROVERA KOJA SPREČAVA GREŠKU
+        nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
+        return;
+    }
     const nextBlockSize = BLOCK_SIZE / 2;
     nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
     
@@ -240,7 +245,11 @@ function drawBoard() {
     }
 }
 
+// ----------------------------------------------
+// ISPRAVLJENA FUNKCIJA drawCurrentPiece()
+// ----------------------------------------------
 function drawCurrentPiece() {
+    if (!currentPiece) return; // PROVERA KOJA SPREČAVA GREŠKU
     for (let r = 0; r < currentPiece.shape.length; r++) {
         for (let c = 0; c < currentPiece.shape[r].length; c++) {
             if (currentPiece.shape[r][c]) {
@@ -286,7 +295,7 @@ function rotatePiece() {
         rotateSound.currentTime = 0;
         rotateSound.play().catch(e => console.error("Greška pri puštanju zvuka za rotaciju:", e));
     } else {
-        const kicks = [[0,0], [-1,0], [1,0], [0,1], [-1,1], [1,1]]; 
+        const kicks = [[0,0], [-1,0], [1,0], [0,1], [-1,1], [1,1]];
         for (const kick of kicks) {
             if (isValidMove(kick[0], kick[1], newShape)) {
                 currentPiece.shape = newShape;
@@ -352,7 +361,7 @@ function checkLines() {
         showComboMessage(linesCleared, combo);
         updateScore(linesCleared, combo);
         
-        if (score % 500 === 0 && dropInterval > 100) { 
+        if (score % 500 === 0 && dropInterval > 100) {
             dropInterval -= 50;
             clearInterval(gameInterval);
             gameInterval = setInterval(gameLoop, dropInterval);
@@ -364,7 +373,7 @@ function checkLines() {
 
 function updateScore(lines, comboCount) {
     const scoreMap = [0, 100, 300, 500, 800];
-    let comboMultiplier = comboCount > 1 ? comboCount * 2 : 1; 
+    let comboMultiplier = comboCount > 1 ? comboCount * 2 : 1;
     
     if (lines > 0) {
         const addedScore = scoreMap[lines] * comboMultiplier;
@@ -394,7 +403,7 @@ function showComboMessage(linesCleared, comboCount) {
         comboDisplay.style.display = 'block';
         setTimeout(() => {
             comboDisplay.style.display = 'none';
-        }, 1500); 
+        }, 1500);
     }
 }
 
@@ -443,7 +452,7 @@ function startGame() {
         const source = audioContext.createBufferSource();
         source.buffer = buffer;
         source.connect(audioContext.destination);
-        source.start(); 
+        source.start();
         source.onended = () => {
             source.disconnect(audioContext.destination);
         };
@@ -451,33 +460,36 @@ function startGame() {
             audioContext.resume();
         }
     } catch (e) {
-        console.error("Greška pri pokušaju inicijalizacije zvuka (verovatno autoplay blokiran):", e); 
+        console.error("Greška pri pokušaju inicijalizacije zvuka (verovatno autoplay blokiran):", e);
     }
 
-    startScreen.style.display = 'none'; 
-    gameOverScreen.style.display = 'none'; 
-    controlsDiv.style.display = 'flex'; 
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    controlsDiv.style.display = 'flex';
     pauseButton.style.display = 'block';
     
-    initBoard(); 
-    score = 0; 
+    // VAŽNO: Ovde prvo inicijalizujemo ploču, pa generišemo delove
+    initBoard();
+    setCanvasSize(); // VAŽNO: Nakon što su elementi vidljivi, postavljamo veličinu
+    generateNewPiece();
+    
+    score = 0;
     combo = 0;
     nextAssistReward = 5000;
     scoreDisplay.textContent = `Score: ${score}`;
-    finalScoreDisplay.textContent = `Your Score: ${score}`; 
+    finalScoreDisplay.textContent = `Your Score: ${score}`;
     
     updateAssistsDisplay();
     
     gameOver = false;
     isPaused = false;
     pauseButton.textContent = "PAUSE";
-    dropInterval = 1000; 
+    dropInterval = 1000;
     
-    if (gameInterval) clearInterval(gameInterval); 
+    if (gameInterval) clearInterval(gameInterval);
     gameInterval = setInterval(gameLoop, dropInterval);
-
-    generateNewPiece(); 
-    draw(); 
+    
+    draw(); // VAŽNO: Tek sada pozivamo crtanje, kada su delovi kreirani
 }
 
 function togglePause() {
@@ -504,12 +516,12 @@ function useAssist() {
         localStorage.setItem('assists', assists);
         updateAssistsDisplay();
         
-        draw(); 
+        draw();
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    setCanvasSize(); // Dodat poziv ovde kako bi se osiguralo da su dimenzije postavljene odmah
+    setCanvasSize(); // Pozivamo setCanvasSize samo na početku, ne i unutar funkcije
     const storedBestScore = localStorage.getItem('bestScore');
     if (storedBestScore) {
         bestScore = parseInt(storedBestScore, 10);
@@ -524,10 +536,11 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('assists', 0);
     }
     updateAssistsDisplay();
+    // Ne pozivamo draw() ovde, jer delovi jos uvek ne postoje
 });
 
 document.addEventListener('keydown', e => {
-    if (gameOver || isPaused) return;
+    if (gameOver || isPaused || !currentPiece) return;
     switch (e.key) {
         case 'ArrowLeft':
             if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
@@ -542,8 +555,8 @@ document.addEventListener('keydown', e => {
             rotatePiece();
             break;
         case ' ':
-            e.preventDefault(); 
-            dropPiece(); 
+            e.preventDefault();
+            dropPiece();
             break;
         case 'a':
             useAssist();
@@ -552,7 +565,7 @@ document.addEventListener('keydown', e => {
             togglePause();
             break;
     }
-    draw(); 
+    draw();
 });
 
 startButton.addEventListener('click', startGame);
@@ -575,7 +588,7 @@ const HARD_DROP_THRESHOLD = 100;
 
 canvas.addEventListener('touchstart', e => {
     e.preventDefault();
-    if (gameOver || isPaused) return;
+    if (gameOver || isPaused || !currentPiece) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     touchMoveX = touchStartX;
@@ -586,7 +599,7 @@ canvas.addEventListener('touchstart', e => {
 
 canvas.addEventListener('touchmove', e => {
     e.preventDefault();
-    if (gameOver || isPaused) return;
+    if (gameOver || isPaused || !currentPiece) return;
 
     const newTouchMoveX = e.touches[0].clientX;
     const newTouchMoveY = e.touches[0].clientY;
@@ -599,7 +612,7 @@ canvas.addEventListener('touchmove', e => {
         } else {
             if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
         }
-        touchMoveX = newTouchMoveX; 
+        touchMoveX = newTouchMoveX;
         isDragging = true;
         draw();
     }
@@ -613,7 +626,7 @@ canvas.addEventListener('touchmove', e => {
 });
 
 canvas.addEventListener('touchend', e => {
-    if (gameOver || isPaused) return;
+    if (gameOver || isPaused || !currentPiece) return;
     const touchEndTime = new Date().getTime();
     const touchDuration = touchEndTime - touchStartTime;
     const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
@@ -622,7 +635,7 @@ canvas.addEventListener('touchend', e => {
     if (touchDuration < 250 && dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD) {
         rotatePiece();
         draw();
-    } 
+    }
     else if (touchDuration < 250 && dy > HARD_DROP_THRESHOLD) {
         dropPiece();
         draw();
