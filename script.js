@@ -66,6 +66,7 @@ function setCanvasSize() {
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
     
+    // Provera da li je igra u toku pre iscrtavanja
     if (!gameOver && !isPaused) {
         draw();
         drawNextPiece();
@@ -89,8 +90,7 @@ let board = [];
 let currentPiece;
 let nextPiece;
 let score = 0;
-let gameOver = true; // Promena: Postavljeno na true dok se ne pokrene
-let gameStarted = false;
+let gameOver = true; // Postavljeno na true na početku da se ne pokrene automatski
 
 let dropInterval = 1000;
 let lastDropTime = 0;
@@ -321,6 +321,7 @@ function drawCurrentPiece() {
 }
 
 function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y) {
+    if (!board.length) return false;
     if (!currentPiece) return false;
     for (let r = 0; r < newShape.length; r++) {
         for (let c = 0; c < newShape[r].length; c++) {
@@ -391,7 +392,9 @@ function mergePiece() {
                     endGame();
                     return;
                 }
-                board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color;
+                if (board[currentPiece.y + r]) { // Dodata provera
+                   board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color;
+                }
             }
         }
     }
@@ -649,7 +652,7 @@ function startGame() {
 }
 
 function togglePause() {
-    if (gameOver || isAnimating || !gameStarted) return;
+    if (gameOver || isAnimating) return;
     isPaused = !isPaused;
     if (isPaused) {
         cancelAnimationFrame(animationFrameId);
@@ -716,8 +719,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     updateAssistsDisplay();
     startScreen.classList.add('show');
-    gameOver = true; // Osiguravamo da se ne pokreće automatski
-    gameStarted = false;
 });
 
 document.addEventListener('keydown', e => {
