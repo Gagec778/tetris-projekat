@@ -116,7 +116,6 @@ const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 const scoreDisplay = document.getElementById('score-display');
 const finalScoreDisplay = document.getElementById('final-score');
-const controlsDiv = document.getElementById('controls');
 const comboDisplay = document.getElementById('combo-display');
 
 const startButton = document.getElementById('start-button');
@@ -595,7 +594,6 @@ function endGame() {
     }
     
     gameOverScreen.classList.add('show');
-    controlsDiv.style.display = 'none';
     pauseButton.style.display = 'none';
 }
 
@@ -620,7 +618,6 @@ function startGame() {
     
     startScreen.classList.remove('show');
     gameOverScreen.classList.remove('show');
-    controlsDiv.style.display = 'flex';
     pauseButton.style.display = 'block';
     
     initBoard();
