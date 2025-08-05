@@ -11,39 +11,42 @@ const mainGameWrapper = document.getElementById('main-game-wrapper');
 let BLOCK_SIZE;
 
 // ----------------------------------------------
-// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (ISPRAVLJENA)
+// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (ISPRAVLJENA, VERZIJA 2)
 // ----------------------------------------------
 function setCanvasSize() {
-    // Izračunava veličinu bloka na osnovu ŠIRINE
+    if (!mainGameWrapper) return;
+
+    // Proračunavamo veličinu bloka na osnovu širine kontejnera
     const containerWidth = mainGameWrapper.clientWidth;
     const blockSizeFromWidth = Math.floor(containerWidth / COLS);
     
-    // Izračunava veličinu bloka na osnovu VISINE
-    // Moramo oduzeti visinu ostalih elemenata (score, next block, dugme za pauzu)
-    const infoSectionHeight = document.getElementById('info-section').clientHeight;
-    const pauseButtonHeight = document.getElementById('pause-button').clientHeight;
-    const totalVerticalPadding = parseInt(window.getComputedStyle(mainGameWrapper).paddingTop) + parseInt(window.getComputedStyle(mainGameWrapper).paddingBottom);
+    // Proračunavamo veličinu bloka na osnovu visine ekrana (minus header i footer)
+    // Oduzimamo fiksnu vrednost za info-sekciju i dugme kako bismo bili sigurni da sve staje
+    const gameAreaHeight = window.innerHeight - 150; // Oduzimamo oko 150px za sve ostale elemente
+    const blockSizeFromHeight = Math.floor(gameAreaHeight / ROWS);
     
-    const availableHeight = mainGameWrapper.clientHeight - infoSectionHeight - pauseButtonHeight - totalVerticalPadding;
-    const blockSizeFromHeight = Math.floor(availableHeight / ROWS);
-    
-    // Uzimamo manju vrednost kako bismo osigurali da igra stane i po širini i po visini
+    // Uzimamo manju vrednost kako bi igra uvek stala i po širini i po visini
     BLOCK_SIZE = Math.min(blockSizeFromWidth, blockSizeFromHeight);
 
     // Ograničavamo maksimalnu veličinu bloka na 35px
     if (BLOCK_SIZE > 35) {
         BLOCK_SIZE = 35;
     }
+    
+    // Osiguravamo da je BLOCK_SIZE barem 1, da ne bi došlo do grešaka
+    if (BLOCK_SIZE < 1) {
+        BLOCK_SIZE = 1;
+    }
 
-    // Postavljamo nove dimenzije kanvasa
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
 
     // Prilagođavamo i canvas za sledeći blok
-    const nextBlockContainerSize = Math.floor(BLOCK_SIZE * 3.5); 
+    const nextBlockContainerSize = Math.floor(BLOCK_SIZE * 4); // Malo veći kako bi stalo sve
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
     
+    // Ponovno crtamo sve nakon promene veličine
     draw();
     drawNextPiece();
 }
@@ -346,7 +349,7 @@ function checkLines() {
 
     if (linesCleared > 0) {
         combo++;
-        showComboMessage(linesCleared, combo); // Ispravka: Prosleđujemo obe vrednosti
+        showComboMessage(linesCleared, combo);
         updateScore(linesCleared, combo);
         
         if (score % 500 === 0 && dropInterval > 100) { 
@@ -377,7 +380,6 @@ function updateScore(lines, comboCount) {
     }
 }
 
-// Konačna, ispravljena funkcija za prikaz kombo poruke
 function showComboMessage(linesCleared, comboCount) {
     let message = '';
     
@@ -507,6 +509,7 @@ function useAssist() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    setCanvasSize(); // Dodat poziv ovde kako bi se osiguralo da su dimenzije postavljene odmah
     const storedBestScore = localStorage.getItem('bestScore');
     if (storedBestScore) {
         bestScore = parseInt(storedBestScore, 10);
