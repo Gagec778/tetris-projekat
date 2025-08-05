@@ -1,307 +1,283 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tetris</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJEKAT PUZZLE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --main-color: #61dafb;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Press Start 2P', cursive;
+            background: linear-gradient(to bottom right, #1a1a2e, #16213e, #0f3460);
+            color: #e0e0e0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(to bottom right, #1a1a2e, #16213e, #0f3460);
-            color: #fff;
-            overflow-x: hidden;
-            touch-action: none;
-        }
-
-        .container {
-            text-align: center;
-            padding: 20px;
-        }
-
-        h1 {
-            font-size: 3rem;
-            color: var(--main-color);
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            margin-bottom: 20px;
-        }
-
-        #game-container {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-            flex-wrap: wrap;
-        }
-
-        #left-panel, #right-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            padding: 20px;
-            background-color: rgba(0, 0, 0, 0.4);
-            border-radius: 10px;
-            border: 1px solid var(--main-color);
-            box-shadow: 0 0 15px rgba(97, 218, 251, 0.3);
-            min-width: 200px;
+            margin: 0;
+            overflow: hidden;
+            padding: 5px;
+            box-sizing: border-box;
         }
 
         #main-game-wrapper {
-            position: relative;
+            background-color: #2c313a;
+            border: 5px solid #61dafb;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 10px;
+            padding: 10px;
+            width: 95vw;
+            max-width: 500px;
+            box-sizing: border-box;
+            max-height: 98vh;
+            overflow: hidden;
+            position: relative;
         }
 
-        canvas {
-            border: 3px solid var(--main-color);
-            background-color: #000;
-            box-shadow: 0 0 20px rgba(97, 218, 251, 0.5);
-            display: block;
-            cursor: none;
+        #info-section {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            padding: 0 5px;
+            box-sizing: border-box;
+            gap: 5px;
+        }
+        
+        #game-stats, #next-block-container {
+            flex: 1;
+            background-color: #1a1a2e;
+            border: 2px solid #61dafb;
+            border-radius: 8px;
+            box-shadow: inset 0 0 8px rgba(97, 218, 251, 0.3);
+            white-space: nowrap;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 5px 8px;
+            gap: 5px;
+        }
+
+        #game-stats {
+            gap: 2px;
+        }
+
+        #score-display, #assists-container, #best-score-display {
+            width: 100%;
+            text-align: center;
+            font-size: 0.8em;
+            border: none;
+            background: none;
+            padding: 0;
+        }
+        
+        #best-score-display {
+            font-size: 0.7em;
+            color: #ccc;
+            margin-top: 5px;
         }
 
         #next-block-container {
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid var(--main-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-
-        #next-block-container p {
-            margin-bottom: 5px;
+            font-size: 0.7em;
+            gap: 3px;
         }
 
         #nextBlockCanvas {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background-color: transparent;
+            background-color: #0d0d1a;
+            border: 1px solid #4fa3d1;
+            border-radius: 5px;
+            width: 60px;
+            height: 60px;
         }
 
-        #theme-panel {
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 10px;
+        canvas#gameCanvas {
+            background-color: #000;
+            border: 3px solid #61dafb;
+            box-shadow: 0 0 15px rgba(97, 218, 251, 0.7);
+            display: block;
             border-radius: 5px;
-            border: 1px solid var(--main-color);
-            text-align: center;
+            width: 100%;
+            height: auto;
+            max-width: 450px;
+            max-height: 70vh;
+            touch-action: none;
         }
 
-        #theme-switcher {
+        #pause-button {
             width: 100%;
-            padding: 5px;
-            border-radius: 5px;
-            border: 1px solid var(--main-color);
-            background-color: #333;
+            max-width: 450px;
+            font-size: 0.8em;
+            padding: 8px;
+            margin-top: 8px;
+            background-color: #e63946;
             color: #fff;
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            font-family: 'Press Start 2P', cursive;
+        }
+        #pause-button:hover { background-color: #c72c38; }
+        #pause-button:active { transform: translateY(1px); }
+
+        #controls {
+            display: none;
         }
 
-        .score-panel {
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid var(--main-color);
-        }
-
-        .game-overlay {
+        #start-screen, #game-over-screen {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
+            background-color: rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
+            gap: 20px;
+            z-index: 1000;
+            font-family: 'Press Start 2P', cursive;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        #start-screen h1, #game-over-screen h1 {
+            font-size: 1.8em;
+            color: #61dafb;
+            text-shadow: 0 0 10px rgba(97, 218, 251, 0.8);
+            margin-bottom: 5px;
+        }
+        #start-screen p {
+            font-size: 1em;
+            margin-bottom: 15px;
+        }
+
+        #game-over-screen #final-score {
+            font-size: 1.5em;
+            color: #e0e0e0;
+            margin-bottom: 15px;
+        }
+
+        #start-screen button, #game-over-screen button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            background-color: #e63946;
             color: #fff;
-            transition: opacity 0.3s ease-in-out;
-            z-index: 10;
-        }
-
-        .game-overlay.hidden {
-            display: none;
-        }
-
-        .game-overlay.show {
-            display: flex;
-        }
-
-        .game-overlay h2 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-        }
-
-        .game-overlay button {
-            padding: 10px 20px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            background-color: var(--main-color);
-            color: #000;
             border: none;
-            border-radius: 5px;
-            transition: background-color 0.3s ease-in-out, transform 0.1s;
-        }
-
-        .game-overlay button:hover {
-            background-color: #fff;
-        }
-
-        .game-overlay button:active {
-            transform: scale(0.98);
-        }
-
-        .assist-panel {
-            margin-top: 20px;
-            font-size: 1.2rem;
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid var(--main-color);
+            border-radius: 10px;
             cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 5px 8px rgba(0, 0, 0, 0.4);
+            font-family: 'Press Start 2P', cursive;
         }
 
-        .assist-panel:hover {
-            background-color: rgba(0, 0, 0, 0.8);
+        #start-screen button:hover, #game-over-screen button:hover {
+            background-color: #c72c38;
+            transform: translateY(-3px);
         }
-
-        #pause-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 8px 16px;
-            font-size: 1rem;
-            cursor: pointer;
-            background-color: rgba(97, 218, 251, 0.7);
-            color: #000;
-            border: none;
-            border-radius: 5px;
-            z-index: 100;
-        }
-
-        #pause-button.hidden {
-            display: none;
-        }
-
-        #final-score {
-            margin-top: 10px;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
+        #start-screen button:active, #game-over-screen button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         #combo-display {
-            color: #ff9900;
-            font-weight: 700;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-            animation: fade-in-out 1.5s forwards;
-            margin-top: 5px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5em;
+            color: #fff;
+            text-shadow: 0 0 10px #61dafb;
+            text-align: center;
+            z-index: 10;
+            animation: fadeOut 1.5s forwards;
         }
-
-        #combo-display.hidden {
-            display: none;
-        }
-
-        @keyframes fade-in-out {
-            0% { opacity: 0; }
-            50% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-
-        @media (max-width: 768px) {
-            #game-container {
-                flex-direction: column;
-                align-items: center;
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
             }
-
-            #left-panel, #right-panel {
-                width: 90%;
-                margin-top: 20px;
+            to {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.5);
             }
+        }
+
+        #assists-container {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+            padding: 5px 0;
+            border: 2px dashed rgba(97, 218, 251, 0.3);
+            border-radius: 5px;
+        }
+        #assists-container:hover {
+            background-color: #4fa3d1;
+        }
+        #assists-container:active {
+            transform: translateY(1px);
+        }
+        #assists-container span {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-left: 5px;
+            display: inline-block;
+        }
+        .bomb-icon {
+            font-size: 1.5em;
+            display: inline-block;
         }
     </style>
 </head>
 <body>
-
-    <audio id="dropSound" src="sounds/drop.mp3"></audio>
-    <audio id="clearSound" src="sounds/clear.mp3"></audio>
-    <audio id="rotateSound" src="sounds/rotate.mp3"></audio>
-    <audio id="gameOverSound" src="sounds/game-over.mp3"></audio>
-
-    <div class="container">
-        <h1>Tetris</h1>
-        <div id="game-container">
-            <div id="left-panel">
-                <div class="score-panel">
-                    <p id="score-display">Score: 0</p>
-                    <p id="combo-display" class="hidden"></p>
-                    <p id="best-score-display">BEST: 0</p>
-                </div>
-                <div id="next-block-container">
-                    <p>NEXT</p>
-                    <canvas id="nextBlockCanvas"></canvas>
-                </div>
-                <div id="theme-panel">
-                    <p>Theme</p>
-                    <select id="theme-switcher">
-                        <option value="classic">Classic</option>
-                        <option value="dark">Dark</option>
-                        <option value="forest">Forest</option>
-                    </select>
+    <div id="main-game-wrapper">
+        <div id="info-section">
+            <div id="game-stats">
+                <div id="score-display">Score: 0</div>
+                <div id="best-score-display">BEST: 0</div>
+                <div id="assists-container">
+                    <span class="bomb-icon">💣</span><span id="assists-count">0</span>
                 </div>
             </div>
-            <div id="main-game-wrapper">
-                <canvas id="gameCanvas"></canvas>
-                <div id="start-screen" class="game-overlay show">
-                    <h2>Welcome to Tetris!</h2>
-                    <button id="start-button">Pokreni igru</button>
-                    <div class="assist-panel">
-                        <p>Assists: <span id="assists-count">0</span></p>
-                    </div>
-                </div>
-                <div id="game-over-screen" class="game-overlay hidden">
-                    <h2>Game Over</h2>
-                    <p id="final-score"></p>
-                    <button id="restart-button">Restart</button>
-                </div>
-                <button id="pause-button" class="hidden">PAUSE</button>
-            </div>
-            <div id="right-panel">
-                <h3>Controls</h3>
-                <p>Arrow Up: Rotate</p>
-                <p>Arrow Left: Move Left</p>
-                <p>Arrow Right: Move Right</p>
-                <p>Arrow Down: Soft Drop</p>
-                <p>Spacebar: Hard Drop</p>
-                <p>A: Use Assist</p>
-                <p>P: Pause</p>
+            <div id="next-block-container">
+                Next:
+                <canvas id="nextBlockCanvas" width="80" height="80"></canvas>
             </div>
         </div>
+        
+        <canvas id="gameCanvas"></canvas>
+        <button id="pause-button">PAUSE</button>
+        <div id="combo-display" style="display: none;"></div>
+        
+        <div id="controls" style="display: none;">
+        </div>
     </div>
-    
+
+    <div id="start-screen">
+        <h1>PROJEKAT PUZZLE</h1>
+        <p>Pritisni dugme da započneš igru!</p>
+        <button id="start-button">Pokreni Igru</button>
+    </div>
+
+    <div id="game-over-screen" style="display: none;">
+        <h1>GAME OVER!</h1>
+        <div id="final-score">Your Score: 0</div>
+        <button id="restart-button">Restart Game</button>
+    </div>
+
+    <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
+    <audio id="clearSound" src="sounds/clear.wav" preload="auto"></audio>
+    <audio id="rotateSound" src="sounds/rotate.wav" preload="auto"></audio>
+    <audio id="gameOverSound" src="sounds/gameover.wav" preload="auto"></audio>
+
     <script src="script.js"></script>
 </body>
 </html>
+
