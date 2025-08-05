@@ -121,7 +121,7 @@ let score = 0;
 let gameOver = false;
 
 // --- PROMENA: ZAMENA setInterval sa requestAnimationFrame ---
-let dropInterval = 1000; // Postavi na željenu početnu brzinu pada (1000ms = 1 sekunda)
+let dropInterval = 1000;
 let lastDropTime = 0;
 let animationFrameId;
 // --- KRAJ PROMENE ---
@@ -283,9 +283,7 @@ function drawGhostPiece() {
         ghostY++;
     }
 
-    // --- PROMENA: SMANJENA VREDNOST za providnost Ghost bloka ---
     ctx.globalAlpha = 0.1;
-    // --- KRAJ PROMENE ---
     
     for (let r = 0; r < currentPiece.shape.length; r++) {
         for (let c = 0; c < currentPiece.shape[r].length; c++) {
@@ -408,7 +406,7 @@ function rotatePiece() {
 }
 
 function dropPiece() {
-    if (!currentPiece) return;
+    if (!currentPiece) return; // PROVERA DA LI POSTOJI BLOK
     while (isValidMove(0, 1, currentPiece.shape)) {
         currentPiece.y++;
     }
@@ -492,8 +490,8 @@ function checkLines() {
             clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
         }
         
-        // --- PROMENA: Pošto se animateLineClear poziva iz gameLoop-a, ne treba je ovde pokretati
-        // ali je potrebno osigurati da se ne generiše novi blok pre animacije.
+        // ZAVRŠAVA FUNKCIJU BEZ GENERISANJA NOVOG BLOKA
+        // Novi blok će biti generisan nakon animacije.
         return; 
     } else {
         lastClearWasSpecial = false;
@@ -553,26 +551,24 @@ function showComboMessage(type, comboCount) {
     }
 }
 
-// --- PROMENA: gameLoop petlja i animacija su sređene ---
 function gameLoop(timestamp) {
     if (gameOver || isPaused) {
         return;
     }
 
-    // Proverava da li je animacija aktivna
     if (isAnimating) {
+        // Kada je animacija aktivna, samo pozivamo nju i izlazimo
         animateLineClear(timestamp);
         return;
     }
     
-    // Proveravamo da li je prošao dovoljan broj milisekundi za sledeći pad
     if (timestamp - lastDropTime > dropInterval) {
         if (isValidMove(0, 1, currentPiece.shape)) {
             currentPiece.y++;
         } else {
             mergePiece();
         }
-        lastDropTime = timestamp; // Resetujemo tajmer
+        lastDropTime = timestamp;
     }
     
     draw();
@@ -592,8 +588,8 @@ function animateLineClear(timestamp) {
         }
         linesToClear = [];
         generateNewPiece();
-        
-        // Nema potrebe da ponovo pokrećemo gameLoop, to se dešava u sledećem frame-u.
+        // SADA POKREĆEMO NOVI FRAME GLAVNE PETLJE
+        animationFrameId = requestAnimationFrame(gameLoop);
         return;
     }
 
@@ -613,7 +609,6 @@ function animateLineClear(timestamp) {
     }
     requestAnimationFrame(animateLineClear);
 }
-// --- KRAJ PROMENE ---
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -624,9 +619,7 @@ function draw() {
 
 function endGame() {
     gameOver = true;
-    // --- PROMENA: ZAMENA clearInterval sa cancelAnimationFrame ---
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    // --- KRAJ PROMENE ---
     
     gameOverSound.currentTime = 0;
     if (gameOverSound.readyState >= 2) {
@@ -671,7 +664,7 @@ function startGame() {
     
     initBoard();
     setCanvasSize();
-    generateNewPiece();
+    generateNewPiece(); // POPRAVLJENO: Pozivamo generisanje bloka odmah na početku
     
     score = 0;
     combo = 0;
@@ -685,10 +678,8 @@ function startGame() {
     isPaused = false;
     pauseButton.textContent = "PAUSE";
     
-    // --- PROMENA: Pokretanje gameLoop petlje sa requestAnimationFrame ---
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     animationFrameId = requestAnimationFrame(gameLoop);
-    // --- KRAJ PROMENE ---
     
     draw();
 }
@@ -697,29 +688,32 @@ function togglePause() {
     if (gameOver || isAnimating) return;
     isPaused = !isPaused;
     if (isPaused) {
-        // --- PROMENA: ZAMENA clearInterval sa cancelAnimationFrame ---
         cancelAnimationFrame(animationFrameId);
-        // --- KRAJ PROMENE ---
         pauseButton.textContent = "RESUME";
     } else {
-        // --- PROMENA: ZAMENA setInterval sa requestAnimationFrame ---
         animationFrameId = requestAnimationFrame(gameLoop);
-        // --- KRAJ PROMENE ---
         pauseButton.textContent = "PAUSE";
     }
 }
 
 function updateAssistsDisplay() {
     assistsCountDisplay.textContent = assists;
+    if (assists > 0) {
+        assistsContainer.classList.add('has-assists');
+    } else {
+        assistsContainer.classList.remove('has-assists');
+    }
 }
 
 function useAssist() {
-    if (assists > 0) {
+    if (assists > 0 && !gameOver && !isPaused && !isAnimating) {
         initBoard();
         
         assists--;
         localStorage.setItem('assists', assists);
         updateAssistsDisplay();
+        
+        generateNewPiece(); // POPRAVLJENO: Generišemo novi blok nakon čišćenja table
         
         draw();
     }
