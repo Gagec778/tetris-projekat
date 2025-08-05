@@ -10,12 +10,15 @@ const ROWS = 18;
 const mainGameWrapper = document.getElementById('main-game-wrapper');
 let BLOCK_SIZE;
 
-let isAnimating = false;
-let linesToClear = [];
+// ----------------------------------------------
+// NOVE PROMENLJIVE ZA GAMEPLAY I IZGLED
+// ----------------------------------------------
+let isAnimating = false; // Za animaciju čišćenja linije
+let linesToClear = []; // Redovi koji čekaju na animaciju
 let animationStart = 0;
-const animationDuration = 200;
+const animationDuration = 200; // u milisekundama
 
-let lastClearWasSpecial = false;
+let lastClearWasSpecial = false; // Za Back-to-Back bonuse
 
 let currentTheme = 'classic';
 const THEMES = {
@@ -39,8 +42,11 @@ const THEMES = {
     }
 };
 
-const T_SHAPE_INDEX = 5;
+const T_SHAPE_INDEX = 5; // Indeks T bloka u TETROMINOES nizu
 
+// ----------------------------------------------
+// FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (POPRAVLJENA)
+// ----------------------------------------------
 function setCanvasSize() {
     if (!mainGameWrapper) return;
 
@@ -67,6 +73,7 @@ function setCanvasSize() {
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
     
+    // VAŽNO: Nakon promene veličine, ponovo crtamo sve
     if (!gameOver && !isPaused) {
         draw();
         drawNextPiece();
@@ -77,13 +84,34 @@ window.addEventListener('resize', setCanvasSize);
 
 let COLORS;
 const TETROMINOES = [
-    [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
-    [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
-    [[1, 1], [1, 1]],
-    [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
-    [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
-    [[1, 1, 0], [0, 1, 1], [0, 0, 0]]
+    // I
+    [[0, 0, 0, 0],
+     [1, 1, 1, 1],
+     [0, 0, 0, 0],
+     [0, 0, 0, 0]],
+    // J
+    [[1, 0, 0],
+     [1, 1, 1],
+     [0, 0, 0]],
+    // L
+    [[0, 0, 1],
+     [1, 1, 1],
+     [0, 0, 0]],
+    // O
+    [[1, 1],
+     [1, 1]],
+    // S
+    [[0, 1, 1],
+     [1, 1, 0],
+     [0, 0, 0]],
+    // T
+    [[0, 1, 0],
+     [1, 1, 1],
+     [0, 0, 0]],
+    // Z
+    [[1, 1, 0],
+     [0, 1, 1],
+     [0, 0, 0]]
 ];
 
 let board = [];
@@ -92,9 +120,11 @@ let nextPiece;
 let score = 0;
 let gameOver = false;
 
+// --- PROMENA: ZAMENA setInterval sa requestAnimationFrame ---
 let dropInterval = 1000;
 let lastDropTime = 0;
 let animationFrameId;
+// --- KRAJ PROMENE ---
 
 let combo = 0;
 
@@ -182,9 +212,11 @@ function drawBlock(x, y, color, context = ctx) {
 
     const blockSize = (context === nextBlockCtx) ? BLOCK_SIZE / 2 : BLOCK_SIZE;
 
+    // Lice bloka
     context.fillStyle = color;
     context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
 
+    // Gornja i leva ivica
     context.fillStyle = lightColor;
     context.beginPath();
     context.moveTo(x * blockSize, y * blockSize);
@@ -196,6 +228,7 @@ function drawBlock(x, y, color, context = ctx) {
     context.closePath();
     context.fill();
 
+    // Donja i desna ivica
     context.fillStyle = darkColor;
     context.beginPath();
     context.moveTo((x + 1) * blockSize, (y + 1) * blockSize);
@@ -221,9 +254,11 @@ function lightenColor(color, amount) {
     let r = parseInt(color.substring(1, 3), 16);
     let g = parseInt(color.substring(3, 5), 16);
     let b = parseInt(color.substring(5, 7), 16);
+
     r = Math.min(255, r + amount);
     g = Math.min(255, g + amount);
     b = Math.min(255, b + amount);
+
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
@@ -231,11 +266,14 @@ function darkenColor(color, amount) {
     let r = parseInt(color.substring(1, 3), 16);
     let g = parseInt(color.substring(3, 5), 16);
     let b = parseInt(color.substring(5, 7), 16);
+
     r = Math.max(0, r - amount);
     g = Math.max(0, g - amount);
     b = Math.max(0, b - amount);
+
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
+
 
 function drawGhostPiece() {
     if (!currentPiece) return;
@@ -367,7 +405,7 @@ function rotatePiece() {
 }
 
 function dropPiece() {
-    if (!currentPiece) return;
+    if (!currentPiece) return; // PROVERA DA LI POSTOJI BLOK
     while (isValidMove(0, 1, currentPiece.shape)) {
         currentPiece.y++;
     }
@@ -523,7 +561,7 @@ function gameLoop(timestamp) {
     if (timestamp - lastDropTime > dropInterval) {
         if (currentPiece && isValidMove(0, 1, currentPiece.shape)) {
             currentPiece.y++;
-        } else if (currentPiece) { // Added this check
+        } else if (currentPiece) {
             mergePiece();
         }
         lastDropTime = timestamp;
@@ -679,7 +717,7 @@ function useAssist() {
 function setTheme(themeName) {
     currentTheme = themeName;
     COLORS = THEMES[themeName].blockColors;
-    document.body.style.background = `linear-gradient(to bottom right, ${THEMES[themeName].background}, #16213e, #0f3460)`;
+    document.body.style.background = `linear-gradient(to bottom right, ${THEMES[themeName].background}, #16213e, #0f3460)`; // Popravljena linija
     document.documentElement.style.setProperty('--main-color', THEMES[themeName].lineColor);
     localStorage.setItem('theme', themeName);
     
