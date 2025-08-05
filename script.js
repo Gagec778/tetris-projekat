@@ -11,6 +11,40 @@ const mainGameWrapper = document.getElementById('main-game-wrapper');
 let BLOCK_SIZE;
 
 // ----------------------------------------------
+// NOVE PROMENLJIVE ZA GAMEPLAY I IZGLED
+// ----------------------------------------------
+let isAnimating = false; // Za animaciju čišćenja linije
+let linesToClear = []; // Redovi koji čekaju na animaciju
+let animationStart = 0;
+const animationDuration = 200; // u milisekundama
+
+let lastClearWasSpecial = false; // Za Back-to-Back bonuse
+
+let currentTheme = 'classic';
+const THEMES = {
+    'classic': {
+        background: '#1a1a2e',
+        boardBackground: '#000',
+        lineColor: '#61dafb',
+        blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000']
+    },
+    'dark': {
+        background: '#0d0d0d',
+        boardBackground: '#1c1c1c',
+        lineColor: '#999999',
+        blockColors: ['#00FFFF', '#3366FF', '#FF9933', '#FFFF00', '#33CC66', '#9966CC', '#FF3333']
+    },
+    'forest': {
+        background: '#0a1d0d',
+        boardBackground: '#263a29',
+        lineColor: '#b4cf66',
+        blockColors: ['#66FFB2', '#339966', '#FF9900', '#FFFF66', '#33CC66', '#9966CC', '#FF3333']
+    }
+};
+
+const T_SHAPE_INDEX = 5; // Indeks T bloka u TETROMINOES nizu
+
+// ----------------------------------------------
 // FUNKCIJA ZA PRILAGOĐAVANJE VELIČINE (ISPRAVLJENA)
 // ----------------------------------------------
 function setCanvasSize() {
@@ -38,25 +72,14 @@ function setCanvasSize() {
     const nextBlockContainerSize = Math.floor(BLOCK_SIZE * 4);
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
+    
+    draw();
+    drawNextPiece();
 }
 
-// OBRISAN JE POZIV setCanvasSize() ODAVDE. SADA SE POZIVA SAMO KADA JE POTREBNO.
-window.addEventListener('resize', () => {
-    setCanvasSize();
-    draw(); // Dodatno crtanje nakon promene veličine
-    drawNextPiece();
-});
+window.addEventListener('resize', setCanvasSize);
 
-const COLORS = [
-    '#00FFFF', // I - Cyan
-    '#0000FF', // J - Blue
-    '#FFA500', // L - Orange
-    '#FFFF00', // O - Yellow
-    '#00FF00', // S - Green
-    '#800080', // T - Purple
-    '#FF0000'  // Z - Red
-];
-
+let COLORS;
 const TETROMINOES = [
     // I
     [[0, 0, 0, 0],
@@ -121,8 +144,8 @@ const comboDisplay = document.getElementById('combo-display');
 
 const startButton = document.getElementById('start-button');
 const restartButton = document.getElementById('restart-button');
+const themeSwitcher = document.getElementById('theme-switcher');
 
-// NOVE PROMENLJIVE ZA ČUVANJE INDEKSA BLOKOVA
 let currentPieceIndex;
 let nextPieceIndex;
 
@@ -135,9 +158,6 @@ function initBoard() {
     }
 }
 
-// ----------------------------------------------
-// NOVE POMOĆNE FUNKCIJE ZA KREIRANJE BLOKOVA
-// ----------------------------------------------
 function createCurrentPiece() {
     const shape = TETROMINOES[currentPieceIndex];
     const color = COLORS[currentPieceIndex];
@@ -152,27 +172,20 @@ function createCurrentPiece() {
     };
 }
 
-// ----------------------------------------------
-// ISPRAVLJENA I POJEDNOSTAVLJENA FUNKCIJA generateNewPiece()
-// ----------------------------------------------
 function generateNewPiece() {
     if (nextPieceIndex !== undefined) {
-        // Ako postoji sledeći blok, promovišemo ga
         currentPieceIndex = nextPieceIndex;
     } else {
-        // Generišemo prvi blok na početku igre
         currentPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
     }
     
-    // Uvek kreiramo 'currentPiece' objekat sa pravilnim koordinatama
     createCurrentPiece();
 
-    // Generišemo novi indeks za sledeći blok
     nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
     nextPiece = {
         shape: TETROMINOES[nextPieceIndex],
         color: COLORS[nextPieceIndex],
-        x: 0, // Ove koordinate su samo za prikaz u malom prozoru
+        x: 0,
         y: 0
     };
 
@@ -183,51 +196,101 @@ function generateNewPiece() {
     }
 }
 
+// ----------------------------------------------
+// NOVE FUNKCIJE ZA 3D IZGLED I GHOST PIECE
+// ----------------------------------------------
 function drawBlock(x, y, color) {
+    const lightColor = lightenColor(color, 20);
+    const darkColor = darkenColor(color, 20);
+
+    // Lice bloka
     ctx.fillStyle = color;
     ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+
+    // Gornja i leva ivica
+    ctx.fillStyle = lightColor;
+    ctx.beginPath();
+    ctx.moveTo(x * BLOCK_SIZE, y * BLOCK_SIZE);
+    ctx.lineTo((x + 1) * BLOCK_SIZE, y * BLOCK_SIZE);
+    ctx.lineTo((x + 1) * BLOCK_SIZE - 2, y * BLOCK_SIZE + 2);
+    ctx.lineTo(x * BLOCK_SIZE + 2, y * BLOCK_SIZE + 2);
+    ctx.lineTo(x * BLOCK_SIZE + 2, (y + 1) * BLOCK_SIZE - 2);
+    ctx.lineTo(x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+    ctx.closePath();
+    ctx.fill();
+
+    // Donja i desna ivica
+    ctx.fillStyle = darkColor;
+    ctx.beginPath();
+    ctx.moveTo((x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+    ctx.lineTo((x + 1) * BLOCK_SIZE, y * BLOCK_SIZE);
+    ctx.lineTo((x + 1) * BLOCK_SIZE - 2, y * BLOCK_SIZE + 2);
+    ctx.lineTo((x + 1) * BLOCK_SIZE - 2, (y + 1) * BLOCK_SIZE - 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo((x + 1) * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+    ctx.lineTo(x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+    ctx.lineTo(x * BLOCK_SIZE + 2, (y + 1) * BLOCK_SIZE - 2);
+    ctx.lineTo((x + 1) * BLOCK_SIZE - 2, (y + 1) * BLOCK_SIZE - 2);
+    ctx.closePath();
+    ctx.fill();
+
     ctx.strokeStyle = '#222';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1;
     ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 }
 
-// ----------------------------------------------
-// ISPRAVLJENA FUNKCIJA drawPiece()
-// ----------------------------------------------
-function drawPiece(piece, context, blockSizeOverride = null) {
-    if (!piece) return; // PROVERA KOJA SPREČAVA GREŠKU
-    
-    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-    const currentBlockSize = blockSizeOverride !== null ? blockSizeOverride : BLOCK_SIZE;
+// Pomoćne funkcije za 3D efekte
+function lightenColor(color, amount) {
+    let r = parseInt(color.substring(1, 3), 16);
+    let g = parseInt(color.substring(3, 5), 16);
+    let b = parseInt(color.substring(5, 7), 16);
 
-    let drawX = piece.x;
-    let drawY = piece.y;
-    if (context === nextBlockCtx) {
-        const pieceWidth = piece.shape[0].length * (currentBlockSize / 2);
-        const pieceHeight = piece.shape.length * (currentBlockSize / 2);
-        drawX = (context.canvas.width - pieceWidth) / (2 * (currentBlockSize / 2));
-        drawY = (context.canvas.height - pieceHeight) / (2 * (currentBlockSize / 2));
-    }
+    r = Math.min(255, r + amount);
+    g = Math.min(255, g + amount);
+    b = Math.min(255, b + amount);
 
-    for (let r = 0; r < piece.shape.length; r++) {
-        for (let c = 0; c < piece.shape[r].length; c++) {
-            if (piece.shape[r][c]) {
-                context.fillStyle = piece.color;
-                context.fillRect((c + drawX) * currentBlockSize, (r + drawY) * currentBlockSize, currentBlockSize, currentBlockSize);
-                context.strokeStyle = '#222';
-                context.lineWidth = 1;
-                context.strokeRect((c + drawX) * currentBlockSize, (r + drawY) * currentBlockSize, currentBlockSize, currentBlockSize);
-            }
-        }
-    }
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+function darkenColor(color, amount) {
+    let r = parseInt(color.substring(1, 3), 16);
+    let g = parseInt(color.substring(3, 5), 16);
+    let b = parseInt(color.substring(5, 7), 16);
+
+    r = Math.max(0, r - amount);
+    g = Math.max(0, g - amount);
+    b = Math.max(0, b - amount);
+
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 
-// ----------------------------------------------
-// ISPRAVLJENA FUNKCIJA drawNextPiece()
-// ----------------------------------------------
+function drawGhostPiece() {
+    let ghostY = currentPiece.y;
+    while (isValidMove(0, 1, currentPiece.shape, ghostY)) {
+        ghostY++;
+    }
+
+    ctx.globalAlpha = 0.3;
+    for (let r = 0; r < currentPiece.shape.length; r++) {
+        for (let c = 0; c < currentPiece.shape[r].length; c++) {
+            if (currentPiece.shape[r][c]) {
+                const color = currentPiece.color;
+                ctx.fillStyle = color;
+                ctx.fillRect((currentPiece.x + c) * BLOCK_SIZE, (ghostY + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.strokeRect((currentPiece.x + c) * BLOCK_SIZE, (ghostY + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            }
+        }
+    }
+    ctx.globalAlpha = 1.0;
+}
+
 function drawNextPiece() {
-    if (nextPieceIndex === undefined) { // PROVERA KOJA SPREČAVA GREŠKU
+    if (nextPieceIndex === undefined) {
         nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
         return;
     }
@@ -262,7 +325,7 @@ function drawBoard() {
             if (board[r][c]) {
                 drawBlock(c, r, board[r][c]);
             } else {
-                ctx.fillStyle = '#1a1a1a';
+                ctx.fillStyle = THEMES[currentTheme].boardBackground;
                 ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
                 ctx.strokeStyle = '#333';
                 ctx.lineWidth = 1;
@@ -272,11 +335,8 @@ function drawBoard() {
     }
 }
 
-// ----------------------------------------------
-// ISPRAVLJENA FUNKCIJA drawCurrentPiece()
-// ----------------------------------------------
 function drawCurrentPiece() {
-    if (!currentPiece) return; // PROVERA KOJA SPREČAVA GREŠKU
+    if (!currentPiece) return;
     for (let r = 0; r < currentPiece.shape.length; r++) {
         for (let c = 0; c < currentPiece.shape[r].length; c++) {
             if (currentPiece.shape[r][c]) {
@@ -286,12 +346,12 @@ function drawCurrentPiece() {
     }
 }
 
-function isValidMove(offsetX, offsetY, newShape) {
+function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y) {
     for (let r = 0; r < newShape.length; r++) {
         for (let c = 0; c < newShape[r].length; c++) {
             if (newShape[r][c]) {
                 const newX = currentPiece.x + c + offsetX;
-                const newY = currentPiece.y + r + offsetY;
+                const newY = currentY + r + offsetY;
 
                 if (newX < 0 || newX >= COLS || newY >= ROWS) {
                     return false;
@@ -358,11 +418,35 @@ function mergePiece() {
         }
     }
     checkLines();
-    generateNewPiece();
+}
+
+// ----------------------------------------------
+// POBOLJŠANA LOGIKA ZA BODOVANJE I ANIMACIJU
+// ----------------------------------------------
+function isTSpin() {
+    if (currentPieceIndex !== T_SHAPE_INDEX) return false;
+
+    // Proverava se da li je T-blok okružen blokovima na tri od četiri ugla.
+    // Nije savršena implementacija, ali je dobra osnova.
+    let filledCorners = 0;
+    const corners = [
+        { x: currentPiece.x, y: currentPiece.y },
+        { x: currentPiece.x + 2, y: currentPiece.y },
+        { x: currentPiece.x, y: currentPiece.y + 2 },
+        { x: currentPiece.x + 2, y: currentPiece.y + 2 }
+    ];
+
+    for (const corner of corners) {
+        if (corner.x < 0 || corner.x >= COLS || corner.y < 0 || corner.y >= ROWS || (board[corner.y] && board[corner.y][corner.x])) {
+            filledCorners++;
+        }
+    }
+
+    return filledCorners >= 3;
 }
 
 function checkLines() {
-    let linesCleared = 0;
+    linesToClear = [];
     for (let r = ROWS - 1; r >= 0; r--) {
         let isFull = true;
         for (let c = 0; c < COLS; c++) {
@@ -372,41 +456,71 @@ function checkLines() {
             }
         }
         if (isFull) {
-            linesCleared++;
-            board.splice(r, 1);
-            board.unshift(Array(COLS).fill(0));
-            r++;
-            clearSound.currentTime = 0;
-            if (clearSound.readyState >= 2) {
-                clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
-            }
+            linesToClear.push(r);
         }
     }
 
-    if (linesCleared > 0) {
-        combo++;
-        showComboMessage(linesCleared, combo);
-        updateScore(linesCleared, combo);
+    if (linesToClear.length > 0) {
+        isAnimating = true;
+        animationStart = performance.now();
         
-        if (score % 500 === 0 && dropInterval > 100) {
-            dropInterval -= 50;
-            clearInterval(gameInterval);
-            gameInterval = setInterval(gameLoop, dropInterval);
+        let isSpecial = false;
+        if (isTSpin()) {
+            isSpecial = true;
+            // T-Spin se priznaje bez obzira na broj obrisanih linija
+            // ali se najčešće kombinuje sa 1 ili 2 linije.
+        } else if (linesToClear.length === 4) {
+            isSpecial = true;
         }
+
+        if (lastClearWasSpecial && isSpecial) {
+            updateScore(linesToClear.length, true, isTSpin()); // Back-to-Back bonus
+            lastClearWasSpecial = true;
+        } else {
+            updateScore(linesToClear.length, false, isTSpin());
+            lastClearWasSpecial = isSpecial;
+        }
+
+        clearSound.currentTime = 0;
+        if (clearSound.readyState >= 2) {
+            clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
+        }
+
     } else {
+        lastClearWasSpecial = false;
         combo = 0;
+        generateNewPiece();
     }
 }
 
-function updateScore(lines, comboCount) {
-    const scoreMap = [0, 100, 300, 500, 800];
-    let comboMultiplier = comboCount > 1 ? comboCount * 2 : 1;
+function updateScore(lines, isBackToBack, isTSpinClear) {
+    let points = 0;
+    let type = '';
+
+    if (isTSpinClear) {
+        if (lines === 1) { points = 800; type = 'T-Spin Single'; }
+        else if (lines === 2) { points = 1200; type = 'T-Spin Double'; }
+        else if (lines === 3) { points = 1600; type = 'T-Spin Triple'; }
+        else { points = 400; type = 'T-Spin'; }
+    } else {
+        if (lines === 1) { points = 100; type = 'Single'; }
+        else if (lines === 2) { points = 300; type = 'Double'; }
+        else if (lines === 3) { points = 500; type = 'Triple'; }
+        else if (lines === 4) { points = 800; type = 'Tetris'; }
+    }
+    
+    let comboMultiplier = combo > 0 ? combo : 1;
+    let backToBackBonus = isBackToBack ? 1.5 : 1;
+    
+    score += points * comboMultiplier * backToBackBonus;
+    scoreDisplay.textContent = `Score: ${score}`;
     
     if (lines > 0) {
-        const addedScore = scoreMap[lines] * comboMultiplier;
-        score += addedScore;
+        combo++;
+        showComboMessage(type, combo);
+    } else {
+        combo = 0;
     }
-    scoreDisplay.textContent = `Score: ${score}`;
 
     if (score >= nextAssistReward) {
         assists++;
@@ -416,20 +530,10 @@ function updateScore(lines, comboCount) {
     }
 }
 
-// ----------------------------------------------
-// ISPRAVLJENA FUNKCIJA showComboMessage()
-// ----------------------------------------------
-function showComboMessage(linesCleared, comboCount) {
+function showComboMessage(type, comboCount) {
     let message = '';
-
-    // Ako je u pitanju uzastopno brisanje linija (combo chain), prikaži dužinu lanca
-    if (comboCount > 1) {
-        message = `${comboCount}x COMBO!`;
-    } 
-    // Inače, ako je prvi put obrisano više linija, prikaži broj obrisanih linija
-    else if (linesCleared > 1) {
-        message = `${linesCleared}x COMBO!`;
-    }
+    if (type) message = type;
+    if (comboCount > 1) message += ` ${comboCount}x Combo!`;
 
     if (message) {
         comboDisplay.textContent = message;
@@ -440,8 +544,14 @@ function showComboMessage(linesCleared, comboCount) {
     }
 }
 
+
 function gameLoop() {
     if (gameOver || isPaused) return;
+
+    if (isAnimating) {
+        animateLineClear();
+        return;
+    }
 
     if (isValidMove(0, 1, currentPiece.shape)) {
         currentPiece.y++;
@@ -451,9 +561,45 @@ function gameLoop() {
     draw();
 }
 
+function animateLineClear() {
+    const elapsed = performance.now() - animationStart;
+    const progress = elapsed / animationDuration;
+    
+    if (progress >= 1) {
+        // Završetak animacije, sada ukloni linije
+        isAnimating = false;
+        linesToClear.sort((a, b) => b - a);
+        for (const r of linesToClear) {
+            board.splice(r, 1);
+            board.unshift(Array(COLS).fill(0));
+        }
+        linesToClear = [];
+        generateNewPiece();
+        return;
+    }
+
+    draw(); // Nacrtaj tablu u njenom trenutnom stanju
+
+    // Crtaj animaciju "eksplozije" na linijama koje se brišu
+    for (const r of linesToClear) {
+        for (let c = 0; c < COLS; c++) {
+            if (board[r][c]) {
+                const blockSize = BLOCK_SIZE * (1 - progress);
+                const x = c * BLOCK_SIZE + BLOCK_SIZE * progress / 2;
+                const y = r * BLOCK_SIZE + BLOCK_SIZE * progress / 2;
+                
+                ctx.fillStyle = lightenColor(board[r][c], 100);
+                ctx.fillRect(x, y, blockSize, blockSize);
+            }
+        }
+    }
+    requestAnimationFrame(gameLoop);
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBoard();
+    drawGhostPiece();
     drawCurrentPiece();
 }
 
@@ -472,7 +618,7 @@ function endGame() {
         bestScoreDisplay.textContent = `BEST: ${bestScore}`;
     }
     
-    gameOverScreen.style.display = 'flex';
+    gameOverScreen.classList.add('show');
     controlsDiv.style.display = 'none';
     pauseButton.style.display = 'none';
 }
@@ -495,15 +641,14 @@ function startGame() {
     } catch (e) {
         console.error("Greška pri pokušaju inicijalizacije zvuka (verovatno autoplay blokiran):", e);
     }
-
-    startScreen.style.display = 'none';
-    gameOverScreen.style.display = 'none';
+    
+    startScreen.classList.remove('show');
+    gameOverScreen.classList.remove('show');
     controlsDiv.style.display = 'flex';
     pauseButton.style.display = 'block';
     
-    // VAŽNO: Ovde prvo inicijalizujemo ploču, pa generišemo delove
     initBoard();
-    setCanvasSize(); // VAŽNO: Nakon što su elementi vidljivi, postavljamo veličinu
+    setCanvasSize();
     generateNewPiece();
     
     score = 0;
@@ -522,7 +667,7 @@ function startGame() {
     if (gameInterval) clearInterval(gameInterval);
     gameInterval = setInterval(gameLoop, dropInterval);
     
-    draw(); // VAŽNO: Tek sada pozivamo crtanje, kada su delovi kreirani
+    draw();
 }
 
 function togglePause() {
@@ -553,8 +698,21 @@ function useAssist() {
     }
 }
 
+function setTheme(themeName) {
+    currentTheme = themeName;
+    COLORS = THEMES[themeName].blockColors;
+    document.body.style.background = THEMES[themeName].background;
+    document.documentElement.style.setProperty('--main-color', THEMES[themeName].lineColor);
+    localStorage.setItem('theme', themeName);
+    
+    setCanvasSize();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    setCanvasSize(); // Pozivamo setCanvasSize samo na početku, ne i unutar funkcije
+    const storedTheme = localStorage.getItem('theme') || 'classic';
+    setTheme(storedTheme);
+    setCanvasSize();
+
     const storedBestScore = localStorage.getItem('bestScore');
     if (storedBestScore) {
         bestScore = parseInt(storedBestScore, 10);
@@ -569,11 +727,10 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('assists', 0);
     }
     updateAssistsDisplay();
-    // Ne pozivamo draw() ovde, jer delovi jos uvek ne postoje
 });
 
 document.addEventListener('keydown', e => {
-    if (gameOver || isPaused || !currentPiece) return;
+    if (gameOver || isPaused || isAnimating || !currentPiece) return;
     switch (e.key) {
         case 'ArrowLeft':
             if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
@@ -604,12 +761,14 @@ document.addEventListener('keydown', e => {
 startButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
 pauseButton.addEventListener('click', togglePause);
+themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
 
 assistsContainer.addEventListener('click', () => {
     if (gameOver || isPaused) return;
     useAssist();
 });
 
+// Kontrole na dodir ostaju iste, ali su prilagođene novom crtanju
 let touchStartX = 0;
 let touchStartY = 0;
 let touchMoveX = 0;
