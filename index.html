@@ -11,31 +11,35 @@
     <div id="main-game-wrapper">
         <div id="background-image"></div>
         <div id="info-section">
-            <div id="hold-block-container">
+            <div id="hold-block-container" class="info-panel">
                 Hold:
                 <canvas id="holdBlockCanvas"></canvas>
             </div>
             
-            <div id="game-stats">
+            <div id="game-stats" class="info-panel">
                 <div id="score-display">Score: 0</div>
                 <div id="best-score-display">BEST: 0</div>
                 <div id="level-display">Level: 1</div>
                 <div id="sprint-timer" style="display: none;">TIME: 0.00s</div>
                 <div id="ultra-timer" style="display: none;">TIME: 0.00s</div>
+                <div id="assists-panel">
+                    Pomoći:
+                    <div id="assists-display">
+                        <span class="bomb-icon">💣</span><span id="assists-count">0</span>
+                    </div>
+                    <button id="assist-button" class="btn">Koristi</button>
+                </div>
             </div>
             
-            <div id="next-block-container">
+            <div id="next-block-container" class="info-panel">
                 Next:
                 <canvas id="nextBlockCanvas"></canvas>
             </div>
         </div>
         
-        <canvas id="gameCanvas"></canvas>
+        <canvas id="gameCanvas" style="touch-action: none;"></canvas>
 
         <div id="game-controls">
-            <button id="assist-button" class="btn">
-                <span class="bomb-icon">💣</span><span id="assists-count">0</span>
-            </button>
             <button id="pause-button">PAUSE</button>
             <button id="restart-button-inline" style="display: none;">RESTART</button>
         </div>
@@ -76,6 +80,7 @@
         <h1 id="game-over-title">GAME OVER!</h1>
         <div id="final-score" class="final-score">Your Score: 0</div>
         <div id="final-time" class="final-score"></div>
+        <button id="continue-button" class="continue-button" style="display:none;">Koristi bombu i nastavi</button>
         <button id="restart-button">Restart Game</button>
     </div>
 
