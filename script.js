@@ -91,7 +91,7 @@ let resizeObserver;
 let keyBindings;
 
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsButton, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, restartButtonInline;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsButton, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, restartButtonInline, continueButton, assistsPanel, assistsDisplay;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
@@ -123,34 +123,34 @@ function setCanvasSize() {
     const style = document.documentElement.style;
 
     const gameAspectRatio = COLS / ROWS;
-
-    const availableWidth = mainGameWrapper.clientWidth - 20;
-    const availableHeight = mainGameWrapper.clientHeight - infoSection.offsetHeight - gameControls.offsetHeight - 20;
     
+    const availableWidth = window.innerWidth - 20;
+    const availableHeight = window.innerHeight - infoSection.offsetHeight - gameControls.offsetHeight - 20;
+
     let tempBlockSizeWidth = Math.floor(availableWidth / COLS);
     let tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
 
     BLOCK_SIZE = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
     
-    BLOCK_SIZE = Math.max(10, Math.min(40, BLOCK_SIZE));
+    BLOCK_SIZE = Math.max(15, Math.min(40, BLOCK_SIZE));
 
     style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
     gameCanvas.width = COLS * BLOCK_SIZE;
     gameCanvas.height = ROWS * BLOCK_SIZE;
     
-    const holdNextCanvasSize = Math.min(
-        Math.floor(infoSection.clientWidth / 3) - 10,
-        BLOCK_SIZE * 3.5
-    );
+    const holdNextCanvasSize = Math.floor(Math.min(
+        (infoSection.clientWidth / 3) - 10,
+        BLOCK_SIZE * 3
+    ));
     nextBlockCanvas.width = holdNextCanvasSize;
     nextBlockCanvas.height = holdNextCanvasSize;
     holdBlockCanvas.width = holdNextCanvasSize;
     holdBlockCanvas.height = holdNextCanvasSize;
     
-    TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.5;
-    TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 0.5;
-    TAP_THRESHOLD = BLOCK_SIZE * 0.8;
+    TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
+    TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
+    TAP_THRESHOLD = BLOCK_SIZE * 0.5;
 
     if (!gameOver && !isPaused) {
         draw();
@@ -187,11 +187,14 @@ function initDOMAndEventListeners() {
     comboDisplay = document.getElementById('combo-display');
     startButton = document.getElementById('start-button');
     restartButton = document.getElementById('restart-button');
+    continueButton = document.getElementById('continue-button');
     resumeButton = document.getElementById('resume-button');
     pauseButton = document.getElementById('pause-button');
     restartButtonInline = document.getElementById('restart-button-inline');
     assistsButton = document.getElementById('assist-button');
     assistsCountDisplay = document.getElementById('assists-count');
+    assistsPanel = document.getElementById('assists-panel');
+    assistsDisplay = document.getElementById('assists-display');
     bestScoreDisplay = document.getElementById('best-score-display');
     levelDisplay = document.getElementById('level-display');
     themeSwitcher = document.getElementById('theme-switcher');
@@ -212,6 +215,9 @@ function initDOMAndEventListeners() {
     restartButton.addEventListener('click', () => {
         gameOverScreen.style.display = 'none';
         startScreen.style.display = 'flex';
+    });
+    continueButton.addEventListener('click', () => {
+        continueGame();
     });
     pauseButton.addEventListener('click', togglePause);
     resumeButton.addEventListener('click', togglePause);
@@ -238,13 +244,7 @@ function initDOMAndEventListeners() {
         });
     });
 
-    resizeObserver = new ResizeObserver(entries => {
-        for (let entry of entries) {
-            setCanvasSize();
-        }
-    });
-    resizeObserver.observe(document.getElementById('main-game-wrapper'));
-
+    window.addEventListener('resize', setCanvasSize);
     setCanvasSize();
     
     const storedBestScore = localStorage.getItem('bestScore');
@@ -530,7 +530,7 @@ function drawNextPiece() {
     for (let r = 0; r < nextShape.length; r++) {
         for (let c = 0; c < nextShape[r].length; c++) {
             if (nextShape[r][c]) {
-                drawBlock(c, r, nextColor, context, nextBlockSize);
+                drawBlock(c + offsetX/nextBlockSize, r + offsetY/nextBlockSize, nextColor, context, nextBlockSize);
             }
         }
     }
@@ -563,7 +563,7 @@ function drawHeldPiece() {
     for (let r = 0; r < heldShape.length; r++) {
         for (let c = 0; c < heldShape[r].length; c++) {
             if (heldShape[r][c]) {
-                drawBlock(c, r, heldColor, context, heldBlockSize);
+                drawBlock(c + offsetX/heldBlockSize, r + offsetY/heldBlockSize, heldColor, context, heldBlockSize);
             }
         }
     }
@@ -668,6 +668,7 @@ function dropPiece() {
         score += rowsDropped * 2;
     }
     scoreDisplay.textContent = `Score: ${score}`;
+    screenShake(); // Treskanje ekrana samo prilikom hard drop-a
     mergePiece();
     dropSound.currentTime = 0;
     dropSound.play().catch(e => console.error("Greška pri puštanju dropSounda:", e));
@@ -690,7 +691,6 @@ function mergePiece() {
     }
     canHold = true;
     checkLines();
-    screenShake();
 }
 
 function isTSpin() {
@@ -982,7 +982,31 @@ function endGame(isSprintWin = false) {
     gameOverScreen.style.display = 'flex';
     pauseButton.style.display = 'none';
     restartButtonInline.style.display = 'none';
-    assistsButton.style.display = 'none';
+    
+    restartButton.style.display = 'block';
+    
+    if (assists > 0) {
+        continueButton.style.display = 'block';
+    } else {
+        continueButton.style.display = 'none';
+    }
+}
+
+function continueGame() {
+    assists--;
+    localStorage.setItem('assists', assists);
+    updateAssistsDisplay();
+    
+    gameOverScreen.style.display = 'none';
+    
+    gameOver = false;
+    isPaused = false;
+    
+    pauseButton.style.display = 'block';
+    restartButtonInline.style.display = 'block';
+    
+    playBackgroundMusic();
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 function startGame() {
@@ -1157,9 +1181,11 @@ function updateAssistsDisplay() {
     if (assists > 0) {
         assistsButton.style.opacity = 1;
         assistsButton.style.cursor = 'pointer';
+        assistsDisplay.style.color = 'var(--main-color)';
     } else {
         assistsButton.style.opacity = 0.5;
         assistsButton.style.cursor = 'not-allowed';
+        assistsDisplay.style.color = '#777';
     }
 }
 
