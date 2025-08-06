@@ -4,209 +4,141 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PROJEKAT PUZZLE</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
+            --main-bg-color: #1a1a2e;
+            --secondary-bg-color: #000;
             --main-color: #61dafb;
+            --text-color: #fff;
+            --border-color: #444;
+            --button-bg: #61dafb;
+            --button-text: #1a1a2e;
+            --game-stats-bg: rgba(0, 0, 0, 0.4);
+            --overlay-bg: rgba(0, 0, 0, 0.8);
         }
 
-        body {
-            font-family: 'Press Start 2P', cursive;
-            background: linear-gradient(to bottom right, #1a1a2e, #16213e, #0f3460);
-            color: #e0e0e0;
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            color: var(--text-color);
+            background: linear-gradient(to bottom right, var(--main-bg-color), #16213e, #0f3460);
+            background-attachment: fixed;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
+            flex-direction: column;
             overflow: hidden;
-            padding: 5px;
-            box-sizing: border-box;
-            font-size: 14px;
+            text-align: center;
         }
 
         #main-game-wrapper {
-            background-color: #2c313a;
-            border: 5px solid var(--main-color);
-            border-radius: 15px;
-            box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            max-width: 100%;
+            max-height: 100vh;
             padding: 10px;
-            width: 95vw;
-            max-width: 500px;
             box-sizing: border-box;
-            max-height: 98vh;
-            overflow: hidden;
-            position: relative;
+            gap: 10px;
+        }
+        
+        #gameCanvas {
+            border: 2px solid var(--main-color);
+            box-shadow: 0 0 10px var(--main-color);
+            background: var(--secondary-bg-color);
         }
 
         #info-section {
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            justify-content: space-between;
             width: 100%;
-            padding: 0 5px;
+            gap: 10px;
+            font-size: 0.9em;
+            padding: 0 10px;
             box-sizing: border-box;
-            gap: 5px;
-            flex-wrap: wrap;
         }
-        
-        #game-stats, #next-block-container {
-            flex: 1;
-            background-color: #1a1a2e;
-            border: 2px solid var(--main-color);
-            border-radius: 8px;
-            box-shadow: inset 0 0 8px rgba(97, 218, 251, 0.3);
-            white-space: nowrap;
+
+        #game-stats {
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-            padding: 5px 8px;
             gap: 5px;
+            text-align: left;
+            background: var(--game-stats-bg);
+            padding: 8px;
+            border-radius: 5px;
             min-width: 100px;
         }
         
-        #game-stats {
-            gap: 2px;
-            flex-basis: 30%;
+        #game-stats > div {
+            padding: 2px;
         }
 
-        #next-block-container {
-            font-size: 0.7em;
-            gap: 3px;
-            flex-basis: 30%;
-        }
-
-        #score-display, #assists-container, #best-score-display, #level-display {
-            width: 100%;
+        #next-block-container, #hold-block-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--game-stats-bg);
+            padding: 8px;
+            border-radius: 5px;
             text-align: center;
-            font-size: 0.8em;
-            border: none;
-            background: none;
-            padding: 0;
         }
         
-        #best-score-display {
-            font-size: 0.7em;
-            color: #ccc;
+        #nextBlockCanvas, #holdBlockCanvas {
+            border: 1px solid var(--border-color);
+            background-color: var(--secondary-bg-color);
             margin-top: 5px;
         }
-        
-        #level-display {
-            font-size: 0.7em;
-            color: #fff;
-        }
 
-        #nextBlockCanvas {
-            background-color: #0d0d1a;
-            border: 1px solid #4fa3d1;
-            border-radius: 5px;
-            width: 60px;
-            height: 60px;
-        }
-        
-        .canvas-container {
-            position: relative;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        canvas#gameCanvas {
-            background-color: #000;
-            border: 3px solid var(--main-color);
-            box-shadow: 0 0 15px rgba(97, 218, 251, 0.7);
-            display: block;
-            border-radius: 5px;
-            width: 100%;
-            height: auto;
-            max-width: 450px;
-            max-height: 70vh;
-            touch-action: none;
-        }
-
-        #pause-button {
-            width: 100%;
-            max-width: 450px;
-            font-size: 0.8em;
-            padding: 8px;
-            margin-top: 8px;
-            background-color: #e63946;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            font-family: 'Press Start 2P', cursive;
-        }
-        #pause-button:hover { background-color: #c72c38; }
-        #pause-button:active { transform: translateY(1px); }
-
-        #controls {
-            display: none;
-        }
-        
         .overlay {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
+            background-color: var(--overlay-bg);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            text-align: center;
-            gap: 20px;
             z-index: 1000;
-            font-family: 'Press Start 2P', cursive;
-            padding: 15px;
-            box-sizing: border-box;
         }
 
-        .overlay h1 {
-            font-size: 1.8em;
+        h1 {
             color: var(--main-color);
-            text-shadow: 0 0 10px rgba(97, 218, 251, 0.8);
-            margin-bottom: 5px;
-        }
-        .overlay p {
-            font-size: 1em;
-            margin-bottom: 15px;
+            font-size: 2.5em;
+            margin-bottom: 20px;
         }
 
-        .overlay .final-score {
-            font-size: 1.5em;
-            color: #e0e0e0;
-            margin-bottom: 15px;
+        .overlay p, .overlay div {
+            margin: 10px 0;
         }
 
-        .overlay button {
-            padding: 15px 30px;
-            font-size: 1.1em;
-            background-color: #e63946;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
+        .overlay button, #pause-button {
+            padding: 10px 20px;
+            font-size: 1.2em;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            box-shadow: 0 5px 8px rgba(0, 0, 0, 0.4);
-            font-family: 'Press Start 2P', cursive;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            transition: background-color 0.3s;
+            margin-top: 20px;
         }
 
-        .overlay button:hover {
-            background-color: #c72c38;
-            transform: translateY(-3px);
+        .overlay button:hover, #pause-button:hover {
+            background-color: var(--text-color);
         }
-        .overlay button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        
+        #pause-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: none;
         }
 
         #combo-display {
@@ -215,73 +147,60 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 2.5em;
-            color: #fff;
-            text-shadow: 0 0 10px var(--main-color);
-            text-align: center;
-            z-index: 10;
-            animation: fadeOut 1.5s forwards;
+            color: var(--main-color);
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 999;
             display: none;
-        }
-        @keyframes fadeOut {
-            from {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            to {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(1.5);
-            }
+            white-space: nowrap;
         }
 
         #assists-container {
-            position: relative;
-            cursor: pointer;
-            user-select: none;
-            padding: 5px 0;
-            border: 2px dashed rgba(97, 218, 251, 0.3);
-            border-radius: 5px;
-        }
-        #assists-container:hover {
-            background-color: rgba(79, 163, 209, 0.2);
-        }
-        #assists-container:active {
-            transform: translateY(1px);
-        }
-        #assists-container span {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-left: 5px;
-            display: inline-block;
-        }
-        .bomb-icon {
-            font-size: 1.5em;
-            display: inline-block;
-        }
-
-        #theme-switcher-container {
-            flex-basis: 100%;
             display: flex;
-            flex-direction: column;
             align-items: center;
             gap: 5px;
-        }
-
-        #theme-switcher {
-            width: 100%;
-            max-width: 200px;
-            padding: 8px;
-            background-color: #1a1a2e;
-            color: var(--main-color);
-            border: 2px solid var(--main-color);
-            border-radius: 8px;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.8em;
-            appearance: none;
             cursor: pointer;
         }
-        #theme-switcher option {
-            background-color: #1a1a2e;
-            color: var(--main-color);
+
+        .bomb-icon {
+            font-size: 1.2em;
+        }
+        
+        #mode-selector-container, #theme-switcher-container {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        select {
+            padding: 5px;
+            font-size: 1em;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background: var(--game-stats-bg);
+            color: var(--text-color);
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .overlay button, #pause-button {
+                font-size: 1em;
+                padding: 8px 16px;
+            }
+
+            #pause-button {
+                bottom: 10px;
+                right: 10px;
+            }
+
+            #combo-display {
+                font-size: 1.5em;
+            }
         }
     </style>
 </head>
@@ -292,46 +211,62 @@
                 <div id="score-display">Score: 0</div>
                 <div id="best-score-display">BEST: 0</div>
                 <div id="level-display">Level: 1</div>
+                <div id="sprint-timer" style="display: none;">TIME: 0.00s</div>
                 <div id="assists-container">
                     <span class="bomb-icon">💣</span><span id="assists-count">0</span>
                 </div>
             </div>
+            
+            <div id="hold-block-container">
+                Hold:
+                <canvas id="holdBlockCanvas" width="80" height="80"></canvas>
+            </div>
+
             <div id="next-block-container">
                 Next:
-                <canvas id="nextBlockCanvas" width="80" height="80"></canvas>
+                <canvas id="nextBlockCanvas" width="80" height="240"></canvas>
             </div>
         </div>
         
-        <div class="canvas-container">
-            <canvas id="gameCanvas"></canvas>
-            <div id="combo-display"></div>
-        </div>
-        
+        <canvas id="gameCanvas"></canvas>
         <button id="pause-button">PAUSE</button>
+        <div id="combo-display"></div>
     </div>
 
     <div id="start-screen" class="overlay">
         <h1>PROJEKAT PUZZLE</h1>
+        <div id="mode-selector-container">
+            <label for="mode-selector" style="font-size: 0.8em;">Mod igre:</label>
+            <select id="mode-selector">
+                <option value="classic">Classic Mode</option>
+                <option value="sprint">Sprint 40</option>
+                <option value="zen">Zen Mode</option>
+            </select>
+        </div>
         <div id="theme-switcher-container">
-            <label for="theme-switcher" style="font-size: 0.8em;">Theme:</label>
+            <label for="theme-switcher" style="font-size: 0.8em;">Tema:</label>
             <select id="theme-switcher">
                 <option value="classic">Classic</option>
                 <option value="dark">Dark</option>
                 <option value="forest">Forest</option>
+                <option value="modern">Modern</option>
             </select>
         </div>
         <p>Pritisni dugme da započneš igru!</p>
         <button id="start-button">Pokreni Igru</button>
     </div>
+    
+    <div id="start-countdown" class="overlay" style="display:none; font-size: 4em; color: var(--main-color);">3</div>
 
     <div id="game-over-screen" class="overlay" style="display: none;">
-        <h1>GAME OVER!</h1>
-        <div id="final-score" class="final-score">Your Score: 0</div>
-        <button id="restart-button">Restart Game</button>
+        <h1 id="game-over-title">GAME OVER!</h1>
+        <div id="final-score" class="final-score">Tvoj skor: 0</div>
+        <div id="final-time" class="final-score"></div>
+        <button id="restart-button">Restartuj Igru</button>
     </div>
 
     <div id="pause-screen" class="overlay" style="display: none;">
-        <h1>PAUSED</h1>
+        <h1>PAUZIRANO</h1>
         <button id="resume-button">NASTAVI IGRU</button>
     </div>
 
@@ -339,6 +274,10 @@
     <audio id="clearSound" src="sounds/clear.wav" preload="auto"></audio>
     <audio id="rotateSound" src="sounds/rotate.wav" preload="auto"></audio>
     <audio id="gameOverSound" src="sounds/gameover.wav" preload="auto"></audio>
+    <audio id="holdSound" src="sounds/hold.wav" preload="auto"></audio>
+    <audio id="tSpinSound" src="sounds/tspin.wav" preload="auto"></audio>
+    <audio id="tetrisSound" src="sounds/tetris.wav" preload="auto"></audio>
+    <audio id="backgroundMusic" src="sounds/music.mp3" preload="auto"></audio>
 
     <script src="script.js"></script>
 </body>
