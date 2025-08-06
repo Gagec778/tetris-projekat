@@ -64,7 +64,7 @@ let COLORS;
 let currentTheme;
 
 let dropSound, clearSound, rotateSound, gameOverSound;
-let startScreen, gameOverScreen, scoreDisplay, finalScoreDisplay, comboDisplay, startButton, restartButton, themeSwitcher, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay;
 
 function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
@@ -113,11 +113,13 @@ function initDOMAndEventListeners() {
 
     startScreen = document.getElementById('start-screen');
     gameOverScreen = document.getElementById('game-over-screen');
+    pauseScreen = document.getElementById('pause-screen'); // Novi pause ekran
     scoreDisplay = document.getElementById('score-display');
     finalScoreDisplay = document.getElementById('final-score');
     comboDisplay = document.getElementById('combo-display');
     startButton = document.getElementById('start-button');
     restartButton = document.getElementById('restart-button');
+    resumeButton = document.getElementById('resume-button'); // Novo resume dugme
     pauseButton = document.getElementById('pause-button');
     assistsContainer = document.getElementById('assists-container');
     assistsCountDisplay = document.getElementById('assists-count');
@@ -128,6 +130,7 @@ function initDOMAndEventListeners() {
     startButton.addEventListener('click', startGame);
     restartButton.addEventListener('click', startGame);
     pauseButton.addEventListener('click', togglePause);
+    resumeButton.addEventListener('click', togglePause); // Nova kontrola za nastavak igre
     themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
     
     document.addEventListener('keydown', handleKeydown);
@@ -165,7 +168,10 @@ function initDOMAndEventListeners() {
     let lastTouchY = 0;
     let touchMoved = false;
     let lastPieceMoveTime = 0;
-    const moveDelay = 100;
+    
+    // Smanjeni parametri za osetljivije kontrole na dodir
+    const moveDelay = 80;
+    const touchMoveThreshold = BLOCK_SIZE * 0.3;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -187,7 +193,6 @@ function initDOMAndEventListeners() {
         const currentY = e.touches[0].clientY;
         const dx = currentX - lastTouchX;
         const dy = currentY - lastTouchY;
-        const touchMoveThreshold = BLOCK_SIZE * 0.5;
         
         if (Math.abs(dx) > touchMoveThreshold && currentTime - lastPieceMoveTime > moveDelay) {
             if (dx > 0) {
@@ -223,15 +228,41 @@ function initDOMAndEventListeners() {
         const dy = touchEndY - touchStartY;
         const tapThreshold = 10;
         
-        if (dy > BLOCK_SIZE * 1.5 && Math.abs(dx) < BLOCK_SIZE) {
+        // Nova logika za "hard drop" na dodir ghost piece-a
+        if (isTapOnGhostPiece(touchEndX, touchEndY)) {
             dropPiece();
-        }
-        else if (!touchMoved && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
+        } else if (!touchMoved && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
             rotatePiece();
         }
         
         draw();
     });
+}
+
+function isTapOnGhostPiece(touchX, touchY) {
+    if (!currentPiece) return false;
+
+    let ghostY = currentPiece.y;
+    while (isValidMove(0, 1, currentPiece.shape, ghostY)) {
+        ghostY++;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const x = (touchX - rect.left) / BLOCK_SIZE;
+    const y = (touchY - rect.top) / BLOCK_SIZE;
+
+    for (let r = 0; r < currentPiece.shape.length; r++) {
+        for (let c = 0; c < currentPiece.shape[r].length; c++) {
+            if (currentPiece.shape[r][c]) {
+                const blockX = currentPiece.x + c;
+                const blockY = ghostY + r;
+                if (x >= blockX && x < blockX + 1 && y >= blockY && y < blockY + 1) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 function initBoard() {
@@ -491,7 +522,7 @@ function mergePiece() {
                     return;
                 }
                 if (board[currentPiece.y + r]) {
-                   board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color;
+                    board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color;
                 }
             }
         }
@@ -669,11 +700,18 @@ function animateLineClear(timestamp) {
     
     if (progress >= 1) {
         isAnimating = false;
+        
         linesToClear.sort((a, b) => b - a);
+        const linesClearedCount = linesToClear.length;
+
         for (const r of linesToClear) {
             board.splice(r, 1);
+        }
+
+        for (let i = 0; i < linesClearedCount; i++) {
             board.unshift(Array(COLS).fill(0));
         }
+
         linesToClear = [];
         
         if (isBoardEmpty()) {
@@ -702,7 +740,7 @@ function animateLineClear(timestamp) {
         }
     }
     ctx.globalAlpha = 1.0;
-    drawCurrentPiece(); // Ovo će crtati trenutni blok preko svega
+    drawCurrentPiece();
 
     requestAnimationFrame(animateLineClear);
 }
@@ -756,6 +794,7 @@ function startGame() {
     
     startScreen.style.display = 'none';
     gameOverScreen.style.display = 'none';
+    pauseScreen.style.display = 'none'; // Uveravamo se da je pauza ekran sakriven
     pauseButton.style.display = 'block';
     
     initBoard();
@@ -790,8 +829,10 @@ function togglePause() {
     isPaused = !isPaused;
     if (isPaused) {
         cancelAnimationFrame(animationFrameId);
-        pauseButton.textContent = "RESUME";
+        pauseScreen.style.display = 'flex'; // Prikazuje se novi pauza ekran
+        pauseButton.textContent = "RESUME"; // Ovo dugme ostaje, ali mu se menja tekst
     } else {
+        pauseScreen.style.display = 'none'; // Sakriva se pauza ekran
         animationFrameId = requestAnimationFrame(gameLoop);
         pauseButton.textContent = "PAUSE";
     }
