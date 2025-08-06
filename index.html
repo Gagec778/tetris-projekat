@@ -51,6 +51,7 @@
             padding: 0 5px;
             box-sizing: border-box;
             gap: 5px;
+            flex-wrap: wrap;
         }
         
         #game-stats, #next-block-container {
@@ -66,10 +67,18 @@
             align-items: center;
             padding: 5px 8px;
             gap: 5px;
+            min-width: 100px;
         }
-
+        
         #game-stats {
             gap: 2px;
+            flex-basis: 30%;
+        }
+
+        #next-block-container {
+            font-size: 0.7em;
+            gap: 3px;
+            flex-basis: 30%;
         }
 
         #score-display, #assists-container, #best-score-display {
@@ -85,11 +94,6 @@
             font-size: 0.7em;
             color: #ccc;
             margin-top: 5px;
-        }
-
-        #next-block-container {
-            font-size: 0.7em;
-            gap: 3px;
         }
 
         #nextBlockCanvas {
@@ -239,6 +243,32 @@
             font-size: 1.5em;
             display: inline-block;
         }
+
+        #theme-switcher-container {
+            flex-basis: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #theme-switcher {
+            width: 100%;
+            max-width: 200px;
+            padding: 8px;
+            background-color: #1a1a2e;
+            color: var(--main-color);
+            border: 2px solid var(--main-color);
+            border-radius: 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8em;
+            appearance: none;
+            cursor: pointer;
+        }
+        #theme-switcher option {
+            background-color: #1a1a2e;
+            color: var(--main-color);
+        }
     </style>
 </head>
 <body>
@@ -254,6 +284,14 @@
             <div id="next-block-container">
                 Next:
                 <canvas id="nextBlockCanvas" width="80" height="80"></canvas>
+            </div>
+            <div id="theme-switcher-container">
+                <label for="theme-switcher" style="font-size: 0.8em;">Theme:</label>
+                <select id="theme-switcher">
+                    <option value="classic">Classic</option>
+                    <option value="dark">Dark</option>
+                    <option value="forest">Forest</option>
+                </select>
             </div>
         </div>
         
