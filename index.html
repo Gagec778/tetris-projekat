@@ -108,6 +108,14 @@
             width: 60px;
             height: 60px;
         }
+        
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
         canvas#gameCanvas {
             background-color: #000;
@@ -212,7 +220,7 @@
             text-align: center;
             z-index: 10;
             animation: fadeOut 1.5s forwards;
-            display: none; /* Dodeljeno display: none; jer se prikazuje preko JS */
+            display: none;
         }
         @keyframes fadeOut {
             from {
@@ -294,9 +302,12 @@
             </div>
         </div>
         
-        <canvas id="gameCanvas"></canvas>
+        <div class="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+            <div id="combo-display"></div>
+        </div>
+        
         <button id="pause-button">PAUSE</button>
-        <div id="combo-display"></div>
     </div>
 
     <div id="start-screen" class="overlay">
