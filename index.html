@@ -5,284 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PROJEKAT PUZZLE</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --main-color: #61dafb;
-        }
-
-        body {
-            font-family: 'Press Start 2P', cursive;
-            background: linear-gradient(to bottom right, #1a1a2e, #16213e, #0f3460);
-            color: #e0e0e0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            padding: 5px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-
-        #main-game-wrapper {
-            background-color: #2c313a;
-            border: 5px solid var(--main-color);
-            border-radius: 15px;
-            box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            width: 95vw;
-            max-width: 500px;
-            box-sizing: border-box;
-            max-height: 98vh;
-            overflow: hidden;
-            position: relative;
-        }
-
-        #info-section {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            width: 100%;
-            padding: 0 5px;
-            box-sizing: border-box;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-        
-        #game-stats, #next-block-container, #hold-block-container {
-            flex: 1;
-            background-color: #1a1a2e;
-            border: 2px solid var(--main-color);
-            border-radius: 8px;
-            box-shadow: inset 0 0 8px rgba(97, 218, 251, 0.3);
-            white-space: nowrap;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-            padding: 5px 8px;
-            gap: 5px;
-            min-width: 100px;
-        }
-        
-        #game-stats {
-            gap: 2px;
-            flex-basis: 30%;
-        }
-
-        #next-block-container, #hold-block-container {
-            font-size: 0.7em;
-            gap: 3px;
-            flex-basis: 30%;
-        }
-
-        #score-display, #assists-container, #best-score-display, #level-display, #sprint-timer {
-            width: 100%;
-            text-align: center;
-            font-size: 0.8em;
-            border: none;
-            background: none;
-            padding: 0;
-        }
-        
-        #best-score-display {
-            font-size: 0.7em;
-            color: #ccc;
-            margin-top: 5px;
-        }
-        
-        #level-display {
-            font-size: 0.7em;
-            color: #fff;
-        }
-        
-        #sprint-timer {
-            font-size: 0.7em;
-            color: #ffcc00;
-        }
-
-        #nextBlockCanvas, #holdBlockCanvas {
-            background-color: #0d0d1a;
-            border: 1px solid #4fa3d1;
-            border-radius: 5px;
-            width: 60px;
-            height: 60px;
-        }
-
-        canvas#gameCanvas {
-            background-color: #000;
-            border: 3px solid var(--main-color);
-            box-shadow: 0 0 15px rgba(97, 218, 251, 0.7);
-            display: block;
-            border-radius: 5px;
-            width: 100%;
-            height: auto;
-            max-width: 450px;
-            max-height: 70vh;
-            touch-action: none;
-        }
-
-        #pause-button {
-            width: 100%;
-            max-width: 450px;
-            font-size: 0.8em;
-            padding: 8px;
-            margin-top: 8px;
-            background-color: #e63946;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            font-family: 'Press Start 2P', cursive;
-        }
-        #pause-button:hover { background-color: #c72c38; }
-        #pause-button:active { transform: translateY(1px); }
-
-        #controls {
-            display: none;
-        }
-        
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            gap: 20px;
-            z-index: 1000;
-            font-family: 'Press Start 2P', cursive;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-
-        .overlay h1 {
-            font-size: 1.8em;
-            color: var(--main-color);
-            text-shadow: 0 0 10px rgba(97, 218, 251, 0.8);
-            margin-bottom: 5px;
-        }
-        .overlay p {
-            font-size: 1em;
-            margin-bottom: 15px;
-        }
-
-        .overlay .final-score {
-            font-size: 1.5em;
-            color: #e0e0e0;
-            margin-bottom: 15px;
-        }
-
-        .overlay button, #start-screen select {
-            padding: 15px 30px;
-            font-size: 1.1em;
-            background-color: #e63946;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            box-shadow: 0 5px 8px rgba(0, 0, 0, 0.4);
-            font-family: 'Press Start 2P', cursive;
-        }
-
-        .overlay button:hover {
-            background-color: #c72c38;
-            transform: translateY(-3px);
-        }
-        .overlay button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-        
-        #start-screen select {
-            padding: 8px 16px;
-            font-size: 0.8em;
-            color: var(--main-color);
-            background-color: #1a1a2e;
-            border: 2px solid var(--main-color);
-            appearance: none;
-        }
-        #start-screen select option {
-            background-color: #1a1a2e;
-            color: var(--main-color);
-        }
-
-        #combo-display {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2.5em;
-            color: #fff;
-            text-shadow: 0 0 10px var(--main-color);
-            text-align: center;
-            z-index: 10;
-            animation: fadeOut 1.5s forwards;
-            display: none;
-        }
-        @keyframes fadeOut {
-            from {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            to {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(1.5);
-            }
-        }
-
-        #assists-container {
-            position: relative;
-            cursor: pointer;
-            user-select: none;
-            padding: 5px 0;
-            border: 2px dashed rgba(97, 218, 251, 0.3);
-            border-radius: 5px;
-        }
-        #assists-container:hover {
-            background-color: rgba(79, 163, 209, 0.2);
-        }
-        #assists-container:active {
-            transform: translateY(1px);
-        }
-        #assists-container span {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-left: 5px;
-            display: inline-block;
-        }
-        .bomb-icon {
-            font-size: 1.5em;
-            display: inline-block;
-        }
-
-        #theme-switcher-container, #mode-selector-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            width: 100%;
-        }
-
-        @media (max-width: 400px) {
-            body { font-size: 12px; }
-            #main-game-wrapper { padding: 5px; }
-            .overlay h1 { font-size: 1.5em; }
-            .overlay button, #start-screen select { padding: 10px 20px; font-size: 1em; }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="main-game-wrapper">
@@ -299,12 +22,12 @@
             
             <div id="hold-block-container">
                 Hold:
-                <canvas id="holdBlockCanvas" width="80" height="80"></canvas>
+                <canvas id="holdBlockCanvas"></canvas>
             </div>
             
             <div id="next-block-container">
                 Next:
-                <canvas id="nextBlockCanvas" width="80" height="80"></canvas>
+                <canvas id="nextBlockCanvas"></canvas>
             </div>
         </div>
         
@@ -338,7 +61,7 @@
     <div id="start-countdown" class="overlay" style="display:none; font-size: 4em; color: var(--main-color);">3</div>
 
     <div id="game-over-screen" class="overlay" style="display: none;">
-        <h1>GAME OVER!</h1>
+        <h1 id="game-over-title">GAME OVER!</h1>
         <div id="final-score" class="final-score">Your Score: 0</div>
         <div id="final-time" class="final-score"></div>
         <button id="restart-button">Restart Game</button>
@@ -348,7 +71,7 @@
         <h1>PAUSED</h1>
         <button id="resume-button">NASTAVI IGRU</button>
     </div>
-
+    
     <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
     <audio id="clearSound" src="sounds/clear.wav" preload="auto"></audio>
     <audio id="rotateSound" src="sounds/rotate.wav" preload="auto"></audio>
