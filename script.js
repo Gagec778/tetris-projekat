@@ -90,7 +90,13 @@ function setCanvasSize() {
 
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
-    
+
+    // Centriranje canvasa
+    const canvasContainer = document.querySelector('.canvas-container');
+    canvasContainer.style.width = `${canvas.width}px`;
+    canvasContainer.style.height = `${canvas.height}px`;
+
+    // Podešavanje veličine next bloka
     const nextBlockContainerSize = nextBlockCanvas.parentElement.clientWidth;
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
@@ -171,17 +177,13 @@ function initDOMAndEventListeners() {
     let lastTouchX = 0;
     
     const tapThreshold = 20;
-    let touchMoveThreshold = 0;
-
+    
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         lastTouchX = e.touches[0].clientX;
-        
-        // Dinamički postavljamo prag osetljivosti
-        touchMoveThreshold = BLOCK_SIZE * 0.4;
     });
 
     canvas.addEventListener('touchmove', e => {
@@ -189,6 +191,9 @@ function initDOMAndEventListeners() {
         if (gameOver || isPaused || !currentPiece) return;
         
         const dx = e.touches[0].clientX - lastTouchX;
+        
+        // Dinamički prag osetljivosti na osnovu širine igrice
+        const touchMoveThreshold = canvas.width * 0.05;
         
         if (Math.abs(dx) > touchMoveThreshold) {
             if (dx > 0) {
