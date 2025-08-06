@@ -10,41 +10,46 @@ const THEMES = {
         boardBackground: '#000',
         lineColor: '#61dafb',
         blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000'],
-        flashColor: '#FFFFFF'
+        flashColor: '#FFFFFF',
+        backgroundImage: null
     },
     'dark': {
         background: '#0d0d0d',
         boardBackground: '#1c1c1c',
         lineColor: '#999999',
         blockColors: ['#00FFFF', '#3366FF', '#FF9933', '#FFFF00', '#33CC66', '#9966CC', '#FF3333'],
-        flashColor: '#CCCCCC'
+        flashColor: '#CCCCCC',
+        backgroundImage: null
     },
     'forest': {
         background: '#0a1d0d',
         boardBackground: '#263a29',
         lineColor: '#b4cf66',
         blockColors: ['#66FFB2', '#339966', '#FF9900', '#FFFF66', '#33CC66', '#9966CC', '#FF3333'],
-        flashColor: '#E0FF8C'
+        flashColor: '#E0FF8C',
+        backgroundImage: 'url("images/forest-bg.jpg")'
     },
     'modern': {
         background: '#121212',
         boardBackground: '#1e1e1e',
         lineColor: '#bb86fc',
         blockColors: ['#03dac6', '#cf6679', '#f3a469', '#f0e68c', '#aaff00', '#8c5eff', '#e74c3c'],
-        flashColor: '#ffffff'
+        flashColor: '#ffffff',
+        backgroundImage: 'url("images/modern-bg.jpg")'
     },
     'lava': {
         background: '#220000',
         boardBackground: '#440000',
         lineColor: '#FF4500',
         blockColors: ['#FFD700', '#FF4500', '#FF1493', '#FF6347', '#FF8C00', '#DC143C', '#B22222'],
-        flashColor: '#FF6347'
+        flashColor: '#FF6347',
+        backgroundImage: 'url("images/lava-bg.jpg")'
     }
 };
 
 const T_SHAPE_INDEX = 5;
 
-let canvas, ctx, nextBlockCanvas, nextBlockCtx;
+let canvas, ctx, nextBlockCanvas, nextBlockCtx, holdBlockCanvas, holdBlockCtx;
 let COLS, ROWS, BLOCK_SIZE;
 
 const TETROMINOES = [
@@ -58,7 +63,8 @@ const TETROMINOES = [
 ];
 
 let board = [];
-let currentPiece, nextPiece;
+let currentPiece, nextPiece, heldPiece = null;
+let canHold = true;
 let score = 0;
 let gameOver = true;
 let isPaused = false;
@@ -72,25 +78,28 @@ let level = 1;
 let linesClearedThisLevel = 0;
 let linesClearedTotal = 0;
 let startTime;
-let sprintTimer;
-let ultraTimer;
-let ultraTimeLimit = 120; // 2 minuta
+let ultraTimeLimit = 120;
 
 let lastDropTime = 0;
 let animationFrameId;
 let currentPieceIndex, nextPieceIndex;
+let heldPieceIndex = null;
 let COLORS;
 let currentTheme;
 let currentMode = 'classic';
 let resizeObserver;
+let keyBindings;
 
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsButton, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, restartButtonInline;
 let backgroundMusicPlaying = false;
+let controlsModal, controlsButton, closeControlsModal, controlInputs;
+let backgroundImageElement;
 
-// Pragovi za osetljivost dodira
-const TOUCH_MOVE_THRESHOLD = 5; // Smanjen prag
-const TAP_THRESHOLD = 10; // Smanjen prag
+// Touch sensitivity thresholds, now relative to block size
+let TOUCH_MOVE_THRESHOLD_X = 0;
+let TOUCH_MOVE_THRESHOLD_Y = 0;
+let TAP_THRESHOLD = 0;
 
 function playBackgroundMusic() {
     if (!backgroundMusicPlaying) {
@@ -114,32 +123,39 @@ function setCanvasSize() {
     const style = document.documentElement.style;
 
     const gameAspectRatio = COLS / ROWS;
-    const padding = 20;
 
-    const availableWidth = mainGameWrapper.clientWidth - padding;
-    const availableHeight = mainGameWrapper.clientHeight - infoSection.offsetHeight - gameControls.offsetHeight - padding;
+    const availableWidth = mainGameWrapper.clientWidth - 20;
+    const availableHeight = mainGameWrapper.clientHeight - infoSection.offsetHeight - gameControls.offsetHeight - 20;
     
     let tempBlockSizeWidth = Math.floor(availableWidth / COLS);
     let tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
 
-    let newBlockSize = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
+    BLOCK_SIZE = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
     
-    newBlockSize = Math.max(10, Math.min(40, newBlockSize));
+    BLOCK_SIZE = Math.max(10, Math.min(40, BLOCK_SIZE));
 
-    BLOCK_SIZE = newBlockSize;
-    
     style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
     gameCanvas.width = COLS * BLOCK_SIZE;
     gameCanvas.height = ROWS * BLOCK_SIZE;
     
-    const nextContainerWidth = Math.floor(infoSection.clientWidth / 2) - 10;
-    nextBlockCanvas.width = nextContainerWidth;
-    nextBlockCanvas.height = nextContainerWidth;
+    const holdNextCanvasSize = Math.min(
+        Math.floor(infoSection.clientWidth / 3) - 10,
+        BLOCK_SIZE * 3.5
+    );
+    nextBlockCanvas.width = holdNextCanvasSize;
+    nextBlockCanvas.height = holdNextCanvasSize;
+    holdBlockCanvas.width = holdNextCanvasSize;
+    holdBlockCanvas.height = holdNextCanvasSize;
+    
+    TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.5;
+    TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 0.5;
+    TAP_THRESHOLD = BLOCK_SIZE * 0.8;
 
     if (!gameOver && !isPaused) {
         draw();
         drawNextPiece();
+        drawHeldPiece();
     }
 }
 
@@ -148,6 +164,8 @@ function initDOMAndEventListeners() {
     ctx = canvas.getContext('2d');
     nextBlockCanvas = document.getElementById('nextBlockCanvas');
     nextBlockCtx = nextBlockCanvas.getContext('2d');
+    holdBlockCanvas = document.getElementById('holdBlockCanvas');
+    holdBlockCtx = holdBlockCanvas.getContext('2d');
     
     COLS = 10;
     ROWS = 20;
@@ -172,7 +190,7 @@ function initDOMAndEventListeners() {
     resumeButton = document.getElementById('resume-button');
     pauseButton = document.getElementById('pause-button');
     restartButtonInline = document.getElementById('restart-button-inline');
-    assistsContainer = document.getElementById('assists-container');
+    assistsButton = document.getElementById('assist-button');
     assistsCountDisplay = document.getElementById('assists-count');
     bestScoreDisplay = document.getElementById('best-score-display');
     levelDisplay = document.getElementById('level-display');
@@ -181,6 +199,11 @@ function initDOMAndEventListeners() {
     sprintTimerDisplay = document.getElementById('sprint-timer');
     ultraTimerDisplay = document.getElementById('ultra-timer');
     startCountdown = document.getElementById('start-countdown');
+    controlsModal = document.getElementById('controls-modal');
+    controlsButton = document.getElementById('controls-button');
+    closeControlsModal = document.getElementById('close-controls-modal');
+    controlInputs = document.querySelectorAll('#controls-modal input');
+    backgroundImageElement = document.getElementById('background-image');
 
     startButton.addEventListener('click', () => {
         currentMode = modeSelector.value;
@@ -197,20 +220,30 @@ function initDOMAndEventListeners() {
         startGame();
     });
     themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
+    assistsButton.addEventListener('click', () => {
+        if (gameOver || isPaused) return;
+        useAssist();
+    });
+
+    controlsButton.addEventListener('click', showControlsModal);
+    closeControlsModal.addEventListener('click', () => controlsModal.style.display = 'none');
     
     document.addEventListener('keydown', handleKeydown);
     
+    controlInputs.forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            e.preventDefault();
+            input.value = e.key;
+            saveKeyBindings();
+        });
+    });
+
     resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
             setCanvasSize();
         }
     });
     resizeObserver.observe(document.getElementById('main-game-wrapper'));
-
-    assistsContainer.addEventListener('click', () => {
-        if (gameOver || isPaused) return;
-        useAssist();
-    });
 
     setCanvasSize();
     
@@ -233,6 +266,8 @@ function initDOMAndEventListeners() {
     setTheme(savedTheme);
     themeSwitcher.value = savedTheme;
 
+    loadKeyBindings();
+
     let touchStartX = 0;
     let touchStartY = 0;
     let lastTouchX = 0;
@@ -251,7 +286,7 @@ function initDOMAndEventListeners() {
         
         const dx = e.touches[0].clientX - lastTouchX;
         
-        if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD) {
+        if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
@@ -272,12 +307,44 @@ function initDOMAndEventListeners() {
         
         if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
             rotatePiece();
-        } else if (dy > TAP_THRESHOLD && dy > Math.abs(dx)) {
+        } else if (dy > TOUCH_MOVE_THRESHOLD_Y && dy > Math.abs(dx)) {
             dropPiece();
         }
         
         draw();
     });
+}
+
+function loadKeyBindings() {
+    const savedBindings = JSON.parse(localStorage.getItem('keyBindings'));
+    keyBindings = savedBindings || {
+        left: 'ArrowLeft',
+        right: 'ArrowRight',
+        down: 'ArrowDown',
+        rotate: 'ArrowUp',
+        drop: ' ',
+        hold: 'c',
+        assist: 'b'
+    };
+
+    controlInputs.forEach(input => {
+        const action = input.dataset.action;
+        if (keyBindings[action]) {
+            input.value = keyBindings[action];
+        }
+    });
+}
+
+function saveKeyBindings() {
+    controlInputs.forEach(input => {
+        const action = input.dataset.action;
+        keyBindings[action] = input.value;
+    });
+    localStorage.setItem('keyBindings', JSON.stringify(keyBindings));
+}
+
+function showControlsModal() {
+    controlsModal.style.display = 'block';
 }
 
 function initBoard() {
@@ -328,6 +395,24 @@ function generateNewPiece() {
     }
 }
 
+function holdPiece() {
+    if (!canHold) return;
+    
+    const originalHeldIndex = heldPieceIndex;
+    heldPieceIndex = currentPieceIndex;
+    
+    if (originalHeldIndex !== null) {
+        currentPieceIndex = originalHeldIndex;
+        createCurrentPiece();
+    } else {
+        generateNewPiece();
+    }
+    
+    canHold = false;
+    drawHeldPiece();
+    draw();
+}
+
 function setTheme(themeName) {
     currentTheme = themeName;
     const theme = THEMES[themeName];
@@ -339,6 +424,7 @@ function setTheme(themeName) {
         document.documentElement.style.setProperty('--border-color', theme.lineColor);
         document.documentElement.style.setProperty('--main-color', theme.lineColor);
         document.documentElement.style.setProperty('--flash-color', theme.flashColor);
+        backgroundImageElement.style.backgroundImage = theme.backgroundImage || 'none';
         localStorage.setItem('theme', themeName);
     }
 }
@@ -418,32 +504,71 @@ function drawGhostPiece() {
 }
 
 function drawNextPiece() {
-    if (!nextPiece) {
-        nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
+    const piece = nextPiece;
+    const context = nextBlockCtx;
+    const canvasEl = nextBlockCanvas;
+    
+    if (!piece) {
+        context.clearRect(0, 0, canvasEl.width, canvasEl.height);
         return;
     }
-    const nextShape = nextPiece.shape;
-    const nextColor = nextPiece.color;
     
-    nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
+    const nextShape = piece.shape;
+    const nextColor = piece.color;
+    
+    context.clearRect(0, 0, canvasEl.width, canvasEl.height);
     
     let shapeWidth = nextShape[0].length;
     let shapeHeight = nextShape.length;
 
     const maxDim = Math.max(shapeWidth, shapeHeight);
-    const nextBlockSize = Math.floor(Math.min(nextBlockCanvas.width, nextBlockCanvas.height) / (maxDim + 1));
+    const nextBlockSize = Math.floor(Math.min(canvasEl.width, canvasEl.height) / (maxDim + 1));
     
-    const offsetX = (nextBlockCanvas.width - shapeWidth * nextBlockSize) / 2;
-    const offsetY = (nextBlockCanvas.height - shapeHeight * nextBlockSize) / 2;
+    const offsetX = (canvasEl.width - shapeWidth * nextBlockSize) / 2;
+    const offsetY = (canvasEl.height - shapeHeight * nextBlockSize) / 2;
 
     for (let r = 0; r < nextShape.length; r++) {
         for (let c = 0; c < nextShape[r].length; c++) {
             if (nextShape[r][c]) {
-                drawBlock(c, r, nextColor, nextBlockCtx, nextBlockSize);
+                drawBlock(c, r, nextColor, context, nextBlockSize);
             }
         }
     }
 }
+
+function drawHeldPiece() {
+    const piece = heldPieceIndex !== null ? { shape: TETROMINOES[heldPieceIndex], color: COLORS[heldPieceIndex] } : null;
+    const context = holdBlockCtx;
+    const canvasEl = holdBlockCanvas;
+
+    if (!piece) {
+        context.clearRect(0, 0, canvasEl.width, canvasEl.height);
+        return;
+    }
+
+    const heldShape = piece.shape;
+    const heldColor = piece.color;
+
+    context.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    
+    let shapeWidth = heldShape[0].length;
+    let shapeHeight = heldShape.length;
+
+    const maxDim = Math.max(shapeWidth, shapeHeight);
+    const heldBlockSize = Math.floor(Math.min(canvasEl.width, canvasEl.height) / (maxDim + 1));
+
+    const offsetX = (canvasEl.width - shapeWidth * heldBlockSize) / 2;
+    const offsetY = (canvasEl.height - shapeHeight * heldBlockSize) / 2;
+
+    for (let r = 0; r < heldShape.length; r++) {
+        for (let c = 0; c < heldShape[r].length; c++) {
+            if (heldShape[r][c]) {
+                drawBlock(c, r, heldColor, context, heldBlockSize);
+            }
+        }
+    }
+}
+
 
 function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -563,7 +688,9 @@ function mergePiece() {
             }
         }
     }
+    canHold = true;
     checkLines();
+    screenShake();
 }
 
 function isTSpin() {
@@ -676,16 +803,17 @@ function updateScore(lines, isCurrentSpecial) {
         if (linesClearedTotal >= 40) {
             endGame(true);
         }
-    } else if (currentMode === 'classic') {
+    } else if (currentMode === 'classic' || currentMode === 'marathon') {
         linesClearedThisLevel += lines;
         if (linesClearedThisLevel >= 10) {
             level++;
             linesClearedThisLevel -= 10;
             levelDisplay.textContent = `Level: ${level}`;
-            dropInterval = Math.max(100, 1000 - level * 50);
+            if (currentMode === 'classic') {
+                dropInterval = Math.max(100, 1000 - level * 50);
+            }
         }
     }
-
 
     if (score >= nextAssistReward) {
         assists++;
@@ -810,6 +938,13 @@ function animateLineClear(timestamp) {
     requestAnimationFrame(animateLineClear);
 }
 
+function screenShake() {
+    const wrapper = document.getElementById('main-game-wrapper');
+    wrapper.classList.add('screen-shake');
+    setTimeout(() => {
+        wrapper.classList.remove('screen-shake');
+    }, 200);
+}
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -847,6 +982,7 @@ function endGame(isSprintWin = false) {
     gameOverScreen.style.display = 'flex';
     pauseButton.style.display = 'none';
     restartButtonInline.style.display = 'none';
+    assistsButton.style.display = 'none';
 }
 
 function startGame() {
@@ -898,6 +1034,9 @@ function initGame() {
     linesClearedThisLevel = 0;
     linesClearedTotal = 0;
     nextAssistReward = 5000;
+    heldPiece = null;
+    heldPieceIndex = null;
+    canHold = true;
     
     scoreDisplay.textContent = `Score: ${score}`;
     levelDisplay.textContent = `Level: ${level}`;
@@ -912,6 +1051,7 @@ function initGame() {
     pauseButton.textContent = "PAUSE";
     pauseButton.style.display = 'block';
     restartButtonInline.style.display = 'block';
+    assistsButton.style.display = 'flex';
 
     levelDisplay.style.display = 'none';
     sprintTimerDisplay.style.display = 'none';
@@ -968,20 +1108,21 @@ function togglePause() {
 }
 function handleKeydown(e) {
     if (gameOver || isPaused) return;
-    switch (e.key) {
-        case 'ArrowLeft':
+
+    switch (e.key.toLowerCase()) {
+        case keyBindings.left.toLowerCase():
             if (isValidMove(-1, 0, currentPiece.shape)) {
                 currentPiece.x--;
                 draw();
             }
             break;
-        case 'ArrowRight':
+        case keyBindings.right.toLowerCase():
             if (isValidMove(1, 0, currentPiece.shape)) {
                 currentPiece.x++;
                 draw();
             }
             break;
-        case 'ArrowDown':
+        case keyBindings.down.toLowerCase():
             if (isValidMove(0, 1, currentPiece.shape)) {
                 currentPiece.y++;
                 lastDropTime = performance.now();
@@ -990,13 +1131,19 @@ function handleKeydown(e) {
                 mergePiece();
             }
             break;
-        case 'ArrowUp':
+        case keyBindings.rotate.toLowerCase():
             rotatePiece();
             draw();
             break;
-        case ' ':
+        case keyBindings.drop.toLowerCase():
             dropPiece();
             draw();
+            break;
+        case keyBindings.hold.toLowerCase():
+            holdPiece();
+            break;
+        case keyBindings.assist.toLowerCase():
+            useAssist();
             break;
         case 'p':
         case 'P':
@@ -1008,11 +1155,11 @@ function handleKeydown(e) {
 function updateAssistsDisplay() {
     assistsCountDisplay.textContent = assists;
     if (assists > 0) {
-        assistsContainer.style.opacity = 1;
-        assistsContainer.style.cursor = 'pointer';
+        assistsButton.style.opacity = 1;
+        assistsButton.style.cursor = 'pointer';
     } else {
-        assistsContainer.style.opacity = 0.5;
-        assistsContainer.style.cursor = 'not-allowed';
+        assistsButton.style.opacity = 0.5;
+        assistsButton.style.cursor = 'not-allowed';
     }
 }
 
