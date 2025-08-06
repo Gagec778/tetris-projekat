@@ -32,7 +32,7 @@ const T_SHAPE_INDEX = 5;
 
 let canvas, ctx, nextBlockCanvas, nextBlockCtx;
 let COLS = 10, ROWS = 18;
-const BLOCK_SIZE = 25; // Fiksna veličina bloka
+let BLOCK_SIZE;
 
 const TETROMINOES = [
     [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
@@ -68,6 +68,27 @@ let dropSound, clearSound, rotateSound, gameOverSound;
 let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay;
 
 function setCanvasSize() {
+    const mainGameWrapper = document.getElementById('main-game-wrapper');
+    const containerWidth = mainGameWrapper.clientWidth - 20;
+    const infoSectionHeight = document.getElementById('info-section').clientHeight;
+    const pauseButtonHeight = document.getElementById('pause-button').clientHeight;
+    const gap = 10;
+    const totalVerticalPadding = 20;
+    const availableHeight = mainGameWrapper.clientHeight - infoSectionHeight - pauseButtonHeight - gap * 2 - totalVerticalPadding;
+
+    let tempBlockSizeWidth = Math.floor(containerWidth / COLS);
+    let tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
+    
+    BLOCK_SIZE = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
+
+    if (BLOCK_SIZE > 40) {
+        BLOCK_SIZE = 40;
+    }
+    
+    if (BLOCK_SIZE < 5) {
+        BLOCK_SIZE = 5;
+    }
+
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
 
@@ -167,7 +188,6 @@ function initDOMAndEventListeners() {
         
         const dx = e.touches[0].clientX - lastTouchX;
         
-        // Dinamički prag osetljivosti na osnovu širine igrice
         const touchMoveThreshold = canvas.width * 0.05;
         
         if (Math.abs(dx) > touchMoveThreshold) {
@@ -190,10 +210,8 @@ function initDOMAndEventListeners() {
         const dy = touchEndY - touchStartY;
         
         if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
-            // TAP za rotaciju
             rotatePiece();
         } else if (dy > tapThreshold && dy > Math.abs(dx)) {
-            // SWIPE DOLE za hard drop
             dropPiece();
         }
         
@@ -623,7 +641,6 @@ function gameLoop(timestamp) {
             if (isValidMove(0, 1, currentPiece.shape)) {
                 currentPiece.y++;
             } else {
-                // Trenutno registrovanje spuštanja bloka
                 mergePiece();
             }
         }
