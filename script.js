@@ -169,11 +169,10 @@ function initDOMAndEventListeners() {
     let touchStartX = 0;
     let touchStartY = 0;
     let isMoving = false;
-    let lastMoveTime = 0;
+    let horizontalMoveDetected = false;
     
-    const tapThreshold = 10; // Mali prag za prepoznavanje tapa
-    let swipeThreshold = window.innerWidth * 0.05; // Dinamički prag za swipe, 5% širine ekrana
-    const moveThrottle = 50; // Kašnjenje u milisekundama za horizontalno pomeranje
+    const tapThreshold = 20; // Manji prag za prepoznavanje tapa
+    const swipeThreshold = BLOCK_SIZE * 0.5; // Dinamički prag za swipe, 50% veličine bloka
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -181,29 +180,27 @@ function initDOMAndEventListeners() {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         isMoving = false;
-        lastMoveTime = performance.now();
+        horizontalMoveDetected = false;
     });
 
     canvas.addEventListener('touchmove', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         
-        const currentTime = performance.now();
         const dx = e.touches[0].clientX - touchStartX;
         const dy = e.touches[0].clientY - touchStartY;
         
-        // Horizontalno pomeranje sa kašnjenjem (throttle)
-        if (Math.abs(dx) > swipeThreshold && currentTime - lastMoveTime > moveThrottle) {
-            isMoving = true;
+        if (!horizontalMoveDetected && Math.abs(dx) > swipeThreshold) {
+            horizontalMoveDetected = true;
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
             touchStartX = e.touches[0].clientX;
-            lastMoveTime = currentTime;
             draw();
         }
+        
     });
 
     canvas.addEventListener('touchend', e => {
@@ -214,15 +211,12 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
 
-        // Provera da li je gest bio Hard Drop ili Tap/Rotacija
-        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > swipeThreshold) {
-            // SWIPE DOLE za hard drop
-            if (dy > 0) {
-                dropPiece();
-            }
-        } else if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
+        if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
             // TAP za rotaciju
             rotatePiece();
+        } else if (dy > tapThreshold && dy > Math.abs(dx)) {
+            // SWIPE DOLE za hard drop
+            dropPiece();
         }
         
         draw();
