@@ -1,7 +1,7 @@
 let isAnimating = false;
 let linesToClear = [];
 let animationStart = 0;
-const animationDuration = 400; // Povećana trajanje animacije
+const animationDuration = 400;
 let lastClearWasSpecial = false;
 
 const THEMES = {
@@ -9,19 +9,22 @@ const THEMES = {
         background: '#1a1a2e',
         boardBackground: '#000',
         lineColor: '#61dafb',
-        blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000']
+        blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000'],
+        flashColor: '#FFFFFF'
     },
     'dark': {
         background: '#0d0d0d',
         boardBackground: '#1c1c1c',
         lineColor: '#999999',
-        blockColors: ['#00FFFF', '#3366FF', '#FF9933', '#FFFF00', '#33CC66', '#9966CC', '#FF3333']
+        blockColors: ['#00FFFF', '#3366FF', '#FF9933', '#FFFF00', '#33CC66', '#9966CC', '#FF3333'],
+        flashColor: '#CCCCCC'
     },
     'forest': {
         background: '#0a1d0d',
         boardBackground: '#263a29',
         lineColor: '#b4cf66',
-        blockColors: ['#66FFB2', '#339966', '#FF9900', '#FFFF66', '#33CC66', '#9966CC', '#FF3333']
+        blockColors: ['#66FFB2', '#339966', '#FF9900', '#FFFF66', '#33CC66', '#9966CC', '#FF3333'],
+        flashColor: '#E0FF8C'
     }
 };
 
@@ -51,7 +54,8 @@ let bestScore = 0;
 let nextAssistReward = 5000;
 
 let dropInterval = 1000;
-const dropSpeedDecreaseRate = 20;
+let level = 1;
+let linesClearedThisLevel = 0;
 
 let lastDropTime = 0;
 let animationFrameId;
@@ -60,7 +64,7 @@ let COLORS;
 let currentTheme;
 
 let dropSound, clearSound, rotateSound, gameOverSound;
-let startScreen, gameOverScreen, scoreDisplay, finalScoreDisplay, comboDisplay, startButton, restartButton, themeSwitcher, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton;
+let startScreen, gameOverScreen, scoreDisplay, finalScoreDisplay, comboDisplay, startButton, restartButton, themeSwitcher, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay;
 
 function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
@@ -118,6 +122,7 @@ function initDOMAndEventListeners() {
     assistsContainer = document.getElementById('assists-container');
     assistsCountDisplay = document.getElementById('assists-count');
     bestScoreDisplay = document.getElementById('best-score-display');
+    levelDisplay = document.getElementById('level-display');
     themeSwitcher = document.getElementById('theme-switcher');
     
     startButton.addEventListener('click', startGame);
@@ -154,14 +159,13 @@ function initDOMAndEventListeners() {
     setTheme(savedTheme);
     themeSwitcher.value = savedTheme;
 
-    // **NOVE, POBOLJŠANE TOUCH KONTROLE**
     let touchStartX = 0;
     let touchStartY = 0;
     let lastTouchX = 0;
     let lastTouchY = 0;
     let touchMoved = false;
     let lastPieceMoveTime = 0;
-    const moveDelay = 100; // Dodato kašnjenje za horizontalni pokret
+    const moveDelay = 100;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -185,7 +189,6 @@ function initDOMAndEventListeners() {
         const dy = currentY - lastTouchY;
         const touchMoveThreshold = BLOCK_SIZE * 0.5;
         
-        // Horizontalno prevlačenje sa odlaganjem
         if (Math.abs(dx) > touchMoveThreshold && currentTime - lastPieceMoveTime > moveDelay) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
@@ -197,7 +200,6 @@ function initDOMAndEventListeners() {
             lastPieceMoveTime = currentTime;
         }
 
-        // Soft drop sa odlaganjem (ako se vuče polako, spušta se red po red)
         if (dy > touchMoveThreshold && currentTime - lastPieceMoveTime > moveDelay) {
             if (isValidMove(0, 1, currentPiece.shape)) {
                 currentPiece.y++;
@@ -221,11 +223,9 @@ function initDOMAndEventListeners() {
         const dy = touchEndY - touchStartY;
         const tapThreshold = 10;
         
-        // Hard drop (brzi potez na dole, veći dy)
         if (dy > BLOCK_SIZE * 1.5 && Math.abs(dx) < BLOCK_SIZE) {
             dropPiece();
         }
-        // Rotacija (kratak dodir/tap)
         else if (!touchMoved && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
             rotatePiece();
         }
@@ -285,9 +285,6 @@ function generateNewPiece() {
 
 function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
     if (!context) return;
-    const lightColor = lightenColor(color, 20);
-    const darkColor = darkenColor(color, 20);
-
     context.fillStyle = color;
     context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
     context.strokeStyle = darkenColor(color, 40);
@@ -601,6 +598,13 @@ function updateScore(lines, isCurrentSpecial) {
         lastClearWasSpecial = false;
     }
 
+    linesClearedThisLevel += lines;
+    if (linesClearedThisLevel >= 10) {
+        level++;
+        linesClearedThisLevel -= 10;
+        levelDisplay.textContent = `Level: ${level}`;
+    }
+
     if (score >= nextAssistReward) {
         assists++;
         nextAssistReward += 5000;
@@ -644,6 +648,8 @@ function gameLoop(timestamp) {
         return;
     }
     
+    dropInterval = Math.max(100, 1000 - level * 50);
+
     if (timestamp - lastDropTime > dropInterval) {
         if (currentPiece && isValidMove(0, 1, currentPiece.shape)) {
             currentPiece.y++;
@@ -653,8 +659,6 @@ function gameLoop(timestamp) {
         lastDropTime = timestamp;
     }
     
-    dropInterval = Math.max(100, 1000 - Math.floor(score / 100) * dropSpeedDecreaseRate);
-
     draw();
     animationFrameId = requestAnimationFrame(gameLoop);
 }
@@ -681,7 +685,9 @@ function animateLineClear(timestamp) {
         return;
     }
 
-    draw();
+    drawBoard();
+    
+    ctx.globalAlpha = 1.0 - progress;
 
     for (const r of linesToClear) {
         for (let c = 0; c < COLS; c++) {
@@ -690,13 +696,17 @@ function animateLineClear(timestamp) {
                 const x = c * BLOCK_SIZE + BLOCK_SIZE * progress / 2;
                 const y = r * BLOCK_SIZE + BLOCK_SIZE * progress / 2;
                 
-                ctx.fillStyle = lightenColor(board[r][c], 100);
+                ctx.fillStyle = board[r][c];
                 ctx.fillRect(x, y, blockSize, blockSize);
             }
         }
     }
+    ctx.globalAlpha = 1.0;
+    drawCurrentPiece(); // Ovo će crtati trenutni blok preko svega
+
     requestAnimationFrame(animateLineClear);
 }
+
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -753,8 +763,11 @@ function startGame() {
     
     score = 0;
     combo = 0;
+    level = 1;
+    linesClearedThisLevel = 0;
     nextAssistReward = 5000;
     scoreDisplay.textContent = `Score: ${score}`;
+    levelDisplay.textContent = `Level: ${level}`;
     finalScoreDisplay.textContent = `Your Score: ${score}`;
     
     updateAssistsDisplay();
