@@ -117,20 +117,24 @@ function pauseBackgroundMusic() {
 }
 
 function setCanvasSize() {
-    const mainGameWrapper = document.getElementById('main-game-wrapper');
+    const root = document.documentElement;
     const infoSection = document.getElementById('info-section');
     const gameControls = document.getElementById('game-controls');
-    const root = document.documentElement;
 
     const availableHeight = window.innerHeight - 20;
     const availableWidth = window.innerWidth - 20;
 
-    const gameCanvasRatio = COLS / ROWS;
-    const contentHeight = infoSection.offsetHeight + gameControls.offsetHeight;
-    const availableGameHeight = availableHeight - contentHeight - 20;
-
-    let tempBlockSize = Math.floor(Math.min(availableWidth / (COLS + 7), availableGameHeight / ROWS));
+    let totalVerticalSpace = infoSection.offsetHeight + gameControls.offsetHeight + 20;
+    let availableGameHeight = availableHeight - totalVerticalSpace;
     
+    // Uvek dajemo prednost visini
+    let tempBlockSize = Math.floor(availableGameHeight / ROWS);
+    
+    // Proveravamo da li je širina platna prevelika
+    if (tempBlockSize * COLS > availableWidth) {
+        tempBlockSize = Math.floor(availableWidth / (COLS + 7)); 
+    }
+
     BLOCK_SIZE = Math.max(12, Math.min(tempBlockSize, 40));
 
     root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
@@ -264,25 +268,32 @@ function initDOMAndEventListeners() {
     let touchStartY = 0;
     let lastTouchX = 0;
     let lastTouchY = 0;
+    let touchMoveDetected = false;
 
     canvas.addEventListener('touchstart', e => {
-        e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         lastTouchX = touchStartX;
         lastTouchY = touchStartY;
+        touchMoveDetected = false;
     });
 
     canvas.addEventListener('touchmove', e => {
-        e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
+        e.preventDefault();
         
         const currentTouchX = e.touches[0].clientX;
         const currentTouchY = e.touches[0].clientY;
         const dx = currentTouchX - lastTouchX;
         const dy = currentTouchY - lastTouchY;
+        const totalDx = currentTouchX - touchStartX;
+        const totalDy = currentTouchY - touchStartY;
         
+        if (Math.abs(totalDx) > TAP_THRESHOLD || Math.abs(totalDy) > TAP_THRESHOLD) {
+            touchMoveDetected = true;
+        }
+
         if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
@@ -294,7 +305,6 @@ function initDOMAndEventListeners() {
         }
 
         if (dy > TOUCH_MOVE_THRESHOLD_Y && dy > Math.abs(dx)) {
-            // Soft drop on a vertical swipe down
             if (isValidMove(0, 1, currentPiece.shape)) {
                 currentPiece.y++;
                 lastDropTime = performance.now();
@@ -315,9 +325,12 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
+        // Cisti tap - rotiraj
         if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
             rotatePiece();
-        } else if (dy > BLOCK_SIZE * 3 && dy > Math.abs(dx)) { // Povecan prag za hard drop
+        } 
+        // Vertikalni swipe dovoljno dug - hard drop
+        else if (dy > BLOCK_SIZE * 3 && dy > Math.abs(dx)) { 
             dropPiece();
         }
         
@@ -503,77 +516,46 @@ function drawGhostPiece() {
     ctx.globalAlpha = 1.0;
 }
 
-function drawNextPiece() {
-    const piece = nextPiece;
-    const context = nextBlockCtx;
-    const canvasEl = nextBlockCanvas;
-    
+function drawPieceInCanvas(piece, context, canvasEl) {
     if (!piece) {
         context.clearRect(0, 0, canvasEl.width, canvasEl.height);
         return;
     }
     
-    const nextShape = piece.shape;
-    const nextColor = piece.color;
+    const shape = piece.shape;
+    const color = piece.color;
     
     context.clearRect(0, 0, canvasEl.width, canvasEl.height);
     
-    let shapeWidth = nextShape[0].length;
-    let shapeHeight = nextShape.length;
-    const maxDim = Math.max(shapeWidth, shapeHeight);
-    const nextBlockSize = Math.floor(Math.min(canvasEl.width, canvasEl.height) / (maxDim + 1));
+    let shapeWidth = shape[0].length;
+    let shapeHeight = shape.length;
     
-    const offsetX = (canvasEl.width - shapeWidth * nextBlockSize) / 2;
-    const offsetY = (canvasEl.height - shapeHeight * nextBlockSize) / 2;
+    const maxDim = Math.max(shapeWidth, shapeHeight);
+    const pieceBlockSize = Math.floor(Math.min(canvasEl.width, canvasEl.height) / (maxDim + 1));
+    
+    const offsetX = (canvasEl.width - shapeWidth * pieceBlockSize) / 2;
+    const offsetY = (canvasEl.height - shapeHeight * pieceBlockSize) / 2;
 
-    for (let r = 0; r < nextShape.length; r++) {
-        for (let c = 0; c < nextShape[r].length; c++) {
-            if (nextShape[r][c]) {
-                drawBlock(c, r, nextColor, context, nextBlockSize);
+    for (let r = 0; r < shape.length; r++) {
+        for (let c = 0; c < shape[r].length; c++) {
+            if (shape[r][c]) {
                 context.save();
                 context.translate(offsetX, offsetY);
-                drawBlock(c, r, nextColor, context, nextBlockSize);
+                drawBlock(c, r, color, context, pieceBlockSize);
                 context.restore();
             }
         }
     }
+}
+
+function drawNextPiece() {
+    drawPieceInCanvas(nextPiece, nextBlockCtx, nextBlockCanvas);
 }
 
 function drawHeldPiece() {
     const piece = heldPieceIndex !== null ? { shape: TETROMINOES[heldPieceIndex], color: COLORS[heldPieceIndex] } : null;
-    const context = holdBlockCtx;
-    const canvasEl = holdBlockCanvas;
-
-    if (!piece) {
-        context.clearRect(0, 0, canvasEl.width, canvasEl.height);
-        return;
-    }
-
-    const heldShape = piece.shape;
-    const heldColor = piece.color;
-
-    context.clearRect(0, 0, canvasEl.width, canvasEl.height);
-    
-    let shapeWidth = heldShape[0].length;
-    let shapeHeight = heldShape.length;
-    const maxDim = Math.max(shapeWidth, shapeHeight);
-    const heldBlockSize = Math.floor(Math.min(canvasEl.width, canvasEl.height) / (maxDim + 1));
-
-    const offsetX = (canvasEl.width - shapeWidth * heldBlockSize) / 2;
-    const offsetY = (canvasEl.height - shapeHeight * heldBlockSize) / 2;
-
-    for (let r = 0; r < heldShape.length; r++) {
-        for (let c = 0; c < heldShape[r].length; c++) {
-            if (heldShape[r][c]) {
-                context.save();
-                context.translate(offsetX, offsetY);
-                drawBlock(c, r, heldColor, context, heldBlockSize);
-                context.restore();
-            }
-        }
-    }
+    drawPieceInCanvas(piece, holdBlockCtx, holdBlockCanvas);
 }
-
 
 function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -841,6 +823,7 @@ function showPerfectClearMessage() {
     comboDisplay.style.display = 'block';
     setTimeout(() => {
         comboDisplay.style.display = 'none';
+        generateNewPiece();
     }, 2000);
 }
 
@@ -904,15 +887,15 @@ function animateLineClear(timestamp) {
         
         if (isBoardEmpty()) {
             showPerfectClearMessage();
+        } else {
+            generateNewPiece();
         }
-        
-        generateNewPiece();
         animationFrameId = requestAnimationFrame(gameLoop);
         return;
     }
 
     drawBoard();
-    const midPoint = COLS / 2;
+    
     for (const r of linesToClear) {
         const lineProgress = Math.sin(progress * Math.PI);
         
@@ -978,10 +961,11 @@ function endGame(isSprintWin = false) {
     gameOverScreen.style.display = 'flex';
     pauseButton.style.display = 'none';
     restartButtonInline.style.display = 'none';
+    assistsButton.style.display = 'none';
     
     restartButton.style.display = 'block';
     
-    if (assists > 0) {
+    if (assists > 0 && !isSprintWin) {
         continueButton.style.display = 'block';
     } else {
         continueButton.style.display = 'none';
@@ -1000,7 +984,8 @@ function continueGame() {
     
     pauseButton.style.display = 'block';
     restartButtonInline.style.display = 'block';
-    
+    assistsButton.style.display = 'flex';
+
     playBackgroundMusic();
     animationFrameId = requestAnimationFrame(gameLoop);
 }
@@ -1186,12 +1171,34 @@ function updateAssistsDisplay() {
 }
 
 function useAssist() {
-    if (assists > 0) {
+    if (assists > 0 && !isAnimating) {
         assists--;
         localStorage.setItem('assists', assists);
         updateAssistsDisplay();
 
-        const assistLine = Math.floor(Math.random() * (ROWS - 5)) + 5;
+        const fullLines = [];
+        for (let r = 0; r < ROWS; r++) {
+            let isFull = true;
+            for (let c = 0; c < COLS; c++) {
+                if (board[r][c] === 0) {
+                    isFull = false;
+                    break;
+                }
+            }
+            if (isFull) fullLines.push(r);
+        }
+
+        let assistLine;
+        if (fullLines.length < ROWS - 1) {
+            let randomLine = Math.floor(Math.random() * ROWS);
+            while (fullLines.includes(randomLine)) {
+                randomLine = Math.floor(Math.random() * ROWS);
+            }
+            assistLine = randomLine;
+        } else {
+            assistLine = Math.floor(Math.random() * ROWS);
+        }
+
         board[assistLine] = Array(COLS).fill(THEMES[currentTheme].flashColor);
         
         linesToClear.push(assistLine);
