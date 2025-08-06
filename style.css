@@ -42,7 +42,8 @@ body {
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    width: calc(10 * var(--block-size) + 120px); /* Aproksimativna širina */
+    /* Zamenjena fiksna širina dinamičnijom min-width vrednošću */
+    min-width: 320px;
     height: 98vh;
     max-width: 95vw;
     box-sizing: border-box;
@@ -162,7 +163,7 @@ canvas#gameCanvas {
     background-color: var(--board-bg-color);
     display: block;
     border-radius: 5px;
-    touch-action: none;
+    /*touch-action: none;*/
     width: calc(var(--block-size) * 10);
     height: calc(var(--block-size) * 20);
 }
