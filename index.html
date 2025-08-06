@@ -15,6 +15,7 @@
                 <div id="best-score-display">BEST: 0</div>
                 <div id="level-display">Level: 1</div>
                 <div id="sprint-timer" style="display: none;">TIME: 0.00s</div>
+                <div id="ultra-timer" style="display: none;">TIME: 0.00s</div>
                 <div id="assists-container">
                     <span class="bomb-icon">💣</span><span id="assists-count">0</span>
                 </div>
@@ -27,7 +28,12 @@
         </div>
         
         <canvas id="gameCanvas"></canvas>
-        <button id="pause-button">PAUSE</button>
+
+        <div id="game-controls">
+            <button id="pause-button">PAUSE</button>
+            <button id="restart-button-inline" style="display: none;">RESTART</button>
+        </div>
+
         <div id="combo-display"></div>
     </div>
 
@@ -39,6 +45,8 @@
                 <option value="classic">Classic Mode</option>
                 <option value="sprint">Sprint 40</option>
                 <option value="zen">Zen Mode</option>
+                <option value="marathon">Marathon</option>
+                <option value="ultra">Ultra 2min</option>
             </select>
         </div>
         <div id="theme-switcher-container">
@@ -47,6 +55,8 @@
                 <option value="classic">Classic</option>
                 <option value="dark">Dark</option>
                 <option value="forest">Forest</option>
+                <option value="modern">Modern</option>
+                <option value="lava">Lava</option>
             </select>
         </div>
         <p>Pritisni dugme da započneš igru!</p>
