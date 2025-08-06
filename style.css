@@ -42,13 +42,19 @@ body {
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    /* Zamenjena fiksna širina dinamičnijom min-width vrednošću */
-    min-width: 320px;
+    width: 98vw;
     height: 98vh;
-    max-width: 95vw;
+    max-width: 600px; /* Dodat max-width za desktop */
+    max-height: 900px;
     box-sizing: border-box;
     position: relative;
     transition: all 0.3s ease-in-out;
+}
+
+@media (min-width: 600px) {
+    #main-game-wrapper {
+        width: auto;
+    }
 }
 
 .screen-shake {
@@ -68,6 +74,23 @@ body {
     80% { transform: translate(-1px, -1px) rotate(1deg); }
     90% { transform: translate(1px, 2px) rotate(0deg); }
     100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+.bomb-animation {
+    position: absolute;
+    width: var(--block-size);
+    height: var(--block-size);
+    background-color: #FFD700;
+    border-radius: 5px;
+    box-shadow: 0 0 10px #FFD700;
+    animation: explode 0.8s forwards;
+    z-index: 10;
+}
+
+@keyframes explode {
+    0% { transform: scale(1) translate(0, 0); opacity: 1; }
+    50% { transform: scale(1.5) translate(var(--dx), var(--dy)); opacity: 1; }
+    100% { transform: scale(0) translate(var(--dx), var(--dy)); opacity: 0; }
 }
 
 #background-image {
@@ -111,16 +134,15 @@ body {
     overflow: hidden;
 }
 
+.panel-header {
+    font-size: 0.8em;
+    width: 100%;
+    text-align: center;
+}
+
 #game-stats {
     flex-grow: 2;
     padding: 8px;
-}
-
-#hold-block-container, #next-block-container {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.8em;
-    padding: 5px;
 }
 
 #assists-panel {
@@ -130,6 +152,11 @@ body {
     padding: 5px;
     text-align: center;
 }
+#assists-content {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
 
 #score-display, #best-score-display, #level-display, #sprint-timer, #ultra-timer {
     width: 100%;
@@ -137,16 +164,12 @@ body {
     font-size: 0.7em;
     padding: 2px 0;
 }
-#assists-display {
-    font-size: 1em;
-    padding-top: 5px;
-}
  
 #best-score-display { color: #ccc; }
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
 
-#nextBlockCanvas, #holdBlockCanvas {
+#nextBlockCanvas {
     background-color: #0d0d1a;
     border: 1px solid #4fa3d1;
     border-radius: 5px;
@@ -176,7 +199,7 @@ canvas#gameCanvas {
     margin-top: 10px;
 }
 
-#pause-button, #restart-button-inline, #assist-button {
+#pause-button, #restart-button-inline {
     flex: 1;
     font-size: 0.8em;
     padding: 8px;
@@ -188,23 +211,38 @@ canvas#gameCanvas {
     transition: background-color 0.2s, transform 0.1s;
     font-family: 'Press Start 2P', cursive;
 }
-#pause-button:hover, #restart-button-inline:hover, #assist-button:hover { background-color: #c72c38; }
-#pause-button:active, #restart-button-inline:active, #assist-button:active { transform: translateY(1px); }
+#pause-button:hover, #restart-button-inline:hover { background-color: #c72c38; }
+#pause-button:active, #restart-button-inline:active { transform: translateY(1px); }
 
 #assist-button {
     background-color: #2a9d8f;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    width: 100%;
-}
-#assist-button span {
+    padding: 0;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s, opacity 0.2s;
+    font-family: 'Press Start 2P', cursive;
     font-size: 1em;
-    font-weight: bold;
 }
+#assist-button:hover { background-color: #268981; }
+#assist-button:active { transform: translateY(1px); }
 .bomb-icon {
     font-size: 1.2em;
+}
+#assists-count {
+    font-size: 1.2em;
+    color: var(--main-color);
+    font-weight: bold;
+}
+#assist-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .overlay {
