@@ -6,21 +6,21 @@ let lastClearWasSpecial = false;
 
 const THEMES = {
     'classic': {
-        background: '#1a1a2e',
+        background: 'linear-gradient(to bottom right, #1a1a2e, #16213e, #0f3460)',
         boardBackground: '#000',
         lineColor: '#61dafb',
         blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000'],
         flashColor: '#FFFFFF'
     },
     'dark': {
-        background: '#0d0d0d',
+        background: 'linear-gradient(to bottom right, #0d0d0d, #1c1c1c, #0a141d)',
         boardBackground: '#1c1c1c',
         lineColor: '#999999',
         blockColors: ['#00FFFF', '#3366FF', '#FF9933', '#FFFF00', '#33CC66', '#9966CC', '#FF3333'],
         flashColor: '#CCCCCC'
     },
     'forest': {
-        background: '#0a1d0d',
+        background: 'linear-gradient(to bottom right, #0a1d0d, #263a29, #1b261b)',
         boardBackground: '#263a29',
         lineColor: '#b4cf66',
         blockColors: ['#66FFB2', '#339966', '#FF9900', '#FFFF66', '#33CC66', '#9966CC', '#FF3333'],
@@ -834,7 +834,7 @@ function useAssist() {
 function setTheme(themeName) {
     currentTheme = themeName;
     COLORS = THEMES[themeName].blockColors;
-    document.body.style.background = `linear-gradient(to bottom right, ${THEMES[themeName].background}, #16213e, #0f3460)`;
+    document.body.style.background = THEMES[themeName].background;
     document.documentElement.style.setProperty('--main-color', THEMES[themeName].lineColor);
     localStorage.setItem('theme', themeName);
     
