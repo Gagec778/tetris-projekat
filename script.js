@@ -69,12 +69,13 @@ let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, c
 function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
     const containerWidth = mainGameWrapper.clientWidth - 20;
-    const blockSizeFromWidth = Math.floor(containerWidth / COLS);
-    
     const gameAreaHeight = window.innerHeight - 250;
-    const blockSizeFromHeight = Math.floor(gameAreaHeight / ROWS);
     
-    BLOCK_SIZE = Math.min(blockSizeFromWidth, blockSizeFromHeight);
+    let tempBlockSizeWidth = Math.floor(containerWidth / COLS);
+    let tempBlockSizeHeight = Math.floor(gameAreaHeight / ROWS);
+    
+    // Uzimamo manju vrednost da bi stalo i po širini i po visini
+    BLOCK_SIZE = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
 
     if (BLOCK_SIZE > 35) {
         BLOCK_SIZE = 35;
@@ -168,9 +169,7 @@ function initDOMAndEventListeners() {
     let lastTouchY = 0;
     let lastPieceMoveTime = 0;
     
-    // Senzitivnost je dodatno smanjena
     const moveDelay = 100;
-    const touchMoveThreshold = BLOCK_SIZE * 0.25;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -192,6 +191,8 @@ function initDOMAndEventListeners() {
         const dx = currentX - lastTouchX;
         const dy = currentY - lastTouchY;
         
+        const touchMoveThreshold = window.innerHeight * 0.02;
+
         if (Math.abs(dx) > touchMoveThreshold && currentTime - lastPieceMoveTime > moveDelay) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
@@ -223,42 +224,24 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        const tapThreshold = 30;
+        const tapThreshold = window.innerHeight * 0.05;
 
-        if (isTapOnGhostPiece(touchEndX, touchEndY)) {
-            dropPiece();
-        } else if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
-            rotatePiece();
+        // Provera da li je to bio tap (pomeranje prsta je unutar praga)
+        if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
+            // Nova logika za detekciju hard drop-a
+            const rect = canvas.getBoundingClientRect();
+            const tapY = touchEndY - rect.top;
+            
+            // Ako je tap na donjoj polovini ekrana, hard drop
+            if (tapY > rect.height * 0.5) {
+                dropPiece();
+            } else { // U suprotnom, rotacija
+                rotatePiece();
+            }
         }
         
         draw();
     });
-}
-
-function isTapOnGhostPiece(touchX, touchY) {
-    if (!currentPiece) return false;
-
-    let ghostY = currentPiece.y;
-    while (isValidMove(0, 1, currentPiece.shape, ghostY)) {
-        ghostY++;
-    }
-
-    const rect = canvas.getBoundingClientRect();
-    const x = (touchX - rect.left) / BLOCK_SIZE;
-    const y = (touchY - rect.top) / BLOCK_SIZE;
-
-    for (let r = 0; r < currentPiece.shape.length; r++) {
-        for (let c = 0; c < currentPiece.shape[r].length; c++) {
-            if (currentPiece.shape[r][c]) {
-                const blockX = currentPiece.x + c;
-                const blockY = ghostY + r;
-                if (x >= blockX && x < blockX + 1 && y >= blockY && y < blockY + 1) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
 }
 
 function initBoard() {
