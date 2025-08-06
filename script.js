@@ -69,9 +69,14 @@ let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, c
 
 function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
-    const containerWidth = mainGameWrapper.clientWidth - 20;
-    const infoSectionHeight = document.getElementById('info-section').clientHeight;
-    const pauseButtonHeight = document.getElementById('pause-button').clientHeight;
+    const infoSection = document.getElementById('info-section');
+    const pauseButton = document.getElementById('pause-button');
+    
+    if (!mainGameWrapper || !infoSection || !pauseButton) return;
+
+    const containerWidth = mainGameWrapper.clientWidth - 20; // 20px padding
+    const infoSectionHeight = infoSection.clientHeight;
+    const pauseButtonHeight = pauseButton.clientHeight;
     const gap = 10;
     const totalVerticalPadding = 20;
     const availableHeight = mainGameWrapper.clientHeight - infoSectionHeight - pauseButtonHeight - gap * 2 - totalVerticalPadding;
@@ -93,12 +98,17 @@ function setCanvasSize() {
     canvas.height = ROWS * BLOCK_SIZE;
 
     const canvasContainer = document.querySelector('.canvas-container');
-    canvasContainer.style.width = `${canvas.width}px`;
-    canvasContainer.style.height = `${canvas.height}px`;
+    if (canvasContainer) {
+        canvasContainer.style.width = `${canvas.width}px`;
+        canvasContainer.style.height = `${canvas.height}px`;
+    }
 
-    const nextBlockContainerSize = nextBlockCanvas.parentElement.clientWidth;
-    nextBlockCanvas.width = nextBlockContainerSize;
-    nextBlockCanvas.height = nextBlockContainerSize;
+    const nextBlockContainer = nextBlockCanvas.parentElement;
+    if (nextBlockContainer) {
+        const nextBlockContainerSize = nextBlockContainer.clientWidth;
+        nextBlockCanvas.width = nextBlockContainerSize;
+        nextBlockCanvas.height = nextBlockContainerSize;
+    }
     
     if (!gameOver && !isPaused) {
         draw();
@@ -437,7 +447,9 @@ function rotatePiece() {
     if (isValidMove(0, 0, newShape)) {
         currentPiece.shape = newShape;
         rotateSound.currentTime = 0;
-        rotateSound.play().catch(e => console.error("Greška pri puštanju zvuka za rotaciju:", e));
+        if (rotateSound.readyState >= 2) {
+            rotateSound.play().catch(e => console.error("Greška pri puštanju zvuka za rotaciju:", e));
+        }
     } else {
         const kicks = [[0,0], [-1,0], [1,0], [0,1], [-1,1], [1,1]];
         for (const kick of kicks) {
@@ -446,7 +458,9 @@ function rotatePiece() {
                 currentPiece.x += kick[0];
                 currentPiece.y += kick[1];
                 rotateSound.currentTime = 0;
-                rotateSound.play().catch(e => console.error("Greška pri puštanju zvuka za rotaciju:", e));
+                if (rotateSound.readyState >= 2) {
+                    rotateSound.play().catch(e => console.error("Greška pri puštanju zvuka za rotaciju:", e));
+                }
                 return;
             }
         }
@@ -464,7 +478,9 @@ function dropPiece() {
     scoreDisplay.textContent = `Score: ${score}`;
     mergePiece();
     dropSound.currentTime = 0;
-    dropSound.play().catch(e => console.error("Greška pri puštanju dropSounda:", e));
+    if (dropSound.readyState >= 2) {
+        dropSound.play().catch(e => console.error("Greška pri puštanju dropSounda:", e));
+    }
 }
 
 function mergePiece() {
@@ -535,7 +551,7 @@ function checkLines() {
         isAnimating = true;
         animationStart = performance.now();
         
-        let isCurrentSpecial = isTSpin() || linesToClear.length === 4;
+        let isCurrentSpecial = (linesToClear.length === 4) || isTSpin();
 
         updateScore(linesToClear.length, isCurrentSpecial);
         
@@ -544,7 +560,7 @@ function checkLines() {
             clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
         }
         
-        return; 
+        return;
     } else {
         lastClearWasSpecial = false;
         combo = 0;
