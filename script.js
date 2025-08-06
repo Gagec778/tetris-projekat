@@ -44,7 +44,7 @@ const THEMES = {
 
 const T_SHAPE_INDEX = 5;
 
-let canvas, ctx, nextBlockCanvas, nextBlockCtx, holdBlockCanvas, holdBlockCtx;
+let canvas, ctx, nextBlockCanvas, nextBlockCtx;
 let COLS, ROWS, BLOCK_SIZE;
 
 const TETROMINOES = [
@@ -58,7 +58,7 @@ const TETROMINOES = [
 ];
 
 let board = [];
-let currentPiece, nextPiece, heldPiece;
+let currentPiece, nextPiece;
 let score = 0;
 let gameOver = true;
 let isPaused = false;
@@ -80,10 +80,9 @@ let currentPieceIndex, nextPieceIndex;
 let COLORS;
 let currentTheme;
 let currentMode = 'classic';
-let hasSwappedThisTurn = false;
 let resizeObserver;
 
-let dropSound, clearSound, rotateSound, gameOverSound, holdSound, tSpinSound, tetrisSound, backgroundMusic;
+let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic;
 let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, startCountdown;
 let backgroundMusicPlaying = false;
 
@@ -101,7 +100,6 @@ function pauseBackgroundMusic() {
     backgroundMusicPlaying = false;
 }
 
-// Function to handle resizing and ensure game fits
 function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
     const infoSection = document.getElementById('info-section');
@@ -119,7 +117,6 @@ function setCanvasSize() {
 
     let newBlockSize = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
     
-    // Set max/min block size to maintain playability
     newBlockSize = Math.max(10, Math.min(40, newBlockSize));
 
     BLOCK_SIZE = newBlockSize;
@@ -129,16 +126,13 @@ function setCanvasSize() {
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
     
-    const nextHoldContainerWidth = Math.floor(mainGameWrapper.clientWidth / 3) - 10;
-    nextBlockCanvas.width = nextHoldContainerWidth;
-    nextBlockCanvas.height = nextHoldContainerWidth;
-    holdBlockCanvas.width = nextHoldContainerWidth;
-    holdBlockCanvas.height = nextHoldContainerWidth;
+    const nextContainerWidth = Math.floor(mainGameWrapper.clientWidth / 2) - 10;
+    nextBlockCanvas.width = nextContainerWidth;
+    nextBlockCanvas.height = nextContainerWidth;
 
     if (!gameOver && !isPaused) {
         draw();
         drawNextPiece();
-        drawHeldPiece();
     }
 }
 
@@ -147,8 +141,6 @@ function initDOMAndEventListeners() {
     ctx = canvas.getContext('2d');
     nextBlockCanvas = document.getElementById('nextBlockCanvas');
     nextBlockCtx = nextBlockCanvas.getContext('2d');
-    holdBlockCanvas = document.getElementById('holdBlockCanvas');
-    holdBlockCtx = holdBlockCanvas.getContext('2d');
     
     COLS = 10;
     ROWS = 20;
@@ -157,7 +149,6 @@ function initDOMAndEventListeners() {
     clearSound = document.getElementById('clearSound');
     rotateSound = document.getElementById('rotateSound');
     gameOverSound = document.getElementById('gameOverSound');
-    holdSound = document.getElementById('holdSound');
     tSpinSound = document.getElementById('tSpinSound');
     tetrisSound = document.getElementById('tetrisSound');
     backgroundMusic = document.getElementById('backgroundMusic');
@@ -196,7 +187,6 @@ function initDOMAndEventListeners() {
     
     document.addEventListener('keydown', handleKeydown);
     
-    // Using ResizeObserver for responsive canvas
     resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
             setCanvasSize();
@@ -233,8 +223,8 @@ function initDOMAndEventListeners() {
     let touchStartX = 0;
     let touchStartY = 0;
     let lastTouchX = 0;
-    let touchMoveThreshold = 10; // Reduced sensitivity
-    let tapThreshold = 20; // Reduced tap threshold
+    let touchMoveThreshold = 10;
+    let tapThreshold = 20;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -302,7 +292,6 @@ function createCurrentPiece() {
         x: startX,
         y: 0
     };
-    hasSwappedThisTurn = false;
 }
 
 function generateNewPiece() {
@@ -356,12 +345,10 @@ function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
     context.fillStyle = gradient;
     context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
 
-    // Inner shadow for 3D effect
     context.strokeStyle = darkenColor(color, 50);
     context.lineWidth = 1;
     context.strokeRect(x * blockSize + 1, y * blockSize + 1, blockSize - 2, blockSize - 2);
 
-    // subtle highlight
     context.strokeStyle = lightenColor(color, 50);
     context.lineWidth = 1;
     context.beginPath();
@@ -447,35 +434,6 @@ function drawNextPiece() {
     }
 }
 
-function drawHeldPiece() {
-    if (!heldPiece) {
-        holdBlockCtx.clearRect(0, 0, holdBlockCanvas.width, holdBlockCanvas.height);
-        return;
-    }
-    const heldShape = heldPiece.shape;
-    const heldColor = heldPiece.color;
-
-    holdBlockCtx.clearRect(0, 0, holdBlockCanvas.width, holdBlockCanvas.height);
-    
-    let shapeWidth = heldShape[0].length;
-    let shapeHeight = heldShape.length;
-    
-    const maxDim = Math.max(shapeWidth, shapeHeight);
-    const heldBlockSize = Math.floor(Math.min(holdBlockCanvas.width, holdBlockCanvas.height) / (maxDim + 1));
-
-    const offsetX = (holdBlockCanvas.width - shapeWidth * heldBlockSize) / 2;
-    const offsetY = (holdBlockCanvas.height - shapeHeight * heldBlockSize) / 2;
-
-    for (let r = 0; r < heldShape.length; r++) {
-        for (let c = 0; c < heldShape[r].length; c++) {
-            if (heldShape[r][c]) {
-                drawBlock(c, r, heldColor, holdBlockCtx, heldBlockSize);
-            }
-        }
-    }
-}
-
-
 function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -490,7 +448,6 @@ function drawBoard() {
         }
     }
     
-    // Draw grid lines
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
     for (let r = 0; r < ROWS; r++) {
@@ -545,8 +502,6 @@ function rotatePiece() {
         }
     }
     
-    let isTSpinRotation = (currentPieceIndex === T_SHAPE_INDEX);
-
     if (isValidMove(0, 0, newShape)) {
         currentPiece.shape = newShape;
         rotateSound.currentTime = 0;
@@ -598,39 +553,6 @@ function mergePiece() {
         }
     }
     checkLines();
-}
-
-function holdPiece() {
-    if (hasSwappedThisTurn) return;
-
-    holdSound.currentTime = 0;
-    holdSound.play().catch(e => console.error("Greška pri puštanju hold sounda:", e));
-
-    if (!heldPiece) {
-        heldPiece = {
-            shape: TETROMINOES[currentPieceIndex],
-            color: COLORS[currentPieceIndex],
-            x: 0,
-            y: 0
-        };
-        generateNewPiece();
-    } else {
-        const tempPiece = {
-            shape: TETROMINOES[currentPieceIndex],
-            color: COLORS[currentPieceIndex],
-            x: 0,
-            y: 0
-        };
-
-        const originalHeldIndex = TETROMINOES.findIndex(p => p === heldPiece.shape);
-        currentPieceIndex = originalHeldIndex;
-        
-        createCurrentPiece();
-        heldPiece = tempPiece;
-    }
-    hasSwappedThisTurn = true;
-    draw();
-    drawHeldPiece();
 }
 
 function isTSpin() {
@@ -846,17 +768,26 @@ function animateLineClear(timestamp) {
         return;
     }
 
+    // Explozija animacija
     drawBoard();
-    
-    // Animate line clear with a shrinking effect
+    const midPoint = COLS / 2;
     for (const r of linesToClear) {
-        const flashProgress = Math.sin(progress * Math.PI); // Sinusoidal function for flash effect
-        ctx.globalAlpha = flashProgress;
-        ctx.fillStyle = THEMES[currentTheme].flashColor;
-        ctx.fillRect(0, r * BLOCK_SIZE, canvas.width, BLOCK_SIZE);
+        const lineProgress = Math.sin(progress * Math.PI); // Sinusoidalna funkcija za efekat animacije
+        
+        for (let c = 0; c < COLS; c++) {
+            const block = board[r][c];
+            if (block) {
+                const color = block;
+                const shrinkSize = BLOCK_SIZE * (1 - lineProgress);
+                const offset = (BLOCK_SIZE - shrinkSize) / 2;
+                
+                // Crtanje bloka sa smanjenim dimenzijama
+                ctx.fillStyle = color;
+                ctx.fillRect(c * BLOCK_SIZE + offset, r * BLOCK_SIZE + offset, shrinkSize, shrinkSize);
+            }
+        }
     }
     
-    ctx.globalAlpha = 1.0;
     drawCurrentPiece();
     
     requestAnimationFrame(animateLineClear);
@@ -949,8 +880,6 @@ function initGame() {
     linesClearedThisLevel = 0;
     linesClearedTotal = 0;
     nextAssistReward = 5000;
-    heldPiece = null;
-    hasSwappedThisTurn = false;
     
     scoreDisplay.textContent = `Score: ${score}`;
     levelDisplay.textContent = `Level: ${level}`;
@@ -986,7 +915,6 @@ function initGame() {
     animationFrameId = requestAnimationFrame(gameLoop);
     
     draw();
-    drawHeldPiece();
 }
 
 function togglePause() {
@@ -1032,15 +960,11 @@ function handleKeydown(e) {
             rotatePiece();
             draw();
             break;
-        case ' ': // Hard drop
+        case ' ':
             dropPiece();
             draw();
             break;
-        case 'h': // Hold piece
-        case 'H':
-            holdPiece();
-            break;
-        case 'p': // Pause
+        case 'p':
         case 'P':
             togglePause();
             break;
