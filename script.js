@@ -168,28 +168,16 @@ function initDOMAndEventListeners() {
 
     let touchStartX = 0;
     let touchStartY = 0;
-    let touchMoveTimer;
-    const swipeThreshold = window.innerHeight * 0.1; // Dinamički prag za swipe (10% visine ekrana)
-    const tapThreshold = 20; // Manji prag za tap (u pikselima)
-    const hardDropDelay = 150; // Vreme u milisekundama za hard drop
+    let isMoving = false;
+    let moveThreshold = window.innerWidth * 0.02;
+    let swipeThreshold = window.innerHeight * 0.05;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        
-        // Podesi timer za soft drop (ako se drži prst)
-        touchMoveTimer = setInterval(() => {
-            if (!isValidMove(0, 1, currentPiece.shape)) {
-                clearInterval(touchMoveTimer);
-                return;
-            }
-            currentPiece.y++;
-            score += 1;
-            scoreDisplay.textContent = `Score: ${score}`;
-            draw();
-        }, 100);
+        isMoving = false;
     });
 
     canvas.addEventListener('touchmove', e => {
@@ -200,58 +188,38 @@ function initDOMAndEventListeners() {
         const currentY = e.touches[0].clientY;
         const dx = currentX - touchStartX;
         const dy = currentY - touchStartY;
-        
+
+        // Provera da li je pokret veći od praga
+        if (Math.abs(dx) > moveThreshold || Math.abs(dy) > moveThreshold) {
+            isMoving = true;
+        }
+
         // Horizontalno pomeranje
-        if (Math.abs(dx) > BLOCK_SIZE) {
+        if (Math.abs(dx) > moveThreshold) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
-            touchStartX = currentX; // Resetuj početnu poziciju za glatko kretanje
+            touchStartX = currentX;
+            draw();
         }
-
-        // Soft drop
-        if (dy > BLOCK_SIZE) {
-            if (isValidMove(0, 1, currentPiece.shape)) {
-                currentPiece.y++;
-                score += 1;
-                scoreDisplay.textContent = `Score: ${score}`;
-            }
-            touchStartY = currentY; // Resetuj početnu poziciju za soft drop
-        }
-
-        draw();
     });
 
     canvas.addEventListener('touchend', e => {
         if (gameOver || isPaused || !currentPiece) return;
-        
-        clearInterval(touchMoveTimer); // Zaustavi soft drop timer
         
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        // Provera da li je to bio Hard drop (brza gesta nadole)
-        if (dy > swipeThreshold && performance.now() - lastDropTime < hardDropDelay) {
-             dropPiece();
-        } else if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
-            // Provera da li je bio tap
-            const rect = canvas.getBoundingClientRect();
-            const tapY = touchEndY - rect.top;
-            
-            // Ako je tap na gornjoj polovini, rotacija
-            if (tapY < rect.height * 0.5) {
-                rotatePiece();
-            } else { // Ako je tap na donjoj polovini, soft drop (fallback)
-                if (isValidMove(0, 1, currentPiece.shape)) {
-                    currentPiece.y++;
-                    score += 1;
-                    scoreDisplay.textContent = `Score: ${score}`;
-                }
-            }
+        if (!isMoving) {
+            // TAP za rotaciju
+            rotatePiece();
+        } else if (dy > swipeThreshold && Math.abs(dx) < Math.abs(dy)) {
+            // SWIPE DOLE za hard drop
+            dropPiece();
         }
         
         draw();
@@ -676,10 +644,13 @@ function gameLoop(timestamp) {
     dropInterval = Math.max(100, 1000 - level * 50);
 
     if (timestamp - lastDropTime > dropInterval) {
-        if (currentPiece && isValidMove(0, 1, currentPiece.shape)) {
-            currentPiece.y++;
-        } else if (currentPiece) {
-            mergePiece();
+        if (currentPiece) {
+            if (isValidMove(0, 1, currentPiece.shape)) {
+                currentPiece.y++;
+            } else {
+                // Trenutno registrovanje spuštanja bloka
+                mergePiece();
+            }
         }
         lastDropTime = timestamp;
     }
