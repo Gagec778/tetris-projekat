@@ -44,14 +44,14 @@ body {
 #info-section {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: stretch;
     width: 100%;
     padding: 0 5px;
     box-sizing: border-box;
     gap: 10px;
 }
  
-#game-stats, #next-block-container, #hold-block-container {
+#game-stats, #next-block-container {
     background-color: #1a1a2e;
     border: 2px solid var(--border-color);
     border-radius: 8px;
@@ -72,7 +72,7 @@ body {
     gap: 2px;
 }
 
-#next-block-container, #hold-block-container {
+#next-block-container {
     font-size: 0.7em;
     gap: 3px;
 }
@@ -103,7 +103,7 @@ body {
     color: #ffcc00;
 }
 
-#nextBlockCanvas, #holdBlockCanvas {
+#nextBlockCanvas {
     background-color: #0d0d1a;
     border: 1px solid #4fa3d1;
     border-radius: 5px;
@@ -122,7 +122,7 @@ canvas#gameCanvas {
     display: block;
     border-radius: 5px;
     touch-action: none;
-    width: calc(var(--block-size) * 10); /* Use CSS variable for responsive canvas */
+    width: calc(var(--block-size) * 10);
     height: calc(var(--block-size) * 20);
     max-width: 100%;
     max-height: 100%;
@@ -229,7 +229,7 @@ canvas#gameCanvas {
     z-index: 10;
     animation: fadeOut 1.5s forwards;
     display: none;
-    white-space: pre-wrap; /* Allows for multiline messages */
+    white-space: pre-wrap;
 }
 @keyframes fadeOut {
     from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -289,9 +289,9 @@ canvas#gameCanvas {
 @media (max-width: 600px) {
     body { font-size: 12px; }
     #main-game-wrapper { padding: 5px; gap: 5px; }
-    #info-section { flex-wrap: wrap; justify-content: space-around; }
-    #game-stats, #next-block-container, #hold-block-container { flex-basis: 45%; min-width: unset; }
-    #next-block-container, #hold-block-container { font-size: 0.6em; }
+    #info-section { flex-wrap: nowrap; justify-content: space-around; align-items: flex-start;}
+    #game-stats, #next-block-container { flex-basis: 45%; min-width: unset; }
+    #next-block-container { font-size: 0.6em; }
     .overlay h1 { font-size: 1.5em; }
     .overlay button, .overlay select { padding: 10px 20px; font-size: 1em; }
 }
