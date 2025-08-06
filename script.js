@@ -49,7 +49,7 @@ const THEMES = {
 
 const T_SHAPE_INDEX = 5;
 
-let canvas, ctx, nextBlockCanvas, nextBlockCtx, holdBlockCanvas, holdBlockCtx;
+let canvas, ctx, nextBlockCanvas, nextBlockCtx;
 const COLS = 10;
 const ROWS = 20;
 let BLOCK_SIZE;
@@ -65,8 +65,7 @@ const TETROMINOES = [
 ];
 
 let board = [];
-let currentPiece, nextPiece, heldPiece = null;
-let canHold = true;
+let currentPiece, nextPiece;
 let score = 0;
 let gameOver = true;
 let isPaused = false;
@@ -74,6 +73,7 @@ let combo = 0;
 let assists = 0;
 let bestScore = 0;
 let nextAssistReward = 5000;
+let bombBonus = 1500;
 
 let dropInterval = 1000;
 let level = 1;
@@ -85,15 +85,14 @@ const ultraTimeLimit = 120;
 let lastDropTime = 0;
 let animationFrameId;
 let currentPieceIndex, nextPieceIndex;
-let heldPieceIndex = null;
 let COLORS;
 let currentTheme;
 let currentMode = 'classic';
 let resizeObserver;
 let keyBindings;
 
-let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsButton, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, restartButtonInline, continueButton, assistsPanel, assistsDisplay;
+let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsButton, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, restartButtonInline, continueButton;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
@@ -120,21 +119,13 @@ function setCanvasSize() {
     const root = document.documentElement;
     const infoSection = document.getElementById('info-section');
     const gameControls = document.getElementById('game-controls');
+    const wrapper = document.getElementById('main-game-wrapper');
 
-    const availableHeight = window.innerHeight - 20;
-    const availableWidth = window.innerWidth - 20;
+    const availableWidth = wrapper.clientWidth - 20;
+    const availableHeight = wrapper.clientHeight - infoSection.offsetHeight - gameControls.offsetHeight - 20;
 
-    let totalVerticalSpace = infoSection.offsetHeight + gameControls.offsetHeight + 20;
-    let availableGameHeight = availableHeight - totalVerticalSpace;
+    let tempBlockSize = Math.floor(Math.min(availableWidth / COLS, availableHeight / ROWS));
     
-    // Uvek dajemo prednost visini
-    let tempBlockSize = Math.floor(availableGameHeight / ROWS);
-    
-    // Proveravamo da li je širina platna prevelika
-    if (tempBlockSize * COLS > availableWidth) {
-        tempBlockSize = Math.floor(availableWidth / (COLS + 7)); 
-    }
-
     BLOCK_SIZE = Math.max(12, Math.min(tempBlockSize, 40));
 
     root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
@@ -145,8 +136,6 @@ function setCanvasSize() {
     const sideCanvasSize = Math.floor(BLOCK_SIZE * 4);
     nextBlockCanvas.width = sideCanvasSize;
     nextBlockCanvas.height = sideCanvasSize;
-    holdBlockCanvas.width = sideCanvasSize;
-    holdBlockCanvas.height = sideCanvasSize;
     
     TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
     TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
@@ -155,7 +144,6 @@ function setCanvasSize() {
     if (!gameOver && !isPaused) {
         draw();
         drawNextPiece();
-        drawHeldPiece();
     }
 }
 
@@ -164,8 +152,6 @@ function initDOMAndEventListeners() {
     ctx = canvas.getContext('2d');
     nextBlockCanvas = document.getElementById('nextBlockCanvas');
     nextBlockCtx = nextBlockCanvas.getContext('2d');
-    holdBlockCanvas = document.getElementById('holdBlockCanvas');
-    holdBlockCtx = holdBlockCanvas.getContext('2d');
     
     dropSound = document.getElementById('dropSound');
     clearSound = document.getElementById('clearSound');
@@ -174,6 +160,7 @@ function initDOMAndEventListeners() {
     tSpinSound = document.getElementById('tSpinSound');
     tetrisSound = document.getElementById('tetrisSound');
     backgroundMusic = document.getElementById('backgroundMusic');
+    bombSound = document.getElementById('bombSound');
 
     startScreen = document.getElementById('start-screen');
     gameOverScreen = document.getElementById('game-over-screen');
@@ -190,8 +177,6 @@ function initDOMAndEventListeners() {
     restartButtonInline = document.getElementById('restart-button-inline');
     assistsButton = document.getElementById('assist-button');
     assistsCountDisplay = document.getElementById('assists-count');
-    assistsPanel = document.getElementById('assists-panel');
-    assistsDisplay = document.getElementById('assists-display');
     bestScoreDisplay = document.getElementById('best-score-display');
     levelDisplay = document.getElementById('level-display');
     themeSwitcher = document.getElementById('theme-switcher');
@@ -268,7 +253,6 @@ function initDOMAndEventListeners() {
     let touchStartY = 0;
     let lastTouchX = 0;
     let lastTouchY = 0;
-    let touchMoveDetected = false;
 
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
@@ -276,7 +260,6 @@ function initDOMAndEventListeners() {
         touchStartY = e.touches[0].clientY;
         lastTouchX = touchStartX;
         lastTouchY = touchStartY;
-        touchMoveDetected = false;
     });
 
     canvas.addEventListener('touchmove', e => {
@@ -287,13 +270,8 @@ function initDOMAndEventListeners() {
         const currentTouchY = e.touches[0].clientY;
         const dx = currentTouchX - lastTouchX;
         const dy = currentTouchY - lastTouchY;
-        const totalDx = currentTouchX - touchStartX;
         const totalDy = currentTouchY - touchStartY;
         
-        if (Math.abs(totalDx) > TAP_THRESHOLD || Math.abs(totalDy) > TAP_THRESHOLD) {
-            touchMoveDetected = true;
-        }
-
         if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
@@ -325,11 +303,9 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        // Cisti tap - rotiraj
         if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
             rotatePiece();
         } 
-        // Vertikalni swipe dovoljno dug - hard drop
         else if (dy > BLOCK_SIZE * 3 && dy > Math.abs(dx)) { 
             dropPiece();
         }
@@ -393,7 +369,7 @@ function createCurrentPiece() {
         shape: shape,
         color: color,
         x: startX,
-        y: -1
+        y: -2
     };
 }
 
@@ -418,24 +394,6 @@ function generateNewPiece() {
     if (!isValidMove(0, 0, currentPiece.shape)) {
         endGame();
     }
-}
-
-function holdPiece() {
-    if (!canHold) return;
-    
-    const originalHeldIndex = heldPieceIndex;
-    heldPieceIndex = currentPieceIndex;
-    
-    if (originalHeldIndex !== null) {
-        currentPieceIndex = originalHeldIndex;
-        createCurrentPiece();
-    } else {
-        generateNewPiece();
-    }
-    
-    canHold = false;
-    drawHeldPiece();
-    draw();
 }
 
 function setTheme(themeName) {
@@ -552,11 +510,6 @@ function drawNextPiece() {
     drawPieceInCanvas(nextPiece, nextBlockCtx, nextBlockCanvas);
 }
 
-function drawHeldPiece() {
-    const piece = heldPieceIndex !== null ? { shape: TETROMINOES[heldPieceIndex], color: COLORS[heldPieceIndex] } : null;
-    drawPieceInCanvas(piece, holdBlockCtx, holdBlockCanvas);
-}
-
 function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = THEMES[currentTheme].boardBackground;
@@ -667,7 +620,6 @@ function mergePiece() {
             }
         }
     }
-    canHold = true;
     checkLines();
 }
 
@@ -1039,9 +991,6 @@ function initGame() {
     linesClearedThisLevel = 0;
     linesClearedTotal = 0;
     nextAssistReward = 5000;
-    heldPiece = null;
-    heldPieceIndex = null;
-    canHold = true;
     
     scoreDisplay.textContent = `Score: ${score}`;
     levelDisplay.textContent = `Level: ${level}`;
@@ -1144,9 +1093,6 @@ function handleKeydown(e) {
             dropPiece();
             draw();
             break;
-        case keyBindings.hold.toLowerCase():
-            holdPiece();
-            break;
         case keyBindings.assist.toLowerCase():
             useAssist();
             break;
@@ -1160,13 +1106,9 @@ function handleKeydown(e) {
 function updateAssistsDisplay() {
     assistsCountDisplay.textContent = assists;
     if (assists > 0) {
-        assistsButton.style.opacity = 1;
-        assistsButton.style.cursor = 'pointer';
-        assistsDisplay.style.color = 'var(--main-color)';
+        assistsButton.classList.remove('disabled');
     } else {
-        assistsButton.style.opacity = 0.5;
-        assistsButton.style.cursor = 'not-allowed';
-        assistsDisplay.style.color = '#777';
+        assistsButton.classList.add('disabled');
     }
 }
 
@@ -1175,35 +1117,52 @@ function useAssist() {
         assists--;
         localStorage.setItem('assists', assists);
         updateAssistsDisplay();
+        
+        bombSound.currentTime = 0;
+        bombSound.play().catch(e => console.error("Greška pri puštanju zvuka bombe:", e));
 
-        const fullLines = [];
+        const fragments = [];
         for (let r = 0; r < ROWS; r++) {
-            let isFull = true;
             for (let c = 0; c < COLS; c++) {
-                if (board[r][c] === 0) {
-                    isFull = false;
-                    break;
+                if (board[r][c] !== 0) {
+                    fragments.push({ x: c * BLOCK_SIZE, y: r * BLOCK_SIZE, color: board[r][c] });
                 }
             }
-            if (isFull) fullLines.push(r);
         }
-
-        let assistLine;
-        if (fullLines.length < ROWS - 1) {
-            let randomLine = Math.floor(Math.random() * ROWS);
-            while (fullLines.includes(randomLine)) {
-                randomLine = Math.floor(Math.random() * ROWS);
-            }
-            assistLine = randomLine;
-        } else {
-            assistLine = Math.floor(Math.random() * ROWS);
-        }
-
-        board[assistLine] = Array(COLS).fill(THEMES[currentTheme].flashColor);
         
-        linesToClear.push(assistLine);
+        let explosionDelay = 0;
+        const explosionDuration = 1500;
+        
+        fragments.forEach((frag) => {
+            const fragmentEl = document.createElement('div');
+            fragmentEl.classList.add('bomb-animation');
+            fragmentEl.style.width = `${BLOCK_SIZE}px`;
+            fragmentEl.style.height = `${BLOCK_SIZE}px`;
+            fragmentEl.style.left = `${frag.x}px`;
+            fragmentEl.style.top = `${frag.y}px`;
+            fragmentEl.style.backgroundColor = frag.color;
+
+            const dx = (Math.random() - 0.5) * 400; 
+            const dy = (Math.random() - 0.5) * 400; 
+            fragmentEl.style.setProperty('--dx', `${dx}px`);
+            fragmentEl.style.setProperty('--dy', `${dy}px`);
+
+            canvas.parentElement.appendChild(fragmentEl);
+            
+            setTimeout(() => {
+                fragmentEl.remove();
+            }, explosionDuration);
+        });
+
         isAnimating = true;
-        animationStart = performance.now();
+
+        setTimeout(() => {
+            initBoard();
+            score += bombBonus;
+            scoreDisplay.textContent = `Score: ${score}`;
+            generateNewPiece();
+            isAnimating = false;
+        }, explosionDuration);
     }
 }
 
