@@ -32,6 +32,13 @@ const THEMES = {
         lineColor: '#bb86fc',
         blockColors: ['#03dac6', '#cf6679', '#f3a469', '#f0e68c', '#aaff00', '#8c5eff', '#e74c3c'],
         flashColor: '#ffffff'
+    },
+    'lava': {
+        background: '#220000',
+        boardBackground: '#440000',
+        lineColor: '#FF4500',
+        blockColors: ['#FFD700', '#FF4500', '#FF1493', '#FF6347', '#FF8C00', '#DC143C', '#B22222'],
+        flashColor: '#FF6347'
     }
 };
 
@@ -74,6 +81,7 @@ let COLORS;
 let currentTheme;
 let currentMode = 'classic';
 let hasSwappedThisTurn = false;
+let resizeObserver;
 
 let dropSound, clearSound, rotateSound, gameOverSound, holdSound, tSpinSound, tetrisSound, backgroundMusic;
 let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, startCountdown;
@@ -93,39 +101,40 @@ function pauseBackgroundMusic() {
     backgroundMusicPlaying = false;
 }
 
+// Function to handle resizing and ensure game fits
 function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
-    const containerWidth = mainGameWrapper.clientWidth - 20;
-    const infoSectionHeight = document.getElementById('info-section').clientHeight;
-    const pauseButtonHeight = document.getElementById('pause-button').clientHeight;
-    const gap = 10;
-    const totalVerticalPadding = 20;
-    const availableHeight = mainGameWrapper.clientHeight - infoSectionHeight - pauseButtonHeight - gap * 2 - totalVerticalPadding;
+    const infoSection = document.getElementById('info-section');
+    const pauseButton = document.getElementById('pause-button');
+    const style = document.documentElement.style;
 
-    let tempBlockSizeWidth = Math.floor(containerWidth / (COLS + 5)); // Dodao sam 5 kolona da bih izbegao da canvas bude prevelik
+    const gameAspectRatio = COLS / ROWS;
+    const padding = 20;
+
+    const availableWidth = mainGameWrapper.clientWidth - padding;
+    const availableHeight = mainGameWrapper.clientHeight - infoSection.offsetHeight - pauseButton.offsetHeight - padding - 10;
+    
+    let tempBlockSizeWidth = Math.floor(availableWidth / COLS);
     let tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
-    
-    BLOCK_SIZE = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
 
-    if (BLOCK_SIZE > 35) {
-        BLOCK_SIZE = 35;
-    }
+    let newBlockSize = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
     
-    if (BLOCK_SIZE < 1) {
-        BLOCK_SIZE = 1;
-    }
+    // Set max/min block size to maintain playability
+    newBlockSize = Math.max(10, Math.min(40, newBlockSize));
+
+    BLOCK_SIZE = newBlockSize;
+    
+    style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
     
-    const nextBlockContainer = document.getElementById('next-block-container');
-    const holdBlockContainer = document.getElementById('hold-block-container');
-    const containerSize = nextBlockContainer.clientWidth;
-    nextBlockCanvas.width = containerSize;
-    nextBlockCanvas.height = containerSize;
-    holdBlockCanvas.width = containerSize;
-    holdBlockCanvas.height = containerSize;
-    
+    const nextHoldContainerWidth = Math.floor(mainGameWrapper.clientWidth / 3) - 10;
+    nextBlockCanvas.width = nextHoldContainerWidth;
+    nextBlockCanvas.height = nextHoldContainerWidth;
+    holdBlockCanvas.width = nextHoldContainerWidth;
+    holdBlockCanvas.height = nextHoldContainerWidth;
+
     if (!gameOver && !isPaused) {
         draw();
         drawNextPiece();
@@ -186,8 +195,15 @@ function initDOMAndEventListeners() {
     themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
     
     document.addEventListener('keydown', handleKeydown);
-    window.addEventListener('resize', setCanvasSize);
     
+    // Using ResizeObserver for responsive canvas
+    resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            setCanvasSize();
+        }
+    });
+    resizeObserver.observe(document.getElementById('main-game-wrapper'));
+
     assistsContainer.addEventListener('click', () => {
         if (gameOver || isPaused) return;
         useAssist();
@@ -217,9 +233,8 @@ function initDOMAndEventListeners() {
     let touchStartX = 0;
     let touchStartY = 0;
     let lastTouchX = 0;
-    
-    const tapThreshold = 20;
-    let touchMoveThreshold = 0;
+    let touchMoveThreshold = 10; // Reduced sensitivity
+    let tapThreshold = 20; // Reduced tap threshold
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -227,8 +242,6 @@ function initDOMAndEventListeners() {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         lastTouchX = e.touches[0].clientX;
-        
-        touchMoveThreshold = BLOCK_SIZE * 0.4;
     });
 
     canvas.addEventListener('touchmove', e => {
@@ -315,13 +328,47 @@ function generateNewPiece() {
     }
 }
 
+function setTheme(themeName) {
+    currentTheme = themeName;
+    const theme = THEMES[themeName];
+    if (theme) {
+        COLORS = theme.blockColors;
+        document.body.style.background = theme.background;
+        document.documentElement.style.setProperty('--background-color', theme.background);
+        document.documentElement.style.setProperty('--board-bg-color', theme.boardBackground);
+        document.documentElement.style.setProperty('--border-color', theme.lineColor);
+        document.documentElement.style.setProperty('--main-color', theme.lineColor);
+        document.documentElement.style.setProperty('--flash-color', theme.flashColor);
+        localStorage.setItem('theme', themeName);
+    }
+}
+
 function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
     if (!context) return;
-    context.fillStyle = color;
+    
+    const lightColor = lightenColor(color, 20);
+    const darkColor = darkenColor(color, 40);
+
+    const gradient = context.createLinearGradient(x * blockSize, y * blockSize, x * blockSize + blockSize, y * blockSize + blockSize);
+    gradient.addColorStop(0, lightColor);
+    gradient.addColorStop(1, darkColor);
+
+    context.fillStyle = gradient;
     context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
-    context.strokeStyle = darkenColor(color, 40);
+
+    // Inner shadow for 3D effect
+    context.strokeStyle = darkenColor(color, 50);
     context.lineWidth = 1;
-    context.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
+    context.strokeRect(x * blockSize + 1, y * blockSize + 1, blockSize - 2, blockSize - 2);
+
+    // subtle highlight
+    context.strokeStyle = lightenColor(color, 50);
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(x * blockSize + 1, y * blockSize + 1);
+    context.lineTo(x * blockSize + blockSize - 1, y * blockSize + 1);
+    context.lineTo(x * blockSize + blockSize - 1, y * blockSize + blockSize - 1);
+    context.stroke();
 }
 
 function lightenColor(color, amount) {
@@ -363,6 +410,9 @@ function drawGhostPiece() {
                 const color = currentPiece.color;
                 ctx.fillStyle = color;
                 ctx.fillRect((currentPiece.x + c) * BLOCK_SIZE, (ghostY + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.strokeStyle = darkenColor(color, 40);
+                ctx.lineWidth = 1;
+                ctx.strokeRect((currentPiece.x + c) * BLOCK_SIZE, (ghostY + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
             }
         }
     }
@@ -379,23 +429,11 @@ function drawNextPiece() {
     
     nextBlockCtx.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
     
-    let shapeWidth = 0;
-    for (let r = 0; r < nextShape.length; r++) {
-        let rowWidth = 0;
-        for (let c = 0; c < nextShape[r].length; c++) {
-            if (nextShape[r][c]) {
-                rowWidth = c + 1;
-            }
-        }
-        if (rowWidth > shapeWidth) {
-            shapeWidth = rowWidth;
-        }
-    }
-    const shapeHeight = nextShape.length;
+    let shapeWidth = nextShape[0].length;
+    let shapeHeight = nextShape.length;
 
-    const canvasSize = Math.min(nextBlockCanvas.width, nextBlockCanvas.height);
-    const pieceSize = Math.max(shapeWidth, shapeHeight);
-    const nextBlockSize = Math.floor(canvasSize / (pieceSize + 1));
+    const maxDim = Math.max(shapeWidth, shapeHeight);
+    const nextBlockSize = Math.floor(Math.min(nextBlockCanvas.width, nextBlockCanvas.height) / (maxDim + 1));
     
     const offsetX = (nextBlockCanvas.width - shapeWidth * nextBlockSize) / 2;
     const offsetY = (nextBlockCanvas.height - shapeHeight * nextBlockSize) / 2;
@@ -403,11 +441,7 @@ function drawNextPiece() {
     for (let r = 0; r < nextShape.length; r++) {
         for (let c = 0; c < nextShape[r].length; c++) {
             if (nextShape[r][c]) {
-                nextBlockCtx.fillStyle = nextColor;
-                nextBlockCtx.fillRect(offsetX + c * nextBlockSize, offsetY + r * nextBlockSize, nextBlockSize, nextBlockSize);
-                nextBlockCtx.strokeStyle = darkenColor(nextColor, 40);
-                nextBlockCtx.lineWidth = 1;
-                nextBlockCtx.strokeRect(offsetX + c * nextBlockSize, offsetY + r * nextBlockSize, nextBlockSize, nextBlockSize);
+                drawBlock(c, r, nextColor, nextBlockCtx, nextBlockSize);
             }
         }
     }
@@ -423,23 +457,11 @@ function drawHeldPiece() {
 
     holdBlockCtx.clearRect(0, 0, holdBlockCanvas.width, holdBlockCanvas.height);
     
-    let shapeWidth = 0;
-    for (let r = 0; r < heldShape.length; r++) {
-        let rowWidth = 0;
-        for (let c = 0; c < heldShape[r].length; c++) {
-            if (heldShape[r][c]) {
-                rowWidth = c + 1;
-            }
-        }
-        if (rowWidth > shapeWidth) {
-            shapeWidth = rowWidth;
-        }
-    }
-    const shapeHeight = heldShape.length;
+    let shapeWidth = heldShape[0].length;
+    let shapeHeight = heldShape.length;
     
-    const canvasSize = Math.min(holdBlockCanvas.width, holdBlockCanvas.height);
-    const pieceSize = Math.max(shapeWidth, shapeHeight);
-    const heldBlockSize = Math.floor(canvasSize / (pieceSize + 1));
+    const maxDim = Math.max(shapeWidth, shapeHeight);
+    const heldBlockSize = Math.floor(Math.min(holdBlockCanvas.width, holdBlockCanvas.height) / (maxDim + 1));
 
     const offsetX = (holdBlockCanvas.width - shapeWidth * heldBlockSize) / 2;
     const offsetY = (holdBlockCanvas.height - shapeHeight * heldBlockSize) / 2;
@@ -447,11 +469,7 @@ function drawHeldPiece() {
     for (let r = 0; r < heldShape.length; r++) {
         for (let c = 0; c < heldShape[r].length; c++) {
             if (heldShape[r][c]) {
-                holdBlockCtx.fillStyle = heldColor;
-                holdBlockCtx.fillRect(offsetX + c * heldBlockSize, offsetY + r * heldBlockSize, heldBlockSize, heldBlockSize);
-                holdBlockCtx.strokeStyle = darkenColor(heldColor, 40);
-                holdBlockCtx.lineWidth = 1;
-                holdBlockCtx.strokeRect(offsetX + c * heldBlockSize, offsetY + r * heldBlockSize, heldBlockSize, heldBlockSize);
+                drawBlock(c, r, heldColor, holdBlockCtx, heldBlockSize);
             }
         }
     }
@@ -472,10 +490,11 @@ function drawBoard() {
         }
     }
     
+    // Draw grid lines
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 1;
             ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
         }
     }
@@ -526,10 +545,7 @@ function rotatePiece() {
         }
     }
     
-    let isTSpinRotation = false;
-    if (currentPieceIndex === T_SHAPE_INDEX) {
-        isTSpinRotation = true;
-    }
+    let isTSpinRotation = (currentPieceIndex === T_SHAPE_INDEX);
 
     if (isValidMove(0, 0, newShape)) {
         currentPiece.shape = newShape;
@@ -606,13 +622,8 @@ function holdPiece() {
             y: 0
         };
 
-        currentPieceIndex = heldPiece.shape === TETROMINOES[0] ? 0 :
-                            heldPiece.shape === TETROMINOES[1] ? 1 :
-                            heldPiece.shape === TETROMINOES[2] ? 2 :
-                            heldPiece.shape === TETROMINOES[3] ? 3 :
-                            heldPiece.shape === TETROMINOES[4] ? 4 :
-                            heldPiece.shape === TETROMINOES[5] ? 5 :
-                            heldPiece.shape === TETROMINOES[6] ? 6 : undefined;
+        const originalHeldIndex = TETROMINOES.findIndex(p => p === heldPiece.shape);
+        currentPieceIndex = originalHeldIndex;
         
         createCurrentPiece();
         heldPiece = tempPiece;
@@ -621,7 +632,6 @@ function holdPiece() {
     draw();
     drawHeldPiece();
 }
-
 
 function isTSpin() {
     if (currentPieceIndex !== T_SHAPE_INDEX) return false;
@@ -688,7 +698,7 @@ function checkLines() {
             if (clearSound.readyState >= 2) clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
         }
         
-        return; 
+        return;
     } else {
         lastClearWasSpecial = false;
         combo = 0;
@@ -838,23 +848,17 @@ function animateLineClear(timestamp) {
 
     drawBoard();
     
-    ctx.globalAlpha = 1.0 - progress;
-
+    // Animate line clear with a shrinking effect
     for (const r of linesToClear) {
-        for (let c = 0; c < COLS; c++) {
-            if (board[r][c]) {
-                const blockSize = BLOCK_SIZE * (1 - progress);
-                const x = c * BLOCK_SIZE + BLOCK_SIZE * progress / 2;
-                const y = r * BLOCK_SIZE + BLOCK_SIZE * progress / 2;
-                
-                ctx.fillStyle = board[r][c];
-                ctx.fillRect(x, y, blockSize, blockSize);
-            }
-        }
+        const flashProgress = Math.sin(progress * Math.PI); // Sinusoidal function for flash effect
+        ctx.globalAlpha = flashProgress;
+        ctx.fillStyle = THEMES[currentTheme].flashColor;
+        ctx.fillRect(0, r * BLOCK_SIZE, canvas.width, BLOCK_SIZE);
     }
+    
     ctx.globalAlpha = 1.0;
     drawCurrentPiece();
-
+    
     requestAnimationFrame(animateLineClear);
 }
 
@@ -965,7 +969,7 @@ function initGame() {
         levelDisplay.style.display = 'block';
         sprintTimerDisplay.style.display = 'none';
     } else if (currentMode === 'sprint') {
-        dropInterval = 100; // Brži drop u sprint modu
+        dropInterval = 100;
         levelDisplay.style.display = 'none';
         sprintTimerDisplay.style.display = 'block';
         startTime = performance.now();
@@ -1000,75 +1004,73 @@ function togglePause() {
         playBackgroundMusic();
     }
 }
-
-function updateAssistsDisplay() {
-    if (assistsCountDisplay) {
-        assistsCountDisplay.textContent = assists;
-    }
-}
-
-function useAssist() {
-    if (assists > 0 && !gameOver && !isPaused && !isAnimating) {
-        initBoard();
-        
-        assists--;
-        localStorage.setItem('assists', assists);
-        updateAssistsDisplay();
-        
-        generateNewPiece();
-        
-        draw();
-    }
-}
-
-function setTheme(themeName) {
-    currentTheme = themeName;
-    COLORS = THEMES[themeName].blockColors;
-    document.body.style.background = `linear-gradient(to bottom right, ${THEMES[themeName].background}, #16213e, #0f3460)`;
-    document.documentElement.style.setProperty('--main-color', THEMES[themeName].lineColor);
-    localStorage.setItem('theme', themeName);
-    
-    setCanvasSize();
-    if (!gameOver && !isPaused) {
-      draw();
-    }
-}
-
 function handleKeydown(e) {
-    if (gameOver || isPaused || isAnimating || !currentPiece) return;
+    if (gameOver || isPaused) return;
     switch (e.key) {
         case 'ArrowLeft':
-            if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
+            if (isValidMove(-1, 0, currentPiece.shape)) {
+                currentPiece.x--;
+                draw();
+            }
             break;
         case 'ArrowRight':
-            if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
+            if (isValidMove(1, 0, currentPiece.shape)) {
+                currentPiece.x++;
+                draw();
+            }
             break;
         case 'ArrowDown':
             if (isValidMove(0, 1, currentPiece.shape)) {
                 currentPiece.y++;
-                if (currentMode !== 'zen') {
-                    score += 1;
-                }
-                scoreDisplay.textContent = `Score: ${score}`;
+                lastDropTime = performance.now();
+                draw();
+            } else {
+                mergePiece();
             }
             break;
         case 'ArrowUp':
             rotatePiece();
+            draw();
             break;
-        case ' ':
-            e.preventDefault();
+        case ' ': // Hard drop
             dropPiece();
+            draw();
             break;
-        case 'c':
-        case 'C':
+        case 'h': // Hold piece
+        case 'H':
             holdPiece();
             break;
-        case 'p':
+        case 'p': // Pause
         case 'P':
             togglePause();
             break;
     }
-    draw();
 }
 
-document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
+function updateAssistsDisplay() {
+    assistsCountDisplay.textContent = assists;
+    if (assists > 0) {
+        assistsContainer.style.opacity = 1;
+        assistsContainer.style.cursor = 'pointer';
+    } else {
+        assistsContainer.style.opacity = 0.5;
+        assistsContainer.style.cursor = 'not-allowed';
+    }
+}
+
+function useAssist() {
+    if (assists > 0) {
+        assists--;
+        localStorage.setItem('assists', assists);
+        updateAssistsDisplay();
+
+        const assistLine = Math.floor(Math.random() * (ROWS - 5)) + 5;
+        board[assistLine] = Array(COLS).fill(THEMES[currentTheme].flashColor);
+        
+        linesToClear.push(assistLine);
+        isAnimating = true;
+        animationStart = performance.now();
+    }
+}
+
+window.addEventListener('load', initDOMAndEventListeners);
