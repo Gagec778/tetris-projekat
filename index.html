@@ -9,16 +9,19 @@
 </head>
 <body>
     <div id="main-game-wrapper">
+        <div id="background-image"></div>
         <div id="info-section">
+            <div id="hold-block-container">
+                Hold:
+                <canvas id="holdBlockCanvas"></canvas>
+            </div>
+            
             <div id="game-stats">
                 <div id="score-display">Score: 0</div>
                 <div id="best-score-display">BEST: 0</div>
                 <div id="level-display">Level: 1</div>
                 <div id="sprint-timer" style="display: none;">TIME: 0.00s</div>
                 <div id="ultra-timer" style="display: none;">TIME: 0.00s</div>
-                <div id="assists-container">
-                    <span class="bomb-icon">💣</span><span id="assists-count">0</span>
-                </div>
             </div>
             
             <div id="next-block-container">
@@ -30,6 +33,9 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="game-controls">
+            <button id="assist-button" class="btn">
+                <span class="bomb-icon">💣</span><span id="assists-count">0</span>
+            </button>
             <button id="pause-button">PAUSE</button>
             <button id="restart-button-inline" style="display: none;">RESTART</button>
         </div>
@@ -59,6 +65,7 @@
                 <option value="lava">Lava</option>
             </select>
         </div>
+        <button id="controls-button">Podesi kontrole</button>
         <p>Pritisni dugme da započneš igru!</p>
         <button id="start-button">Pokreni Igru</button>
     </div>
@@ -75,6 +82,32 @@
     <div id="pause-screen" class="overlay" style="display: none;">
         <h1>PAUSED</h1>
         <button id="resume-button">NASTAVI IGRU</button>
+    </div>
+
+    <div id="controls-modal" style="display: none;">
+        <h2>Podesi kontrole</h2>
+        <div class="control-item">
+            <span>Levo:</span><input type="text" data-action="left" readonly>
+        </div>
+        <div class="control-item">
+            <span>Desno:</span><input type="text" data-action="right" readonly>
+        </div>
+        <div class="control-item">
+            <span>Spusti:</span><input type="text" data-action="down" readonly>
+        </div>
+        <div class="control-item">
+            <span>Rotiraj:</span><input type="text" data-action="rotate" readonly>
+        </div>
+        <div class="control-item">
+            <span>Hard Drop:</span><input type="text" data-action="drop" readonly>
+        </div>
+        <div class="control-item">
+            <span>Hold:</span><input type="text" data-action="hold" readonly>
+        </div>
+        <div class="control-item">
+            <span>Pomoć:</span><input type="text" data-action="assist" readonly>
+        </div>
+        <button id="close-controls-modal">Zatvori</button>
     </div>
     
     <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
