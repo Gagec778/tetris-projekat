@@ -142,8 +142,8 @@
         #controls {
             display: none;
         }
-
-        #start-screen, #game-over-screen {
+        
+        .overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -162,24 +162,24 @@
             box-sizing: border-box;
         }
 
-        #start-screen h1, #game-over-screen h1 {
+        .overlay h1 {
             font-size: 1.8em;
             color: var(--main-color);
             text-shadow: 0 0 10px rgba(97, 218, 251, 0.8);
             margin-bottom: 5px;
         }
-        #start-screen p {
+        .overlay p {
             font-size: 1em;
             margin-bottom: 15px;
         }
 
-        #game-over-screen #final-score {
+        .overlay .final-score {
             font-size: 1.5em;
             color: #e0e0e0;
             margin-bottom: 15px;
         }
 
-        #start-screen button, #game-over-screen button {
+        .overlay button {
             padding: 15px 30px;
             font-size: 1.1em;
             background-color: #e63946;
@@ -192,11 +192,11 @@
             font-family: 'Press Start 2P', cursive;
         }
 
-        #start-screen button:hover, #game-over-screen button:hover {
+        .overlay button:hover {
             background-color: #c72c38;
             transform: translateY(-3px);
         }
-        #start-screen button:active, #game-over-screen button:active {
+        .overlay button:active {
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
@@ -212,6 +212,7 @@
             text-align: center;
             z-index: 10;
             animation: fadeOut 1.5s forwards;
+            display: none; /* Dodeljeno display: none; jer se prikazuje preko JS */
         }
         @keyframes fadeOut {
             from {
@@ -233,7 +234,7 @@
             border-radius: 5px;
         }
         #assists-container:hover {
-            background-color: #4fa3d1;
+            background-color: rgba(79, 163, 209, 0.2);
         }
         #assists-container:active {
             transform: translateY(1px);
@@ -295,13 +296,10 @@
         
         <canvas id="gameCanvas"></canvas>
         <button id="pause-button">PAUSE</button>
-        <div id="combo-display" style="display: none;"></div>
-        
-        <div id="controls" style="display: none;">
-        </div>
+        <div id="combo-display"></div>
     </div>
 
-    <div id="start-screen">
+    <div id="start-screen" class="overlay">
         <h1>PROJEKAT PUZZLE</h1>
         <div id="theme-switcher-container">
             <label for="theme-switcher" style="font-size: 0.8em;">Theme:</label>
@@ -315,10 +313,15 @@
         <button id="start-button">Pokreni Igru</button>
     </div>
 
-    <div id="game-over-screen" style="display: none;">
+    <div id="game-over-screen" class="overlay" style="display: none;">
         <h1>GAME OVER!</h1>
-        <div id="final-score">Your Score: 0</div>
+        <div id="final-score" class="final-score">Your Score: 0</div>
         <button id="restart-button">Restart Game</button>
+    </div>
+
+    <div id="pause-screen" class="overlay" style="display: none;">
+        <h1>PAUSED</h1>
+        <button id="resume-button">NASTAVI IGRU</button>
     </div>
 
     <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
