@@ -169,9 +169,9 @@ function initDOMAndEventListeners() {
     let touchMoved = false;
     let lastPieceMoveTime = 0;
     
-    // Blago smanjen senzitivitet
-    const moveDelay = 65; // Povećano sa 50 na 65
-    const touchMoveThreshold = BLOCK_SIZE * 0.2; // Povećano sa 0.15 na 0.2
+    // Smanjen senzitivitet za kontrole na dodir
+    const moveDelay = 75; // Povećano sa 65 na 75 za sporije horizontalno kretanje
+    const touchMoveThreshold = BLOCK_SIZE * 0.25; // Povećano sa 0.2 na 0.25
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -226,9 +226,10 @@ function initDOMAndEventListeners() {
         const touchEndY = e.changedTouches[0].clientY;
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
-        const tapThreshold = 10;
         
-        // Vraćena preciznija logika za "hard drop" na dodir senke bloka
+        // Povećan prag za tap (sa 10 na 20) kako bi detekcija bila pouzdanija
+        const tapThreshold = 20;
+        
         if (!touchMoved && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
             if (isTapOnGhostPiece(touchEndX, touchEndY)) {
                 dropPiece();
