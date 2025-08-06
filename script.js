@@ -50,7 +50,9 @@ const THEMES = {
 const T_SHAPE_INDEX = 5;
 
 let canvas, ctx, nextBlockCanvas, nextBlockCtx, holdBlockCanvas, holdBlockCtx;
-let COLS, ROWS, BLOCK_SIZE;
+const COLS = 10;
+const ROWS = 20;
+let BLOCK_SIZE;
 
 const TETROMINOES = [
     [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
@@ -78,7 +80,7 @@ let level = 1;
 let linesClearedThisLevel = 0;
 let linesClearedTotal = 0;
 let startTime;
-let ultraTimeLimit = 120;
+const ultraTimeLimit = 120;
 
 let lastDropTime = 0;
 let animationFrameId;
@@ -96,10 +98,9 @@ let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
 
-// Touch sensitivity thresholds, now relative to block size
-let TOUCH_MOVE_THRESHOLD_X = 0;
-let TOUCH_MOVE_THRESHOLD_Y = 0;
-let TAP_THRESHOLD = 0;
+let TOUCH_MOVE_THRESHOLD_X;
+let TOUCH_MOVE_THRESHOLD_Y;
+let TAP_THRESHOLD;
 
 function playBackgroundMusic() {
     if (!backgroundMusicPlaying) {
@@ -119,34 +120,29 @@ function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
     const infoSection = document.getElementById('info-section');
     const gameControls = document.getElementById('game-controls');
-    const gameCanvas = document.getElementById('gameCanvas');
-    const style = document.documentElement.style;
+    const root = document.documentElement;
 
-    const gameAspectRatio = COLS / ROWS;
-    
+    const availableHeight = window.innerHeight - 20;
     const availableWidth = window.innerWidth - 20;
-    const availableHeight = window.innerHeight - infoSection.offsetHeight - gameControls.offsetHeight - 20;
 
-    let tempBlockSizeWidth = Math.floor(availableWidth / COLS);
-    let tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
+    const gameCanvasRatio = COLS / ROWS;
+    const contentHeight = infoSection.offsetHeight + gameControls.offsetHeight;
+    const availableGameHeight = availableHeight - contentHeight - 20;
 
-    BLOCK_SIZE = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
+    let tempBlockSize = Math.floor(Math.min(availableWidth / (COLS + 7), availableGameHeight / ROWS));
     
-    BLOCK_SIZE = Math.max(15, Math.min(40, BLOCK_SIZE));
+    BLOCK_SIZE = Math.max(12, Math.min(tempBlockSize, 40));
 
-    style.setProperty('--block-size', `${BLOCK_SIZE}px`);
+    root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
-    gameCanvas.width = COLS * BLOCK_SIZE;
-    gameCanvas.height = ROWS * BLOCK_SIZE;
+    canvas.width = COLS * BLOCK_SIZE;
+    canvas.height = ROWS * BLOCK_SIZE;
     
-    const holdNextCanvasSize = Math.floor(Math.min(
-        (infoSection.clientWidth / 3) - 10,
-        BLOCK_SIZE * 3
-    ));
-    nextBlockCanvas.width = holdNextCanvasSize;
-    nextBlockCanvas.height = holdNextCanvasSize;
-    holdBlockCanvas.width = holdNextCanvasSize;
-    holdBlockCanvas.height = holdNextCanvasSize;
+    const sideCanvasSize = Math.floor(BLOCK_SIZE * 4);
+    nextBlockCanvas.width = sideCanvasSize;
+    nextBlockCanvas.height = sideCanvasSize;
+    holdBlockCanvas.width = sideCanvasSize;
+    holdBlockCanvas.height = sideCanvasSize;
     
     TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
     TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
@@ -167,9 +163,6 @@ function initDOMAndEventListeners() {
     holdBlockCanvas = document.getElementById('holdBlockCanvas');
     holdBlockCtx = holdBlockCanvas.getContext('2d');
     
-    COLS = 10;
-    ROWS = 20;
-
     dropSound = document.getElementById('dropSound');
     clearSound = document.getElementById('clearSound');
     rotateSound = document.getElementById('rotateSound');
@@ -245,7 +238,6 @@ function initDOMAndEventListeners() {
     });
 
     window.addEventListener('resize', setCanvasSize);
-    setCanvasSize();
     
     const storedBestScore = localStorage.getItem('bestScore');
     if (storedBestScore) {
@@ -271,20 +263,25 @@ function initDOMAndEventListeners() {
     let touchStartX = 0;
     let touchStartY = 0;
     let lastTouchX = 0;
+    let lastTouchY = 0;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        lastTouchX = e.touches[0].clientX;
+        lastTouchX = touchStartX;
+        lastTouchY = touchStartY;
     });
 
     canvas.addEventListener('touchmove', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         
-        const dx = e.touches[0].clientX - lastTouchX;
+        const currentTouchX = e.touches[0].clientX;
+        const currentTouchY = e.touches[0].clientY;
+        const dx = currentTouchX - lastTouchX;
+        const dy = currentTouchY - lastTouchY;
         
         if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             if (dx > 0) {
@@ -292,8 +289,21 @@ function initDOMAndEventListeners() {
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
-            lastTouchX = e.touches[0].clientX;
+            lastTouchX = currentTouchX;
             draw();
+        }
+
+        if (dy > TOUCH_MOVE_THRESHOLD_Y && dy > Math.abs(dx)) {
+            // Soft drop on a vertical swipe down
+            if (isValidMove(0, 1, currentPiece.shape)) {
+                currentPiece.y++;
+                lastDropTime = performance.now();
+                draw();
+                lastTouchY = currentTouchY;
+            } else {
+                mergePiece();
+                lastTouchY = currentTouchY;
+            }
         }
     });
 
@@ -307,12 +317,14 @@ function initDOMAndEventListeners() {
         
         if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
             rotatePiece();
-        } else if (dy > TOUCH_MOVE_THRESHOLD_Y && dy > Math.abs(dx)) {
+        } else if (dy > BLOCK_SIZE * 3 && dy > Math.abs(dx)) { // Povecan prag za hard drop
             dropPiece();
         }
         
         draw();
     });
+
+    setCanvasSize();
 }
 
 function loadKeyBindings() {
@@ -368,7 +380,7 @@ function createCurrentPiece() {
         shape: shape,
         color: color,
         x: startX,
-        y: 0
+        y: -1
     };
 }
 
@@ -418,7 +430,6 @@ function setTheme(themeName) {
     const theme = THEMES[themeName];
     if (theme) {
         COLORS = theme.blockColors;
-        document.body.style.background = theme.background;
         document.documentElement.style.setProperty('--background-color', theme.background);
         document.documentElement.style.setProperty('--board-bg-color', theme.boardBackground);
         document.documentElement.style.setProperty('--border-color', theme.lineColor);
@@ -432,7 +443,7 @@ function setTheme(themeName) {
 function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
     if (!context) return;
     
-    const lightColor = lightenColor(color, 20);
+    const lightColor = lightenColor(color, 30);
     const darkColor = darkenColor(color, 40);
 
     const gradient = context.createLinearGradient(x * blockSize, y * blockSize, x * blockSize + blockSize, y * blockSize + blockSize);
@@ -444,15 +455,7 @@ function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
 
     context.strokeStyle = darkenColor(color, 50);
     context.lineWidth = 1;
-    context.strokeRect(x * blockSize + 1, y * blockSize + 1, blockSize - 2, blockSize - 2);
-
-    context.strokeStyle = lightenColor(color, 50);
-    context.lineWidth = 1;
-    context.beginPath();
-    context.moveTo(x * blockSize + 1, y * blockSize + 1);
-    context.lineTo(x * blockSize + blockSize - 1, y * blockSize + 1);
-    context.lineTo(x * blockSize + blockSize - 1, y * blockSize + blockSize - 1);
-    context.stroke();
+    context.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
 }
 
 function lightenColor(color, amount) {
@@ -494,9 +497,6 @@ function drawGhostPiece() {
                 const color = currentPiece.color;
                 ctx.fillStyle = color;
                 ctx.fillRect((currentPiece.x + c) * BLOCK_SIZE, (ghostY + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                ctx.strokeStyle = darkenColor(color, 40);
-                ctx.lineWidth = 1;
-                ctx.strokeRect((currentPiece.x + c) * BLOCK_SIZE, (ghostY + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
             }
         }
     }
@@ -520,7 +520,6 @@ function drawNextPiece() {
     
     let shapeWidth = nextShape[0].length;
     let shapeHeight = nextShape.length;
-
     const maxDim = Math.max(shapeWidth, shapeHeight);
     const nextBlockSize = Math.floor(Math.min(canvasEl.width, canvasEl.height) / (maxDim + 1));
     
@@ -530,7 +529,11 @@ function drawNextPiece() {
     for (let r = 0; r < nextShape.length; r++) {
         for (let c = 0; c < nextShape[r].length; c++) {
             if (nextShape[r][c]) {
-                drawBlock(c + offsetX/nextBlockSize, r + offsetY/nextBlockSize, nextColor, context, nextBlockSize);
+                drawBlock(c, r, nextColor, context, nextBlockSize);
+                context.save();
+                context.translate(offsetX, offsetY);
+                drawBlock(c, r, nextColor, context, nextBlockSize);
+                context.restore();
             }
         }
     }
@@ -553,7 +556,6 @@ function drawHeldPiece() {
     
     let shapeWidth = heldShape[0].length;
     let shapeHeight = heldShape.length;
-
     const maxDim = Math.max(shapeWidth, shapeHeight);
     const heldBlockSize = Math.floor(Math.min(canvasEl.width, canvasEl.height) / (maxDim + 1));
 
@@ -563,7 +565,10 @@ function drawHeldPiece() {
     for (let r = 0; r < heldShape.length; r++) {
         for (let c = 0; c < heldShape[r].length; c++) {
             if (heldShape[r][c]) {
-                drawBlock(c + offsetX/heldBlockSize, r + offsetY/heldBlockSize, heldColor, context, heldBlockSize);
+                context.save();
+                context.translate(offsetX, offsetY);
+                drawBlock(c, r, heldColor, context, heldBlockSize);
+                context.restore();
             }
         }
     }
@@ -572,23 +577,14 @@ function drawHeldPiece() {
 
 function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = THEMES[currentTheme].boardBackground;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
             if (board[r][c]) {
                 drawBlock(c, r, board[r][c]);
-            } else {
-                ctx.fillStyle = THEMES[currentTheme].boardBackground;
-                ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
             }
-        }
-    }
-    
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1;
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
         }
     }
 }
@@ -605,7 +601,7 @@ function drawCurrentPiece() {
 }
 
 function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y) {
-    if (!board.length || !currentPiece) return false;
+    if (!currentPiece) return false;
     
     for (let r = 0; r < newShape.length; r++) {
         for (let c = 0; c < newShape[r].length; c++) {
@@ -664,11 +660,11 @@ function dropPiece() {
         currentPiece.y++;
     }
     const rowsDropped = currentPiece.y - originalY;
-    if (currentMode === 'classic') {
+    if (currentMode === 'classic' || currentMode === 'marathon') {
         score += rowsDropped * 2;
     }
     scoreDisplay.textContent = `Score: ${score}`;
-    screenShake(); // Treskanje ekrana samo prilikom hard drop-a
+    screenShake(); 
     mergePiece();
     dropSound.currentTime = 0;
     dropSound.play().catch(e => console.error("Greška pri puštanju dropSounda:", e));
@@ -809,7 +805,7 @@ function updateScore(lines, isCurrentSpecial) {
             level++;
             linesClearedThisLevel -= 10;
             levelDisplay.textContent = `Level: ${level}`;
-            if (currentMode === 'classic') {
+            if (currentMode === 'classic' || currentMode === 'marathon') {
                 dropInterval = Math.max(100, 1000 - level * 50);
             }
         }
