@@ -168,19 +168,15 @@ function initDOMAndEventListeners() {
 
     let touchStartX = 0;
     let touchStartY = 0;
-    let isMoving = false;
-    let horizontalMoveDetected = false;
     
-    const tapThreshold = 20; // Manji prag za prepoznavanje tapa
-    const swipeThreshold = BLOCK_SIZE * 0.5; // Dinamički prag za swipe, 50% veličine bloka
+    const tapThreshold = 20; // Prag u pikselima za prepoznavanje tapa
+    const touchMoveThreshold = BLOCK_SIZE * 0.25; // Dinamički prag za pomeranje, 25% veličine bloka
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        isMoving = false;
-        horizontalMoveDetected = false;
     });
 
     canvas.addEventListener('touchmove', e => {
@@ -188,19 +184,17 @@ function initDOMAndEventListeners() {
         if (gameOver || isPaused || !currentPiece) return;
         
         const dx = e.touches[0].clientX - touchStartX;
-        const dy = e.touches[0].clientY - touchStartY;
         
-        if (!horizontalMoveDetected && Math.abs(dx) > swipeThreshold) {
-            horizontalMoveDetected = true;
+        if (Math.abs(dx) > touchMoveThreshold) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
+            // Resetujemo početnu X poziciju kako bi se čekao sledeći "blok" pomeranja
             touchStartX = e.touches[0].clientX;
             draw();
         }
-        
     });
 
     canvas.addEventListener('touchend', e => {
@@ -208,9 +202,9 @@ function initDOMAndEventListeners() {
         
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
-        const dx = touchEndX - touchStartX;
+        const dx = touchEndX - e.touches[0].clientX;
         const dy = touchEndY - touchStartY;
-
+        
         if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
             // TAP za rotaciju
             rotatePiece();
