@@ -171,7 +171,7 @@ function initDOMAndEventListeners() {
     let lastTouchX = 0;
     
     const tapThreshold = 20;
-    let touchMoveThreshold;
+    let touchMoveThreshold = 0;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -180,7 +180,8 @@ function initDOMAndEventListeners() {
         touchStartY = e.touches[0].clientY;
         lastTouchX = e.touches[0].clientX;
         
-        touchMoveThreshold = BLOCK_SIZE * 0.25;
+        // Dinamički postavljamo prag osetljivosti
+        touchMoveThreshold = BLOCK_SIZE * 0.4;
     });
 
     canvas.addEventListener('touchmove', e => {
