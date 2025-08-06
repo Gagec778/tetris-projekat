@@ -164,12 +164,9 @@ function initDOMAndEventListeners() {
 
     let touchStartX = 0;
     let touchStartY = 0;
-    let lastTouchX = 0;
-    let lastTouchY = 0;
     let touchMoved = false;
     let lastPieceMoveTime = 0;
     
-    // Povećan moveDelay za manje reaktivno kretanje
     const moveDelay = 100;
     const touchMoveThreshold = BLOCK_SIZE * 0.25;
 
@@ -178,8 +175,6 @@ function initDOMAndEventListeners() {
         if (gameOver || isPaused || !currentPiece) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        lastTouchX = touchStartX;
-        lastTouchY = touchStartY;
         touchMoved = false;
         lastPieceMoveTime = performance.now();
     });
@@ -191,17 +186,20 @@ function initDOMAndEventListeners() {
         const currentTime = performance.now();
         const currentX = e.touches[0].clientX;
         const currentY = e.touches[0].clientY;
-        const dx = currentX - lastTouchX;
-        const dy = currentY - lastTouchY;
-        
+        const dx = currentX - touchStartX;
+        const dy = currentY - touchStartY;
+
+        if (Math.abs(dx) > touchMoveThreshold || Math.abs(dy) > touchMoveThreshold) {
+             touchMoved = true;
+        }
+
         if (Math.abs(dx) > touchMoveThreshold && currentTime - lastPieceMoveTime > moveDelay) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
-            lastTouchX = currentX;
-            touchMoved = true;
+            touchStartX = currentX;
             lastPieceMoveTime = currentTime;
         }
 
@@ -211,11 +209,10 @@ function initDOMAndEventListeners() {
                 score += 1;
                 scoreDisplay.textContent = `Score: ${score}`;
             }
-            lastTouchY = currentY;
-            touchMoved = true;
+            touchStartY = currentY;
             lastPieceMoveTime = currentTime;
         }
-
+        
         draw();
     });
 
@@ -224,18 +221,12 @@ function initDOMAndEventListeners() {
         
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
-        const dx = touchEndX - touchStartX;
-        const dy = touchEndY - touchStartY;
-        
-        // Povećan prag za tap (sa 20 na 30) kako bi se osiguralo da se hard drop uvek prepoznaje
-        const tapThreshold = 30;
-        
-        if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
-             if (isTapOnGhostPiece(touchEndX, touchEndY)) {
-                dropPiece();
-            } else {
-                rotatePiece();
-            }
+
+        // Nova, pouzdanija logika za "hard drop"
+        if (isTapOnGhostPiece(touchEndX, touchEndY)) {
+            dropPiece();
+        } else if (!touchMoved) { // Provera rotacije samo ako nije bilo pomeranja
+            rotatePiece();
         }
         
         draw();
