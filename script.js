@@ -170,8 +170,8 @@ function initDOMAndEventListeners() {
     let lastPieceMoveTime = 0;
     
     // Smanjeni parametri za osetljivije kontrole na dodir
-    const moveDelay = 80;
-    const touchMoveThreshold = BLOCK_SIZE * 0.3;
+    const moveDelay = 50; // Smanjeno sa 80 na 50 za brže horizontalno kretanje
+    const touchMoveThreshold = BLOCK_SIZE * 0.15; // Smanjeno sa 0.3 na 0.15 za manji prag pokreta
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -228,41 +228,29 @@ function initDOMAndEventListeners() {
         const dy = touchEndY - touchStartY;
         const tapThreshold = 10;
         
-        // Nova logika za "hard drop" na dodir ghost piece-a
-        if (isTapOnGhostPiece(touchEndX, touchEndY)) {
-            dropPiece();
-        } else if (!touchMoved && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
-            rotatePiece();
+        // Ažurirana logika za "hard drop" na dodir ghost piece-a
+        // Provera da li je tap bio bez pokreta i da li se dodir desio u donjem delu ekrana
+        // ili blizu pozicije senke bloka.
+        if (!touchMoved && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
+            let ghostY = currentPiece.y;
+            while (isValidMove(0, 1, currentPiece.shape, ghostY)) {
+                ghostY++;
+            }
+            
+            const rect = canvas.getBoundingClientRect();
+            const touchY_grid = (touchEndY - rect.top) / BLOCK_SIZE;
+
+            // Proverava da li je tap bio na ili ispod gornje ivice senke bloka
+            if (touchY_grid >= ghostY) {
+                dropPiece();
+            } else {
+                // Ako nije, tretira se kao rotacija
+                rotatePiece();
+            }
         }
         
         draw();
     });
-}
-
-function isTapOnGhostPiece(touchX, touchY) {
-    if (!currentPiece) return false;
-
-    let ghostY = currentPiece.y;
-    while (isValidMove(0, 1, currentPiece.shape, ghostY)) {
-        ghostY++;
-    }
-
-    const rect = canvas.getBoundingClientRect();
-    const x = (touchX - rect.left) / BLOCK_SIZE;
-    const y = (touchY - rect.top) / BLOCK_SIZE;
-
-    for (let r = 0; r < currentPiece.shape.length; r++) {
-        for (let c = 0; c < currentPiece.shape[r].length; c++) {
-            if (currentPiece.shape[r][c]) {
-                const blockX = currentPiece.x + c;
-                const blockY = ghostY + r;
-                if (x >= blockX && x < blockX + 1 && y >= blockY && y < blockY + 1) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
 }
 
 function initBoard() {
