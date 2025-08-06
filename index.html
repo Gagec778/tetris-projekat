@@ -11,9 +11,14 @@
     <div id="main-game-wrapper">
         <div id="background-image"></div>
         <div id="info-section">
-            <div id="hold-block-container" class="info-panel">
-                Hold:
-                <canvas id="holdBlockCanvas"></canvas>
+            <div id="assists-panel" class="info-panel">
+                <div class="panel-header">Pomoći:</div>
+                <div id="assists-content">
+                    <button id="assist-button" class="btn">
+                        <span class="bomb-icon">💣</span>
+                    </button>
+                    <span id="assists-count" class="count">0</span>
+                </div>
             </div>
             
             <div id="game-stats" class="info-panel">
@@ -22,17 +27,10 @@
                 <div id="level-display">Level: 1</div>
                 <div id="sprint-timer" style="display: none;">TIME: 0.00s</div>
                 <div id="ultra-timer" style="display: none;">TIME: 0.00s</div>
-                <div id="assists-panel">
-                    Pomoći:
-                    <div id="assists-display">
-                        <span class="bomb-icon">💣</span><span id="assists-count">0</span>
-                    </div>
-                    <button id="assist-button" class="btn">Koristi</button>
-                </div>
             </div>
             
             <div id="next-block-container" class="info-panel">
-                Next:
+                <div class="panel-header">Next:</div>
                 <canvas id="nextBlockCanvas"></canvas>
             </div>
         </div>
@@ -122,6 +120,7 @@
     <audio id="tSpinSound" src="sounds/tspin.wav" preload="auto"></audio>
     <audio id="tetrisSound" src="sounds/tetris.wav" preload="auto"></audio>
     <audio id="backgroundMusic" src="sounds/music.mp3" preload="auto"></audio>
+    <audio id="bombSound" src="sounds/bomb.wav" preload="auto"></audio>
 
     <script src="script.js"></script>
 </body>
