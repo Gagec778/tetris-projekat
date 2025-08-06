@@ -168,22 +168,26 @@ function initDOMAndEventListeners() {
 
     let touchStartX = 0;
     let touchStartY = 0;
+    let lastTouchX = 0;
     
-    const tapThreshold = 20; // Prag u pikselima za prepoznavanje tapa
-    const touchMoveThreshold = BLOCK_SIZE * 0.25; // Dinamički prag za pomeranje, 25% veličine bloka
+    const tapThreshold = 20;
+    let touchMoveThreshold;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
+        lastTouchX = e.touches[0].clientX;
+        
+        touchMoveThreshold = BLOCK_SIZE * 0.25;
     });
 
     canvas.addEventListener('touchmove', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         
-        const dx = e.touches[0].clientX - touchStartX;
+        const dx = e.touches[0].clientX - lastTouchX;
         
         if (Math.abs(dx) > touchMoveThreshold) {
             if (dx > 0) {
@@ -191,8 +195,7 @@ function initDOMAndEventListeners() {
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
-            // Resetujemo početnu X poziciju kako bi se čekao sledeći "blok" pomeranja
-            touchStartX = e.touches[0].clientX;
+            lastTouchX = e.touches[0].clientX;
             draw();
         }
     });
@@ -202,7 +205,7 @@ function initDOMAndEventListeners() {
         
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
-        const dx = touchEndX - e.touches[0].clientX;
+        const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
         if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
