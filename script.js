@@ -1,7 +1,7 @@
 let isAnimating = false;
 let linesToClear = [];
 let animationStart = 0;
-const animationDuration = 200;
+const animationDuration = 400; // Povećana trajanje animacije
 let lastClearWasSpecial = false;
 
 const THEMES = {
@@ -118,10 +118,12 @@ function initDOMAndEventListeners() {
     assistsContainer = document.getElementById('assists-container');
     assistsCountDisplay = document.getElementById('assists-count');
     bestScoreDisplay = document.getElementById('best-score-display');
+    themeSwitcher = document.getElementById('theme-switcher');
     
     startButton.addEventListener('click', startGame);
     restartButton.addEventListener('click', startGame);
     pauseButton.addEventListener('click', togglePause);
+    themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
     
     document.addEventListener('keydown', handleKeydown);
     window.addEventListener('resize', setCanvasSize);
@@ -148,14 +150,18 @@ function initDOMAndEventListeners() {
     }
     updateAssistsDisplay();
     
-    setTheme('classic');
+    const savedTheme = localStorage.getItem('theme') || 'classic';
+    setTheme(savedTheme);
+    themeSwitcher.value = savedTheme;
 
-    // **NOVE TOUCH KONTROLE**
+    // **NOVE, POBOLJŠANE TOUCH KONTROLE**
     let touchStartX = 0;
     let touchStartY = 0;
     let lastTouchX = 0;
     let lastTouchY = 0;
     let touchMoved = false;
+    let lastPieceMoveTime = 0;
+    const moveDelay = 100; // Dodato kašnjenje za horizontalni pokret
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -165,20 +171,22 @@ function initDOMAndEventListeners() {
         lastTouchX = touchStartX;
         lastTouchY = touchStartY;
         touchMoved = false;
+        lastPieceMoveTime = performance.now();
     });
 
     canvas.addEventListener('touchmove', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         
+        const currentTime = performance.now();
         const currentX = e.touches[0].clientX;
         const currentY = e.touches[0].clientY;
         const dx = currentX - lastTouchX;
         const dy = currentY - lastTouchY;
-        const touchMoveThreshold = BLOCK_SIZE * 0.5; // Prag za osetljivost pokreta
+        const touchMoveThreshold = BLOCK_SIZE * 0.5;
         
-        // Prevlačenje horizontalno
-        if (Math.abs(dx) > touchMoveThreshold) {
+        // Horizontalno prevlačenje sa odlaganjem
+        if (Math.abs(dx) > touchMoveThreshold && currentTime - lastPieceMoveTime > moveDelay) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
@@ -186,10 +194,11 @@ function initDOMAndEventListeners() {
             }
             lastTouchX = currentX;
             touchMoved = true;
+            lastPieceMoveTime = currentTime;
         }
 
-        // Soft drop
-        if (dy > touchMoveThreshold) {
+        // Soft drop sa odlaganjem (ako se vuče polako, spušta se red po red)
+        if (dy > touchMoveThreshold && currentTime - lastPieceMoveTime > moveDelay) {
             if (isValidMove(0, 1, currentPiece.shape)) {
                 currentPiece.y++;
                 score += 1;
@@ -197,6 +206,7 @@ function initDOMAndEventListeners() {
             }
             lastTouchY = currentY;
             touchMoved = true;
+            lastPieceMoveTime = currentTime;
         }
 
         draw();
@@ -209,14 +219,14 @@ function initDOMAndEventListeners() {
         const touchEndY = e.changedTouches[0].clientY;
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
-        const touchThreshold = 10; // Prag za tap, u pikselima
+        const tapThreshold = 10;
         
-        // Hard drop (brzi potez na dole)
+        // Hard drop (brzi potez na dole, veći dy)
         if (dy > BLOCK_SIZE * 1.5 && Math.abs(dx) < BLOCK_SIZE) {
             dropPiece();
         }
         // Rotacija (kratak dodir/tap)
-        else if (!touchMoved && Math.abs(dx) < touchThreshold && Math.abs(dy) < touchThreshold) {
+        else if (!touchMoved && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
             rotatePiece();
         }
         
