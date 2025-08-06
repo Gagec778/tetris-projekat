@@ -31,7 +31,8 @@ const THEMES = {
 const T_SHAPE_INDEX = 5;
 
 let canvas, ctx, nextBlockCanvas, nextBlockCtx;
-let COLS, ROWS, BLOCK_SIZE;
+let COLS = 10, ROWS = 18;
+const BLOCK_SIZE = 25; // Fiksna veličina bloka
 
 const TETROMINOES = [
     [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
@@ -67,36 +68,13 @@ let dropSound, clearSound, rotateSound, gameOverSound;
 let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay;
 
 function setCanvasSize() {
-    const mainGameWrapper = document.getElementById('main-game-wrapper');
-    const containerWidth = mainGameWrapper.clientWidth - 20;
-    const infoSectionHeight = document.getElementById('info-section').clientHeight;
-    const pauseButtonHeight = document.getElementById('pause-button').clientHeight;
-    const gap = 10;
-    const totalVerticalPadding = 20;
-    const availableHeight = mainGameWrapper.clientHeight - infoSectionHeight - pauseButtonHeight - gap * 2 - totalVerticalPadding;
-
-    let tempBlockSizeWidth = Math.floor(containerWidth / COLS);
-    let tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
-    
-    BLOCK_SIZE = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
-
-    if (BLOCK_SIZE > 35) {
-        BLOCK_SIZE = 35;
-    }
-    
-    if (BLOCK_SIZE < 1) {
-        BLOCK_SIZE = 1;
-    }
-
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
 
-    // Centriranje canvasa
     const canvasContainer = document.querySelector('.canvas-container');
     canvasContainer.style.width = `${canvas.width}px`;
     canvasContainer.style.height = `${canvas.height}px`;
 
-    // Podešavanje veličine next bloka
     const nextBlockContainerSize = nextBlockCanvas.parentElement.clientWidth;
     nextBlockCanvas.width = nextBlockContainerSize;
     nextBlockCanvas.height = nextBlockContainerSize;
@@ -113,9 +91,6 @@ function initDOMAndEventListeners() {
     nextBlockCanvas = document.getElementById('nextBlockCanvas');
     nextBlockCtx = nextBlockCanvas.getContext('2d');
     
-    COLS = 10;
-    ROWS = 18;
-
     dropSound = document.getElementById('dropSound');
     clearSound = document.getElementById('clearSound');
     rotateSound = document.getElementById('rotateSound');
