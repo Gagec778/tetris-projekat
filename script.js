@@ -73,6 +73,8 @@ let linesClearedThisLevel = 0;
 let linesClearedTotal = 0;
 let startTime;
 let sprintTimer;
+let ultraTimer;
+let ultraTimeLimit = 120; // 2 minuta
 
 let lastDropTime = 0;
 let animationFrameId;
@@ -83,8 +85,12 @@ let currentMode = 'classic';
 let resizeObserver;
 
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, startCountdown;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsContainer, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown;
 let backgroundMusicPlaying = false;
+
+// Pragovi za osetljivost dodira
+const TOUCH_MOVE_THRESHOLD = 5; // Smanjen prag
+const TAP_THRESHOLD = 10; // Smanjen prag
 
 function playBackgroundMusic() {
     if (!backgroundMusicPlaying) {
@@ -103,14 +109,15 @@ function pauseBackgroundMusic() {
 function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
     const infoSection = document.getElementById('info-section');
-    const pauseButton = document.getElementById('pause-button');
+    const gameControls = document.getElementById('game-controls');
+    const gameCanvas = document.getElementById('gameCanvas');
     const style = document.documentElement.style;
 
     const gameAspectRatio = COLS / ROWS;
     const padding = 20;
 
     const availableWidth = mainGameWrapper.clientWidth - padding;
-    const availableHeight = mainGameWrapper.clientHeight - infoSection.offsetHeight - pauseButton.offsetHeight - padding - 10;
+    const availableHeight = mainGameWrapper.clientHeight - infoSection.offsetHeight - gameControls.offsetHeight - padding;
     
     let tempBlockSizeWidth = Math.floor(availableWidth / COLS);
     let tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
@@ -123,10 +130,10 @@ function setCanvasSize() {
     
     style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
-    canvas.width = COLS * BLOCK_SIZE;
-    canvas.height = ROWS * BLOCK_SIZE;
+    gameCanvas.width = COLS * BLOCK_SIZE;
+    gameCanvas.height = ROWS * BLOCK_SIZE;
     
-    const nextContainerWidth = Math.floor(mainGameWrapper.clientWidth / 2) - 10;
+    const nextContainerWidth = Math.floor(infoSection.clientWidth / 2) - 10;
     nextBlockCanvas.width = nextContainerWidth;
     nextBlockCanvas.height = nextContainerWidth;
 
@@ -164,6 +171,7 @@ function initDOMAndEventListeners() {
     restartButton = document.getElementById('restart-button');
     resumeButton = document.getElementById('resume-button');
     pauseButton = document.getElementById('pause-button');
+    restartButtonInline = document.getElementById('restart-button-inline');
     assistsContainer = document.getElementById('assists-container');
     assistsCountDisplay = document.getElementById('assists-count');
     bestScoreDisplay = document.getElementById('best-score-display');
@@ -171,6 +179,7 @@ function initDOMAndEventListeners() {
     themeSwitcher = document.getElementById('theme-switcher');
     modeSelector = document.getElementById('mode-selector');
     sprintTimerDisplay = document.getElementById('sprint-timer');
+    ultraTimerDisplay = document.getElementById('ultra-timer');
     startCountdown = document.getElementById('start-countdown');
 
     startButton.addEventListener('click', () => {
@@ -183,6 +192,10 @@ function initDOMAndEventListeners() {
     });
     pauseButton.addEventListener('click', togglePause);
     resumeButton.addEventListener('click', togglePause);
+    restartButtonInline.addEventListener('click', () => {
+        gameOver = true;
+        startGame();
+    });
     themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
     
     document.addEventListener('keydown', handleKeydown);
@@ -223,8 +236,6 @@ function initDOMAndEventListeners() {
     let touchStartX = 0;
     let touchStartY = 0;
     let lastTouchX = 0;
-    let touchMoveThreshold = 10;
-    let tapThreshold = 20;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -240,7 +251,7 @@ function initDOMAndEventListeners() {
         
         const dx = e.touches[0].clientX - lastTouchX;
         
-        if (Math.abs(dx) > touchMoveThreshold) {
+        if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
@@ -259,9 +270,9 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
+        if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
             rotatePiece();
-        } else if (dy > tapThreshold && dy > Math.abs(dx)) {
+        } else if (dy > TAP_THRESHOLD && dy > Math.abs(dx)) {
             dropPiece();
         }
         
@@ -722,6 +733,14 @@ function gameLoop(timestamp) {
     if (currentMode === 'sprint') {
         const elapsed = (performance.now() - startTime) / 1000;
         sprintTimerDisplay.textContent = `TIME: ${elapsed.toFixed(2)}s`;
+    } else if (currentMode === 'ultra') {
+        const elapsed = (performance.now() - startTime) / 1000;
+        const remainingTime = ultraTimeLimit - elapsed;
+        if (remainingTime <= 0) {
+            endGame();
+            return;
+        }
+        ultraTimerDisplay.textContent = `TIME: ${remainingTime.toFixed(2)}s`;
     }
 
     if (timestamp - lastDropTime > dropInterval) {
@@ -768,11 +787,10 @@ function animateLineClear(timestamp) {
         return;
     }
 
-    // Explozija animacija
     drawBoard();
     const midPoint = COLS / 2;
     for (const r of linesToClear) {
-        const lineProgress = Math.sin(progress * Math.PI); // Sinusoidalna funkcija za efekat animacije
+        const lineProgress = Math.sin(progress * Math.PI);
         
         for (let c = 0; c < COLS; c++) {
             const block = board[r][c];
@@ -781,7 +799,6 @@ function animateLineClear(timestamp) {
                 const shrinkSize = BLOCK_SIZE * (1 - lineProgress);
                 const offset = (BLOCK_SIZE - shrinkSize) / 2;
                 
-                // Crtanje bloka sa smanjenim dimenzijama
                 ctx.fillStyle = color;
                 ctx.fillRect(c * BLOCK_SIZE + offset, r * BLOCK_SIZE + offset, shrinkSize, shrinkSize);
             }
@@ -829,6 +846,7 @@ function endGame(isSprintWin = false) {
     
     gameOverScreen.style.display = 'flex';
     pauseButton.style.display = 'none';
+    restartButtonInline.style.display = 'none';
 }
 
 function startGame() {
@@ -890,23 +908,39 @@ function initGame() {
     gameOver = false;
     isPaused = false;
     isAnimating = false;
+    
     pauseButton.textContent = "PAUSE";
     pauseButton.style.display = 'block';
+    restartButtonInline.style.display = 'block';
+
+    levelDisplay.style.display = 'none';
+    sprintTimerDisplay.style.display = 'none';
+    ultraTimerDisplay.style.display = 'none';
     
-    if (currentMode === 'classic') {
-        dropInterval = 1000;
-        levelDisplay.style.display = 'block';
-        sprintTimerDisplay.style.display = 'none';
-    } else if (currentMode === 'sprint') {
-        dropInterval = 100;
-        levelDisplay.style.display = 'none';
-        sprintTimerDisplay.style.display = 'block';
-        startTime = performance.now();
-    } else if (currentMode === 'zen') {
-        dropInterval = 1500;
-        levelDisplay.textContent = `Level: ∞`;
-        levelDisplay.style.display = 'block';
-        sprintTimerDisplay.style.display = 'none';
+    switch(currentMode) {
+        case 'classic':
+            dropInterval = 1000;
+            levelDisplay.style.display = 'block';
+            break;
+        case 'sprint':
+            dropInterval = 100;
+            sprintTimerDisplay.style.display = 'block';
+            startTime = performance.now();
+            break;
+        case 'zen':
+            dropInterval = 1500;
+            levelDisplay.textContent = `Level: ∞`;
+            levelDisplay.style.display = 'block';
+            break;
+        case 'marathon':
+            dropInterval = 1000;
+            levelDisplay.style.display = 'block';
+            break;
+        case 'ultra':
+            dropInterval = 100;
+            ultraTimerDisplay.style.display = 'block';
+            startTime = performance.now();
+            break;
     }
 
     playBackgroundMusic();
