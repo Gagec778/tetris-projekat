@@ -113,13 +113,13 @@ function initDOMAndEventListeners() {
 
     startScreen = document.getElementById('start-screen');
     gameOverScreen = document.getElementById('game-over-screen');
-    pauseScreen = document.getElementById('pause-screen'); // Novi pause ekran
+    pauseScreen = document.getElementById('pause-screen');
     scoreDisplay = document.getElementById('score-display');
     finalScoreDisplay = document.getElementById('final-score');
     comboDisplay = document.getElementById('combo-display');
     startButton = document.getElementById('start-button');
     restartButton = document.getElementById('restart-button');
-    resumeButton = document.getElementById('resume-button'); // Novo resume dugme
+    resumeButton = document.getElementById('resume-button');
     pauseButton = document.getElementById('pause-button');
     assistsContainer = document.getElementById('assists-container');
     assistsCountDisplay = document.getElementById('assists-count');
@@ -130,7 +130,7 @@ function initDOMAndEventListeners() {
     startButton.addEventListener('click', startGame);
     restartButton.addEventListener('click', startGame);
     pauseButton.addEventListener('click', togglePause);
-    resumeButton.addEventListener('click', togglePause); // Nova kontrola za nastavak igre
+    resumeButton.addEventListener('click', togglePause);
     themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
     
     document.addEventListener('keydown', handleKeydown);
@@ -169,9 +169,9 @@ function initDOMAndEventListeners() {
     let touchMoved = false;
     let lastPieceMoveTime = 0;
     
-    // Smanjeni parametri za osetljivije kontrole na dodir
-    const moveDelay = 50; // Smanjeno sa 80 na 50 za brže horizontalno kretanje
-    const touchMoveThreshold = BLOCK_SIZE * 0.15; // Smanjeno sa 0.3 na 0.15 za manji prag pokreta
+    // Blago smanjen senzitivitet
+    const moveDelay = 65; // Povećano sa 50 na 65
+    const touchMoveThreshold = BLOCK_SIZE * 0.2; // Povećano sa 0.15 na 0.2
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -228,29 +228,43 @@ function initDOMAndEventListeners() {
         const dy = touchEndY - touchStartY;
         const tapThreshold = 10;
         
-        // Ažurirana logika za "hard drop" na dodir ghost piece-a
-        // Provera da li je tap bio bez pokreta i da li se dodir desio u donjem delu ekrana
-        // ili blizu pozicije senke bloka.
+        // Vraćena preciznija logika za "hard drop" na dodir senke bloka
         if (!touchMoved && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
-            let ghostY = currentPiece.y;
-            while (isValidMove(0, 1, currentPiece.shape, ghostY)) {
-                ghostY++;
-            }
-            
-            const rect = canvas.getBoundingClientRect();
-            const touchY_grid = (touchEndY - rect.top) / BLOCK_SIZE;
-
-            // Proverava da li je tap bio na ili ispod gornje ivice senke bloka
-            if (touchY_grid >= ghostY) {
+            if (isTapOnGhostPiece(touchEndX, touchEndY)) {
                 dropPiece();
             } else {
-                // Ako nije, tretira se kao rotacija
                 rotatePiece();
             }
         }
         
         draw();
     });
+}
+
+function isTapOnGhostPiece(touchX, touchY) {
+    if (!currentPiece) return false;
+
+    let ghostY = currentPiece.y;
+    while (isValidMove(0, 1, currentPiece.shape, ghostY)) {
+        ghostY++;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const x = (touchX - rect.left) / BLOCK_SIZE;
+    const y = (touchY - rect.top) / BLOCK_SIZE;
+
+    for (let r = 0; r < currentPiece.shape.length; r++) {
+        for (let c = 0; c < currentPiece.shape[r].length; c++) {
+            if (currentPiece.shape[r][c]) {
+                const blockX = currentPiece.x + c;
+                const blockY = ghostY + r;
+                if (x >= blockX && x < blockX + 1 && y >= blockY && y < blockY + 1) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 function initBoard() {
@@ -782,7 +796,7 @@ function startGame() {
     
     startScreen.style.display = 'none';
     gameOverScreen.style.display = 'none';
-    pauseScreen.style.display = 'none'; // Uveravamo se da je pauza ekran sakriven
+    pauseScreen.style.display = 'none';
     pauseButton.style.display = 'block';
     
     initBoard();
@@ -817,10 +831,10 @@ function togglePause() {
     isPaused = !isPaused;
     if (isPaused) {
         cancelAnimationFrame(animationFrameId);
-        pauseScreen.style.display = 'flex'; // Prikazuje se novi pauza ekran
-        pauseButton.textContent = "RESUME"; // Ovo dugme ostaje, ali mu se menja tekst
+        pauseScreen.style.display = 'flex';
+        pauseButton.textContent = "RESUME";
     } else {
-        pauseScreen.style.display = 'none'; // Sakriva se pauza ekran
+        pauseScreen.style.display = 'none';
         animationFrameId = requestAnimationFrame(gameLoop);
         pauseButton.textContent = "PAUSE";
     }
