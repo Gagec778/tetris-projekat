@@ -81,7 +81,7 @@
             flex-basis: 30%;
         }
 
-        #score-display, #assists-container, #best-score-display {
+        #score-display, #assists-container, #best-score-display, #level-display {
             width: 100%;
             text-align: center;
             font-size: 0.8em;
@@ -94,6 +94,11 @@
             font-size: 0.7em;
             color: #ccc;
             margin-top: 5px;
+        }
+        
+        #level-display {
+            font-size: 0.7em;
+            color: #fff;
         }
 
         #nextBlockCanvas {
@@ -277,6 +282,7 @@
             <div id="game-stats">
                 <div id="score-display">Score: 0</div>
                 <div id="best-score-display">BEST: 0</div>
+                <div id="level-display">Level: 1</div>
                 <div id="assists-container">
                     <span class="bomb-icon">💣</span><span id="assists-count">0</span>
                 </div>
@@ -284,14 +290,6 @@
             <div id="next-block-container">
                 Next:
                 <canvas id="nextBlockCanvas" width="80" height="80"></canvas>
-            </div>
-            <div id="theme-switcher-container">
-                <label for="theme-switcher" style="font-size: 0.8em;">Theme:</label>
-                <select id="theme-switcher">
-                    <option value="classic">Classic</option>
-                    <option value="dark">Dark</option>
-                    <option value="forest">Forest</option>
-                </select>
             </div>
         </div>
         
@@ -305,6 +303,14 @@
 
     <div id="start-screen">
         <h1>PROJEKAT PUZZLE</h1>
+        <div id="theme-switcher-container">
+            <label for="theme-switcher" style="font-size: 0.8em;">Theme:</label>
+            <select id="theme-switcher">
+                <option value="classic">Classic</option>
+                <option value="dark">Dark</option>
+                <option value="forest">Forest</option>
+            </select>
+        </div>
         <p>Pritisni dugme da započneš igru!</p>
         <button id="start-button">Pokreni Igru</button>
     </div>
