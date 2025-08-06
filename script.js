@@ -169,9 +169,9 @@ function initDOMAndEventListeners() {
     let touchMoved = false;
     let lastPieceMoveTime = 0;
     
-    // Smanjen senzitivitet za kontrole na dodir
-    const moveDelay = 75; // Povećano sa 65 na 75 za sporije horizontalno kretanje
-    const touchMoveThreshold = BLOCK_SIZE * 0.25; // Povećano sa 0.2 na 0.25
+    // Povećan moveDelay za manje reaktivno kretanje
+    const moveDelay = 100;
+    const touchMoveThreshold = BLOCK_SIZE * 0.25;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -227,11 +227,11 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        // Povećan prag za tap (sa 10 na 20) kako bi detekcija bila pouzdanija
-        const tapThreshold = 20;
+        // Povećan prag za tap (sa 20 na 30) kako bi se osiguralo da se hard drop uvek prepoznaje
+        const tapThreshold = 30;
         
-        if (!touchMoved && Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
-            if (isTapOnGhostPiece(touchEndX, touchEndY)) {
+        if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
+             if (isTapOnGhostPiece(touchEndX, touchEndY)) {
                 dropPiece();
             } else {
                 rotatePiece();
