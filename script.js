@@ -69,12 +69,15 @@ let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, c
 function setCanvasSize() {
     const mainGameWrapper = document.getElementById('main-game-wrapper');
     const containerWidth = mainGameWrapper.clientWidth - 20;
-    const gameAreaHeight = window.innerHeight - 250;
-    
+    const infoSectionHeight = document.getElementById('info-section').clientHeight;
+    const pauseButtonHeight = document.getElementById('pause-button').clientHeight;
+    const gap = 10;
+    const totalVerticalPadding = 20;
+    const availableHeight = mainGameWrapper.clientHeight - infoSectionHeight - pauseButtonHeight - gap * 2 - totalVerticalPadding;
+
     let tempBlockSizeWidth = Math.floor(containerWidth / COLS);
-    let tempBlockSizeHeight = Math.floor(gameAreaHeight / ROWS);
+    let tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
     
-    // Uzimamo manju vrednost da bi stalo i po širini i po visini
     BLOCK_SIZE = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
 
     if (BLOCK_SIZE > 35) {
@@ -165,52 +168,57 @@ function initDOMAndEventListeners() {
 
     let touchStartX = 0;
     let touchStartY = 0;
-    let lastTouchX = 0;
-    let lastTouchY = 0;
-    let lastPieceMoveTime = 0;
-    
-    const moveDelay = 100;
+    let touchMoveTimer;
+    const swipeThreshold = window.innerHeight * 0.1; // Dinamički prag za swipe (10% visine ekrana)
+    const tapThreshold = 20; // Manji prag za tap (u pikselima)
+    const hardDropDelay = 150; // Vreme u milisekundama za hard drop
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        lastTouchX = touchStartX;
-        lastTouchY = touchStartY;
-        lastPieceMoveTime = performance.now();
+        
+        // Podesi timer za soft drop (ako se drži prst)
+        touchMoveTimer = setInterval(() => {
+            if (!isValidMove(0, 1, currentPiece.shape)) {
+                clearInterval(touchMoveTimer);
+                return;
+            }
+            currentPiece.y++;
+            score += 1;
+            scoreDisplay.textContent = `Score: ${score}`;
+            draw();
+        }, 100);
     });
 
     canvas.addEventListener('touchmove', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         
-        const currentTime = performance.now();
         const currentX = e.touches[0].clientX;
         const currentY = e.touches[0].clientY;
-        const dx = currentX - lastTouchX;
-        const dy = currentY - lastTouchY;
+        const dx = currentX - touchStartX;
+        const dy = currentY - touchStartY;
         
-        const touchMoveThreshold = window.innerHeight * 0.02;
-
-        if (Math.abs(dx) > touchMoveThreshold && currentTime - lastPieceMoveTime > moveDelay) {
+        // Horizontalno pomeranje
+        if (Math.abs(dx) > BLOCK_SIZE) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
-            lastTouchX = currentX;
-            lastPieceMoveTime = currentTime;
+            touchStartX = currentX; // Resetuj početnu poziciju za glatko kretanje
         }
 
-        if (dy > touchMoveThreshold && currentTime - lastPieceMoveTime > moveDelay) {
+        // Soft drop
+        if (dy > BLOCK_SIZE) {
             if (isValidMove(0, 1, currentPiece.shape)) {
                 currentPiece.y++;
                 score += 1;
                 scoreDisplay.textContent = `Score: ${score}`;
             }
-            lastTouchY = currentY;
-            lastPieceMoveTime = currentTime;
+            touchStartY = currentY; // Resetuj početnu poziciju za soft drop
         }
 
         draw();
@@ -219,24 +227,30 @@ function initDOMAndEventListeners() {
     canvas.addEventListener('touchend', e => {
         if (gameOver || isPaused || !currentPiece) return;
         
+        clearInterval(touchMoveTimer); // Zaustavi soft drop timer
+        
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        const tapThreshold = window.innerHeight * 0.05;
-
-        // Provera da li je to bio tap (pomeranje prsta je unutar praga)
-        if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
-            // Nova logika za detekciju hard drop-a
+        // Provera da li je to bio Hard drop (brza gesta nadole)
+        if (dy > swipeThreshold && performance.now() - lastDropTime < hardDropDelay) {
+             dropPiece();
+        } else if (Math.abs(dx) < tapThreshold && Math.abs(dy) < tapThreshold) {
+            // Provera da li je bio tap
             const rect = canvas.getBoundingClientRect();
             const tapY = touchEndY - rect.top;
             
-            // Ako je tap na donjoj polovini ekrana, hard drop
-            if (tapY > rect.height * 0.5) {
-                dropPiece();
-            } else { // U suprotnom, rotacija
+            // Ako je tap na gornjoj polovini, rotacija
+            if (tapY < rect.height * 0.5) {
                 rotatePiece();
+            } else { // Ako je tap na donjoj polovini, soft drop (fallback)
+                if (isValidMove(0, 1, currentPiece.shape)) {
+                    currentPiece.y++;
+                    score += 1;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                }
             }
         }
         
@@ -371,8 +385,9 @@ function drawNextPiece() {
     }
     const shapeHeight = nextShape.length;
 
-    const scaleFactor = Math.min(nextBlockCanvas.width / (shapeWidth * BLOCK_SIZE), nextBlockCanvas.height / (shapeHeight * BLOCK_SIZE));
-    const nextBlockSize = BLOCK_SIZE * scaleFactor;
+    const canvasSize = Math.min(nextBlockCanvas.width, nextBlockCanvas.height);
+    const pieceSize = Math.max(shapeWidth, shapeHeight);
+    const nextBlockSize = Math.floor(canvasSize / (pieceSize + 1));
     
     const offsetX = (nextBlockCanvas.width - shapeWidth * nextBlockSize) / 2;
     const offsetY = (nextBlockCanvas.height - shapeHeight * nextBlockSize) / 2;
