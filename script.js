@@ -169,8 +169,8 @@ function initDOMAndEventListeners() {
     let touchStartX = 0;
     let touchStartY = 0;
     let isMoving = false;
-    let moveThreshold = window.innerWidth * 0.02;
-    let swipeThreshold = window.innerHeight * 0.05;
+    let moveThreshold = window.innerWidth * 0.05; // Povećan prag za swipe da bi bio manje osetljiv
+    let swipeThreshold = window.innerHeight * 0.05; // Očuvan prag za hard drop
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -189,19 +189,15 @@ function initDOMAndEventListeners() {
         const dx = currentX - touchStartX;
         const dy = currentY - touchStartY;
 
-        // Provera da li je pokret veći od praga
-        if (Math.abs(dx) > moveThreshold || Math.abs(dy) > moveThreshold) {
-            isMoving = true;
-        }
-
-        // Horizontalno pomeranje
+        // Provera da li je pokret veći od praga, ali samo za horizontalni swipe
         if (Math.abs(dx) > moveThreshold) {
+            isMoving = true;
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
-            touchStartX = currentX;
+            touchStartX = currentX; // Resetuje početnu poziciju za glatko kretanje
             draw();
         }
     });
@@ -214,10 +210,14 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        if (!isMoving) {
+        const horizontalMove = Math.abs(dx);
+        const verticalMove = Math.abs(dy);
+
+        // Razlikovanje gesta: Tap, Hard drop ili horizontalni swipe
+        if (horizontalMove < moveThreshold && verticalMove < swipeThreshold) {
             // TAP za rotaciju
             rotatePiece();
-        } else if (dy > swipeThreshold && Math.abs(dx) < Math.abs(dy)) {
+        } else if (verticalMove > swipeThreshold && verticalMove > horizontalMove) {
             // SWIPE DOLE za hard drop
             dropPiece();
         }
