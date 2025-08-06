@@ -168,38 +168,20 @@ function initDOMAndEventListeners() {
 
     let touchStartX = 0;
     let touchStartY = 0;
-    let isMoving = false;
-    let moveThreshold = window.innerWidth * 0.05; // Povećan prag za swipe da bi bio manje osetljiv
-    let swipeThreshold = window.innerHeight * 0.05; // Očuvan prag za hard drop
+    let touchMoved = false;
 
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        isMoving = false;
+        touchMoved = false;
     });
 
     canvas.addEventListener('touchmove', e => {
         e.preventDefault();
         if (gameOver || isPaused || !currentPiece) return;
-        
-        const currentX = e.touches[0].clientX;
-        const currentY = e.touches[0].clientY;
-        const dx = currentX - touchStartX;
-        const dy = currentY - touchStartY;
-
-        // Provera da li je pokret veći od praga, ali samo za horizontalni swipe
-        if (Math.abs(dx) > moveThreshold) {
-            isMoving = true;
-            if (dx > 0) {
-                if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
-            } else {
-                if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
-            }
-            touchStartX = currentX; // Resetuje početnu poziciju za glatko kretanje
-            draw();
-        }
+        touchMoved = true;
     });
 
     canvas.addEventListener('touchend', e => {
@@ -212,14 +194,25 @@ function initDOMAndEventListeners() {
         
         const horizontalMove = Math.abs(dx);
         const verticalMove = Math.abs(dy);
+        
+        const swipeThreshold = window.innerWidth * 0.1; // Dinamički prag osetljivosti
+        const tapThreshold = 20;
 
-        // Razlikovanje gesta: Tap, Hard drop ili horizontalni swipe
-        if (horizontalMove < moveThreshold && verticalMove < swipeThreshold) {
-            // TAP za rotaciju
+        // Provera da li je gest bio "tap"
+        if (horizontalMove < tapThreshold && verticalMove < tapThreshold && !touchMoved) {
             rotatePiece();
-        } else if (verticalMove > swipeThreshold && verticalMove > horizontalMove) {
+        } 
+        // Provera da li je gest bio "swipe"
+        else if (verticalMove > horizontalMove && verticalMove > swipeThreshold) {
             // SWIPE DOLE za hard drop
             dropPiece();
+        } else if (horizontalMove > verticalMove && horizontalMove > swipeThreshold) {
+            // SWIPE LEVO/DESNO za horizontalno pomeranje
+            if (dx > 0) {
+                if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
+            } else {
+                if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
+            }
         }
         
         draw();
