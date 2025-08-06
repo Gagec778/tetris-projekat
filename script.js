@@ -50,7 +50,10 @@ let assists = 0;
 let bestScore = 0;
 let nextAssistReward = 5000;
 
+// Vrednosti za brzinu, sada se menjaju dinamički
 let dropInterval = 1000;
+const dropSpeedDecreaseRate = 20; // Brzina opada svakih 20 bodova
+
 let lastDropTime = 0;
 let animationFrameId;
 let currentPieceIndex, nextPieceIndex;
@@ -148,7 +151,6 @@ function initDOMAndEventListeners() {
     
     setTheme('classic');
 
-    // Novi, poboljšani touch kontrole
     let touchStartX = 0;
     let touchStartY = 0;
 
@@ -166,11 +168,8 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
 
-        // Fleksibilni prag za prevlačenje, baziran na veličini bloka.
-        // 0.75 puta veličina bloka omogućava responzivnije kontrole.
-        const SWIPE_THRESHOLD = BLOCK_SIZE * 0.75;
+        const SWIPE_THRESHOLD = BLOCK_SIZE * 0.4;
         
-        // Prevlačenje levo ili desno
         if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
@@ -178,11 +177,9 @@ function initDOMAndEventListeners() {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
         }
-        // Prevlačenje na dole (hard drop)
         else if (dy > SWIPE_THRESHOLD && Math.abs(dx) < SWIPE_THRESHOLD) {
             dropPiece();
         }
-        // Kratak dodir (tap) - rotacija
         else if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) {
             rotatePiece();
         }
@@ -433,9 +430,13 @@ function rotatePiece() {
 
 function dropPiece() {
     if (!currentPiece) return;
+    const originalY = currentPiece.y; // Beleži početni red
     while (isValidMove(0, 1, currentPiece.shape)) {
         currentPiece.y++;
     }
+    const rowsDropped = currentPiece.y - originalY;
+    score += rowsDropped * 2; // Bodovi za Hard Drop
+    scoreDisplay.textContent = `Score: ${score}`;
     mergePiece();
     dropSound.currentTime = 0;
     dropSound.play().catch(e => console.error("Greška pri puštanju dropSounda:", e));
@@ -479,6 +480,17 @@ function isTSpin() {
     return filledCorners >= 3;
 }
 
+function isBoardEmpty() {
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (board[r][c] !== 0) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 function checkLines() {
     linesToClear = [];
     for (let r = ROWS - 1; r >= 0; r--) {
@@ -498,21 +510,10 @@ function checkLines() {
         isAnimating = true;
         animationStart = performance.now();
         
-        let isSpecial = false;
-        if (isTSpin()) {
-            isSpecial = true;
-        } else if (linesToClear.length === 4) {
-            isSpecial = true;
-        }
+        let isSpecial = isTSpin() || linesToClear.length === 4;
 
-        if (lastClearWasSpecial && isSpecial) {
-            updateScore(linesToClear.length, true, isTSpin());
-            lastClearWasSpecial = true;
-        } else {
-            updateScore(linesToClear.length, false, isTSpin());
-            lastClearWasSpecial = isSpecial;
-        }
-
+        updateScore(linesToClear.length, isSpecial);
+        
         clearSound.currentTime = 0;
         if (clearSound.readyState >= 2) {
             clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
@@ -526,11 +527,12 @@ function checkLines() {
     }
 }
 
-function updateScore(lines, isBackToBack, isTSpinClear) {
+function updateScore(lines, isCurrentSpecial) {
     let points = 0;
     let type = '';
+    const backToBackMultiplier = lastClearWasSpecial && isCurrentSpecial ? 1.5 : 1;
 
-    if (isTSpinClear) {
+    if (isTSpin()) {
         if (lines === 1) { points = 800; type = 'T-Spin Single'; }
         else if (lines === 2) { points = 1200; type = 'T-Spin Double'; }
         else if (lines === 3) { points = 1600; type = 'T-Spin Triple'; }
@@ -542,17 +544,19 @@ function updateScore(lines, isBackToBack, isTSpinClear) {
         else if (lines === 4) { points = 800; type = 'Tetris'; }
     }
     
-    let comboMultiplier = combo > 0 ? combo : 1;
-    let backToBackBonus = isBackToBack ? 1.5 : 1;
-    
-    score += points * comboMultiplier * backToBackBonus;
+    score += Math.floor(points * backToBackMultiplier);
     scoreDisplay.textContent = `Score: ${score}`;
     
     if (lines > 0) {
         combo++;
+        if (isCurrentSpecial && backToBackMultiplier > 1) {
+            type = 'B2B ' + type;
+        }
         showComboMessage(type, combo);
+        lastClearWasSpecial = isCurrentSpecial;
     } else {
         combo = 0;
+        lastClearWasSpecial = false;
     }
 
     if (score >= nextAssistReward) {
@@ -577,6 +581,17 @@ function showComboMessage(type, comboCount) {
     }
 }
 
+function showPerfectClearMessage() {
+    let message = 'Perfect Clear!';
+    score += 5000; // Veliki bonus za Perfect Clear
+    scoreDisplay.textContent = `Score: ${score}`;
+    comboDisplay.textContent = message;
+    comboDisplay.style.display = 'block';
+    setTimeout(() => {
+        comboDisplay.style.display = 'none';
+    }, 2000);
+}
+
 function gameLoop(timestamp) {
     if (gameOver || isPaused) {
         return;
@@ -596,6 +611,9 @@ function gameLoop(timestamp) {
         lastDropTime = timestamp;
     }
     
+    // Povećavanje brzine
+    dropInterval = Math.max(100, 1000 - Math.floor(score / 100) * dropSpeedDecreaseRate);
+
     draw();
     animationFrameId = requestAnimationFrame(gameLoop);
 }
@@ -612,6 +630,11 @@ function animateLineClear(timestamp) {
             board.unshift(Array(COLS).fill(0));
         }
         linesToClear = [];
+        
+        if (isBoardEmpty()) {
+            showPerfectClearMessage();
+        }
+        
         generateNewPiece();
         animationFrameId = requestAnimationFrame(gameLoop);
         return;
@@ -763,7 +786,11 @@ function handleKeydown(e) {
             if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             break;
         case 'ArrowDown':
-            if (isValidMove(0, 1, currentPiece.shape)) currentPiece.y++;
+            if (isValidMove(0, 1, currentPiece.shape)) {
+                currentPiece.y++;
+                score += 1; // Soft Drop bodovi
+                scoreDisplay.textContent = `Score: ${score}`;
+            }
             break;
         case 'ArrowUp':
             rotatePiece();
