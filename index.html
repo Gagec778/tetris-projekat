@@ -2,7 +2,7 @@
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>PROJEKAT PUZZLE</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -19,7 +19,7 @@
             <div id="game-stats" class="info-panel">
                 <div id="best-score-wrapper">
                     <span id="crown-icon">👑</span>
-                    <div id="best-score-display" class="golden-frame">0</div>
+                    <div id="best-score-display">0</div>
                 </div>
                 <div id="score-display">Score: 0</div>
                 <div id="level-display" class="stat-line">Level: 1</div>
@@ -33,9 +33,11 @@
             </div>
         </div>
         
-        <canvas id="gameCanvas" style="touch-action: none;"></canvas>
+        <div id="canvas-container">
+            <canvas id="gameCanvas" style="touch-action: none;"></canvas>
+        </div>
 
-        <div id="assists-panel" class="info-panel">
+        <div id="assists-panel">
             <div id="assist-content-wrapper">
                 <div class="assist-item">
                     <button id="assist-bomb-button" class="btn assist-btn">
