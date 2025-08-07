@@ -131,25 +131,22 @@ function setCanvasSize() {
     const gameWrapper = document.getElementById('main-game-wrapper');
     const infoSection = document.getElementById('info-section');
     const assistsPanel = document.getElementById('assists-panel');
-    const wrapperPadding = 10;
 
-    const gameWrapperHeight = window.innerHeight * 0.98; // 98vh
-    const gameWrapperWidth = window.innerWidth * 0.98; // 98vw
+    const wrapperPadding = 10 * 2; // top and bottom padding
+    const infoSectionHeight = infoSection.clientHeight + 5; // 5px margin-bottom
+    const assistsPanelHeight = assistsPanel.clientHeight;
+    
+    const availableVerticalSpace = gameWrapper.clientHeight - infoSectionHeight - assistsPanelHeight - wrapperPadding;
+    const availableHorizontalSpace = gameWrapper.clientWidth - wrapperPadding;
 
-    gameWrapper.style.maxHeight = `${gameWrapperHeight}px`;
-    gameWrapper.style.maxWidth = `${gameWrapperWidth}px`;
-
-    const availableVerticalSpace = gameWrapper.clientHeight - (infoSection.clientHeight + assistsPanel.clientHeight + wrapperPadding * 2);
-    const availableHorizontalSpace = gameWrapper.clientWidth - wrapperPadding * 2;
-
-    const canvasAspectRatio = COLS / ROWS;
+    const gameAspectRatio = COLS / ROWS;
     const availableAspectRatio = availableHorizontalSpace / availableVerticalSpace;
 
-    if (availableAspectRatio > canvasAspectRatio) {
-        // Ograničeno visinom
+    if (availableAspectRatio > gameAspectRatio) {
+        // Limited by height
         BLOCK_SIZE = Math.floor(availableVerticalSpace / ROWS);
     } else {
-        // Ograničeno širinom
+        // Limited by width
         BLOCK_SIZE = Math.floor(availableHorizontalSpace / COLS);
     }
     
@@ -157,7 +154,7 @@ function setCanvasSize() {
 
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
-
+    
     const sideCanvasSize = Math.floor(BLOCK_SIZE * 4);
     nextBlockCanvas.width = sideCanvasSize;
     nextBlockCanvas.height = sideCanvasSize;
