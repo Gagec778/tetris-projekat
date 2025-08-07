@@ -136,9 +136,15 @@ function setCanvasSize() {
     const wrapperWidth = wrapper.clientWidth;
     const wrapperHeight = wrapper.clientHeight;
 
-    const availableWidth = wrapperWidth - 20;
-    const availableHeight = wrapperHeight - infoSection.offsetHeight - assistsPanel.offsetHeight - 20;
-
+    const padding = 20;
+    const infoHeight = infoSection.offsetHeight;
+    const assistsHeight = assistsPanel.offsetHeight;
+    
+    // Visina koju platno može zauzeti
+    const availableHeight = wrapperHeight - infoHeight - assistsHeight - padding;
+    const availableWidth = wrapperWidth - padding;
+    
+    // Izračunavamo veličinu bloka na osnovu odnosa širine i visine
     const tempBlockSizeWidth = Math.floor(availableWidth / COLS);
     const tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
     
@@ -148,9 +154,11 @@ function setCanvasSize() {
     
     root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
+    // Postavljamo dimenzije platna na osnovu izračunate veličine bloka
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
     
+    // Postavljamo CSS dimenzije platna, koje će sada biti jednake dimenzijama platna
     canvas.style.width = `${canvas.width}px`;
     canvas.style.height = `${canvas.height}px`;
 
