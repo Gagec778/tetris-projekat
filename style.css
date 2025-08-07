@@ -42,7 +42,6 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 10px;
-    /* Uklonjena fiksna širina i visina, sada se prilagođava automatski */
     max-width: 98vw;
     max-height: 98vh;
     box-sizing: border-box;
@@ -202,8 +201,7 @@ canvas#gameCanvas {
     background-color: var(--board-bg-color);
     display: block;
     border-radius: 5px;
-    /* Uklonjene fiksne širine i visine */
-    flex-grow: 1; /* Omogućava da se Canvas element prilagodi dostupnom prostoru */
+    flex-grow: 1; 
 }
 .hammer-mode-cursor {
     cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="fill:%23fff;"><text x="0" y="24" font-size="24">🔨</text></svg>') 16 16, pointer;
@@ -399,4 +397,4 @@ canvas#gameCanvas {
     text-align: center;
     font-family: 'Press Start 2P', cursive;
     padding: 5px;
-}
+    }
