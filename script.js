@@ -563,7 +563,7 @@ function drawBoard() {
     // Draw grid lines
     ctx.strokeStyle = THEMES[currentTheme].gridColor;
     ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.6;
     for (let i = 0; i <= COLS; i++) {
         ctx.beginPath();
         ctx.moveTo(i * BLOCK_SIZE, 0);
