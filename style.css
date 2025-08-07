@@ -4,7 +4,6 @@
     --board-bg-color: #000;
     --border-color: var(--main-color);
     --flash-color: #FFFFFF;
-    --block-size: 25px;
 }
 
 @font-face {
@@ -21,10 +20,10 @@ html, body {
     height: 100%;
     overflow: hidden;
     box-sizing: border-box;
-    font-family: 'Press Start 2P', cursive;
 }
 
 body {
+    font-family: 'Press Start 2P', cursive;
     background: linear-gradient(to bottom right, #1a1a2e, #16213e, #0f3460);
     color: #e0e0e0;
     display: flex;
@@ -43,13 +42,19 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 10px;
-    max-width: 600px;
-    max-height: 900px;
-    width: 100%; /* Podeseno da se prilagodi */
-    height: 100%; /* Podeseno da se prilagodi */
+    width: 98vw;
+    height: 98vh;
+    min-width: 300px;
     box-sizing: border-box;
     position: relative;
     transition: all 0.3s ease-in-out;
+    aspect-ratio: 1 / 1.5;
+}
+
+@media (min-width: 600px) {
+    #main-game-wrapper {
+        width: auto;
+    }
 }
 
 .screen-shake {
@@ -208,7 +213,9 @@ canvas#gameCanvas {
     width: 100%;
     height: 100%;
 }
-.hammer-mode-cursor { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="fill:%23fff;"><text x="0" y="24" font-size="24">🔨</text></svg>') 16 16, pointer; }
+.hammer-mode-cursor {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="fill:%23fff;"><text x="0" y="24" font-size="24">🔨</text></svg>') 16 16, pointer;
+}
 #right-controls {
     display: flex;
     flex-direction: column;
@@ -250,6 +257,7 @@ canvas#gameCanvas {
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s, transform 0.1s;
+    font-family: 'Press Start 2P', cursive;
 }
 .btn:hover {
     background-color: #c72c38;
@@ -269,166 +277,134 @@ canvas#gameCanvas {
     border: none;
     cursor: pointer;
     background-color: #2a9d8f;
-    font-size: 1em;
+    font-size: 1.2em;
+    transition: background-color 0.2s, transform 0.1s;
 }
-.assist-btn .bomb-icon, .assist-btn .hammer-icon, .assist-btn .undo-icon {
-    font-size: 1.5em;
-    line-height: 1;
+.assist-btn:hover {
+    background-color: #1b7a6d;
+}
+.assist-btn:active {
+    transform: translateY(1px);
 }
 .count {
+    color: var(--main-color);
     font-size: 1.2em;
     font-weight: bold;
-    color: var(--main-color);
 }
+.golden-frame {
+    background-color: #333;
+    border: 2px solid #FFD700;
+    box-shadow: 0 0 10px #FFD700;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+#controls-button {
+    margin-top: 10px;
+    font-size: 0.8em;
+    padding: 8px;
+}
+
 .overlay {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: #fff;
+    background-color: rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    text-align: center;
     z-index: 100;
-    animation: fadeIn 0.5s ease-in-out;
+    text-align: center;
+    gap: 15px;
     padding: 20px;
     box-sizing: border-box;
-    font-size: 1.2em;
-}
-.overlay h1 {
-    font-size: 2.5em;
-    margin-bottom: 20px;
-    color: var(--main-color);
-}
-.overlay p {
-    font-size: 0.9em;
-    margin-top: 20px;
-}
-.overlay button {
-    margin-top: 15px;
-    font-size: 1em;
-}
-#start-screen p {
-    font-size: 0.8em;
-}
-#game-over-screen {
-    font-size: 1.5em;
-}
-#game-over-screen button {
-    margin-top: 20px;
-    font-size: 1.2em;
-}
-#pause-screen {
-    font-size: 2em;
-}
-#pause-screen button {
-    font-size: 1em;
-    padding: 12px;
-}
-#exit-modal {
-    position: absolute;
-    width: 80%;
-    max-width: 400px;
-    padding: 20px;
-    background-color: #1a1a2e;
-    border: 2px solid var(--border-color);
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(97, 218, 251, 0.4);
-    z-index: 200;
-}
-#exit-modal-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-}
-#exit-modal h2 {
-    margin: 0;
-    color: var(--main-color);
-}
-#exit-modal p {
-    margin: 0;
-    font-size: 0.9em;
-}
-#exit-modal-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    width: 100%;
-}
-#exit-modal-buttons button {
-    flex: 1;
-    font-size: 0.9em;
-}
-#controls-modal {
-    position: absolute;
-    width: 80%;
-    max-width: 500px;
-    padding: 20px;
-    background-color: #1a1a2e;
-    border: 2px solid var(--border-color);
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(97, 218, 251, 0.4);
-    z-index: 200;
-    display: none;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-#controls-modal-content {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.control-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-.control-line label {
-    flex: 1;
-    text-align: left;
-}
-.control-line input {
-    flex: 1;
-    padding: 5px;
-    border-radius: 5px;
-    border: 1px solid var(--main-color);
-    background-color: #333;
-    color: #fff;
-    font-family: 'Press Start 2P', cursive;
-    text-align: center;
-    outline: none;
-    cursor: pointer;
-}
-.control-line input:focus {
-    box-shadow: 0 0 5px var(--main-color);
-}
-#close-controls-modal {
-    margin-top: 20px;
-}
-
-#combo-display {
-    position: absolute;
-    bottom: 50%;
-    left: 50%;
-    transform: translate(-50%, 50%);
-    color: #fff;
-    text-shadow: 2px 2px 5px #000;
-    font-size: 2.5em;
-    font-weight: bold;
-    z-index: 10;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s ease-in-out;
+    pointer-events: all;
+    animation: fadeIn 0.5s;
 }
 
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+.overlay h1 {
+    font-size: 2.5em;
+    color: var(--main-color);
+    text-shadow: 0 0 10px var(--main-color);
+    margin-bottom: 10px;
+}
+.overlay h2 {
+    font-size: 1.5em;
+    color: var(--flash-color);
+    text-shadow: 0 0 5px var(--flash-color);
+}
+.overlay p {
+    font-size: 1em;
+    margin: 0;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+.modal-content {
+    background-color: #2c313a;
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid var(--border-color);
+    text-align: center;
+    box-shadow: 0 0 20px rgba(97, 218, 251, 0.5);
+    width: 90%;
+    max-width: 400px;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    color: var(--main-color);
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+.modal-buttons .btn {
+    padding: 10px 20px;
+    font-size: 1em;
+}
+
+.controls-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.control-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.control-item input {
+    width: 80px;
+    background-color: #1a1a2e;
+    border: 1px solid var(--border-color);
+    color: #e0e0e0;
+    text-align: center;
+    font-family: 'Press Start 2P', cursive;
+    padding: 5px;
 }
