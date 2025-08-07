@@ -186,22 +186,13 @@ body {
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
 
-#next-block-placeholder {
+#next-block-container canvas {
+    width: 100%;
+    height: 100%;
     background-color: #0d0d1a;
     border: 1px solid #4fa3d1;
     border-radius: 5px;
     box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    max-width: 70px;
-    max-height: 70px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-#nextBlockCanvas {
-    width: 100%;
-    height: 100%;
 }
 
 canvas#gameCanvas {
