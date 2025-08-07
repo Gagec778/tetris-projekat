@@ -4,7 +4,7 @@
     --board-bg-color: #000;
     --border-color: var(--main-color);
     --flash-color: #FFFFFF;
-    /* Linija --block-size: 25px; je uklonjena. */
+    --block-size: 25px;
 }
 
 @font-face {
@@ -31,6 +31,9 @@ body {
     justify-content: center;
     align-items: center;
     font-size: 12px;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
 }
 
 #main-game-wrapper {
@@ -213,7 +216,7 @@ canvas#gameCanvas {
     border-radius: 5px;
     flex-grow: 1;
     width: 100%;
-    height: 100%;
+    height: auto;
 }
 .hammer-mode-cursor {
     cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="fill:%23fff;"><text x="0" y="24" font-size="24">🔨</text></svg>') 16 16, pointer;
