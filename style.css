@@ -31,6 +31,8 @@ body {
     align-items: center;
     font-size: 12px;
     position: relative;
+    user-select: none;
+    touch-action: none;
 }
 
 #background-image {
