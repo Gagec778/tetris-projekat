@@ -1,3 +1,12 @@
+
+function setAppHeight() {
+    document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+}
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', setAppHeight);
+setAppHeight();
+
+
 let isAnimating = false;
 let linesToClear = [];
 let animationStart = 0;
@@ -223,7 +232,9 @@ function initDOMAndEventListeners() {
     homeButton.addEventListener('click', showExitModal);
     confirmExitButton.addEventListener('click', () => {
         exitModal.style.display = 'none';
-        endGame(false, true);
+        pauseScreen.style.display = 'none';
+        gameRunning = false;
+        startScreen.style.display = 'flex';
     });
     cancelExitButton.addEventListener('click', () => {
         exitModal.style.display = 'none';
