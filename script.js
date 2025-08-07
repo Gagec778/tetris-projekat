@@ -131,26 +131,29 @@ function setCanvasSize() {
     const gameWrapper = document.getElementById('main-game-wrapper');
     const infoSection = document.getElementById('info-section');
     const assistsPanel = document.getElementById('assists-panel');
+    const wrapperPadding = 10;
 
-    const padding = 10 * 2; // Gornji i donji padding za wrapper
-    const totalVerticalPadding = padding + infoSection.offsetHeight + assistsPanel.offsetHeight;
-    const availableHeight = window.innerHeight - totalVerticalPadding;
-    const availableWidth = window.innerWidth;
+    const gameWrapperHeight = window.innerHeight * 0.98; // 98vh
+    const gameWrapperWidth = window.innerWidth * 0.98; // 98vw
+
+    gameWrapper.style.maxHeight = `${gameWrapperHeight}px`;
+    gameWrapper.style.maxWidth = `${gameWrapperWidth}px`;
+
+    const availableVerticalSpace = gameWrapper.clientHeight - (infoSection.clientHeight + assistsPanel.clientHeight + wrapperPadding * 2);
+    const availableHorizontalSpace = gameWrapper.clientWidth - wrapperPadding * 2;
 
     const canvasAspectRatio = COLS / ROWS;
-    const screenAspectRatio = availableWidth / availableHeight;
+    const availableAspectRatio = availableHorizontalSpace / availableVerticalSpace;
 
-    let tempBlockSize;
-
-    if (screenAspectRatio > canvasAspectRatio) {
+    if (availableAspectRatio > canvasAspectRatio) {
         // Ograničeno visinom
-        tempBlockSize = Math.floor(availableHeight / ROWS);
+        BLOCK_SIZE = Math.floor(availableVerticalSpace / ROWS);
     } else {
         // Ograničeno širinom
-        tempBlockSize = Math.floor(availableWidth / COLS);
+        BLOCK_SIZE = Math.floor(availableHorizontalSpace / COLS);
     }
     
-    BLOCK_SIZE = Math.max(12, tempBlockSize);
+    BLOCK_SIZE = Math.max(12, BLOCK_SIZE);
 
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
@@ -158,8 +161,6 @@ function setCanvasSize() {
     const sideCanvasSize = Math.floor(BLOCK_SIZE * 4);
     nextBlockCanvas.width = sideCanvasSize;
     nextBlockCanvas.height = sideCanvasSize;
-
-    gameWrapper.style.width = `${canvas.width + 20}px`; // Dodatni padding za wrapper
     
     TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
     TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
@@ -246,7 +247,7 @@ function initDOMAndEventListeners() {
         exitModal.style.display = 'none';
         togglePause();
     });
-    themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
+    // themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
     
     assistsBombButton.addEventListener('click', () => {
         if (gameOver || isPaused) return;
@@ -296,7 +297,7 @@ function initDOMAndEventListeners() {
     
     const savedTheme = localStorage.getItem('theme') || 'classic';
     setTheme(savedTheme);
-    themeSwitcher.value = savedTheme;
+    // themeSwitcher.value = savedTheme;
 
     loadKeyBindings();
 
