@@ -4,7 +4,7 @@
     --board-bg-color: #000;
     --border-color: var(--main-color);
     --flash-color: #FFFFFF;
-    /* --block-size: 25px;  <-- OVA LINIJA JE UKLONJENA */
+    /* Linija --block-size: 25px; je uklonjena. */
 }
 
 @font-face {
@@ -147,8 +147,8 @@ body {
     justify-content: center;
 }
 #next-block-container canvas {
-    width: calc(var(--block-size) * 4);
-    height: calc(var(--block-size) * 4);
+    width: 100%;
+    height: auto;
     max-height: 100%;
 }
 #right-controls {
@@ -212,8 +212,8 @@ canvas#gameCanvas {
     display: block;
     border-radius: 5px;
     flex-grow: 1;
-    width: calc(var(--block-size) * 10);
-    height: calc(var(--block-size) * 20);
+    width: 100%;
+    height: 100%;
 }
 .hammer-mode-cursor {
     cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="fill:%23fff;"><text x="0" y="24" font-size="24">🔨</text></svg>') 16 16, pointer;
@@ -402,4 +402,4 @@ canvas#gameCanvas {
     display: flex;
     gap: 15px;
     margin-top: 20px;
-}
+    }
