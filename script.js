@@ -350,6 +350,39 @@ function initDOMAndEventListeners() {
     setCanvasSize();
 }
 
+function loadKeyBindings() {
+    const savedBindings = JSON.parse(localStorage.getItem('keyBindings'));
+    keyBindings = savedBindings || {
+        left: 'ArrowLeft',
+        right: 'ArrowRight',
+        down: 'ArrowDown',
+        rotate: 'ArrowUp',
+        drop: ' ',
+        bomb: 'b',
+        hammer: 'h',
+        undo: 'u'
+    };
+
+    controlInputs.forEach(input => {
+        const action = input.dataset.action;
+        if (keyBindings[action]) {
+            input.value = keyBindings[action];
+        }
+    });
+}
+
+function saveKeyBindings() {
+    controlInputs.forEach(input => {
+        const action = input.dataset.action;
+        keyBindings[action] = input.value;
+    });
+    localStorage.setItem('keyBindings', JSON.stringify(keyBindings));
+}
+
+function showControlsModal() {
+    controlsModal.style.display = 'block';
+}
+
 function initBoard() {
     board = [];
     for (let r = 0; r < ROWS; r++) {
@@ -524,7 +557,8 @@ function drawBoard() {
             }
         }
     }
-
+    
+    // Draw grid lines
     ctx.strokeStyle = THEMES[currentTheme].gridColor;
     ctx.lineWidth = 1;
     ctx.globalAlpha = 0.8;
@@ -698,12 +732,499 @@ function checkLines() {
             if (tSpinSound.readyState >= 2) tSpinSound.play().catch(e => console.error("Greška pri puštanju T-Spin zvuka:", e));
         } else {
             clearSound.currentTime = 0;
-            if (clearSound.readyState >= 2) clearSound.play().catch(e => console.error("Greška pri puštanju clear zvuka:", e));
+            if (clearSound.readyState >= 2) clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
         }
-        
+        return;
     } else {
         lastClearWasSpecial = false;
+        combo = 0;
         generateNewPiece();
     }
+}
+
+function updateScore(lines, isCurrentSpecial) {
+    let points = 0;
+    let type = '';
+    const backToBackMultiplier = lastClearWasSpecial && isCurrentSpecial ? 1.5 : 1;
+    if (isTSpin()) {
+        if (lines === 1) {
+            points = 800;
+            type = 'T-Spin Single';
+        } else if (lines === 2) {
+            points = 1200;
+            type = 'T-Spin Double';
+        } else if (lines === 3) {
+            points = 1600;
+            type = 'T-Spin Triple';
+        } else {
+            points = 400;
+            type = 'T-Spin';
+        }
+        tSpinSound.currentTime = 0;
+        tSpinSound.play().catch(e => console.error("Greška pri puštanju T-Spin zvuka:", e));
+    } else {
+        switch (lines) {
+            case 1: points = 100; type = 'Single'; break;
+            case 2: points = 300; type = 'Double'; break;
+            case 3: points = 500; type = 'Triple'; break;
+            case 4: points = 800; type = 'Tetris'; break;
+        }
+    }
+    
+    score += points * backToBackMultiplier;
+    
+    if (combo > 0) {
+        score += combo * 50;
+    }
+    
+    if (combo > 1) {
+        showCombo(combo);
+    }
+    
+    combo++;
+    
+    scoreDisplay.textContent = `Score: ${score}`;
+    linesClearedThisLevel += lines;
+    linesClearedTotal += lines;
+
+    if (score >= nextAssistReward) {
+        gainRandomAssist();
+        nextAssistReward += 5000;
+    }
+
+    if (currentMode === 'classic' || currentMode === 'marathon') {
+        updateLevel();
+    }
+    
+    lastClearWasSpecial = isCurrentSpecial;
+}
+
+function updateLevel() {
+    if (linesClearedThisLevel >= 10) {
+        level++;
+        levelDisplay.textContent = `Level: ${level}`;
+        linesClearedThisLevel = 0;
+        dropInterval = Math.max(100, dropInterval - 50);
+    }
+}
+
+function gainRandomAssist() {
+    const assistTypes = ['bomb', 'hammer', 'undo'];
+    const randomAssist = assistTypes[Math.floor(Math.random() * assistTypes.length)];
+    assists[randomAssist]++;
+    updateAssistsDisplay();
+    localStorage.setItem('assists', JSON.stringify(assists));
+}
+
+function updateAssistsDisplay() {
+    assistsBombCountDisplay.textContent = assists.bomb;
+    assistsHammerCountDisplay.textContent = assists.hammer;
+    assistsUndoCountDisplay.textContent = assists.undo;
+}
+
+function useBombAssist() {
+    if (assists.bomb <= 0) return;
+    assists.bomb--;
+    updateAssistsDisplay();
+    localStorage.setItem('assists', JSON.stringify(assists));
+    
+    bombSound.currentTime = 0;
+    bombSound.play().catch(e => console.error("Greška pri puštanju zvuka za bombu:", e));
+
+    const bombCount = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < bombCount; i++) {
+        const x = Math.floor(Math.random() * COLS);
+        const y = Math.floor(Math.random() * ROWS);
+        explode(x, y);
+    }
+    score += bombBonus;
+    scoreDisplay.textContent = `Score: ${score}`;
+    
+    if (currentPiece) {
+        draw();
+    }
+    
+    checkLines();
+}
+
+function explode(cx, cy) {
+    const explosionRadius = 1;
+    const linesToFlash = new Set();
+    const blastCenter = { x: cx, y: cy };
+
+    for (let r = Math.max(0, cy - explosionRadius); r <= Math.min(ROWS - 1, cy + explosionRadius); r++) {
+        for (let c = Math.max(0, cx - explosionRadius); c <= Math.min(COLS - 1, cx + explosionRadius); c++) {
+            if (board[r][c] !== 0) {
+                board[r][c] = 0;
+                linesToFlash.add(r);
+                createBombAnimation(c, r);
+            }
+        }
+    }
+    
+    linesToClear = Array.from(linesToFlash).sort((a,b) => a-b);
+    if(linesToClear.length > 0) {
+        clearLinesAnimated();
+    }
+}
+
+function createBombAnimation(x, y) {
+    const animationEl = document.createElement('div');
+    animationEl.classList.add('bomb-animation');
+    
+    const wrapper = document.getElementById('main-game-wrapper');
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+
+    const dx = canvasRect.left - wrapperRect.left;
+    const dy = canvasRect.top - wrapperRect.top;
+
+    animationEl.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
+    animationEl.style.left = `${dx + x * BLOCK_SIZE}px`;
+    animationEl.style.top = `${dy + y * BLOCK_SIZE}px`;
+    animationEl.style.backgroundColor = 'var(--flash-color)';
+    
+    const randomDx = (Math.random() - 0.5) * 50;
+    const randomDy = (Math.random() - 0.5) * 50;
+    animationEl.style.setProperty('--dx', `${randomDx}px`);
+    animationEl.style.setProperty('--dy', `${randomDy}px`);
+    
+    wrapper.appendChild(animationEl);
+    
+    animationEl.addEventListener('animationend', () => {
+        animationEl.remove();
+    });
+}
+
+
+function toggleHammerMode() {
+    if (assists.hammer <= 0) return;
+    hammerMode = !hammerMode;
+    const gameWrapper = document.getElementById('main-game-wrapper');
+    if (hammerMode) {
+        gameWrapper.classList.add('hammer-mode-cursor');
+    } else {
+        gameWrapper.classList.remove('hammer-mode-cursor');
+    }
+}
+
+function handleCanvasClick(e) {
+    if (hammerMode) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const c = Math.floor(x / BLOCK_SIZE);
+        const r = Math.floor(y / BLOCK_SIZE);
+        
+        if (c >= 0 && c < COLS && r >= 0 && r < ROWS) {
+            hammerBlock(c, r);
+        }
+    }
+}
+
+function handleCanvasHover(e) {
+    if (hammerMode && !gameOver && !isPaused) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const r = Math.floor(y / BLOCK_SIZE);
+        
+        if (r >= 0 && r < ROWS) {
+            hammerLine = r;
+            draw();
+        } else {
+            if (hammerLine !== -1) {
+                hammerLine = -1;
+                draw();
+            }
+        }
+    } else {
+        if (hammerLine !== -1) {
+            hammerLine = -1;
+            draw();
+        }
+    }
+}
+
+function hammerBlock(c, r) {
+    if (assists.hammer <= 0 || !board[r][c]) return;
+    
+    assists.hammer--;
+    updateAssistsDisplay();
+    localStorage.setItem('assists', JSON.stringify(assists));
+    
+    board[r][c] = 0;
+    score += 50;
+    scoreDisplay.textContent = `Score: ${score}`;
+    
+    toggleHammerMode();
+    draw();
+    checkLines();
+}
+
+function useUndoAssist() {
+    if (assists.undo <= 0 || boardHistory.length === 0) return;
+    
+    assists.undo--;
+    updateAssistsDisplay();
+    localStorage.setItem('assists', JSON.stringify(assists));
+    
+    board = boardHistory.pop();
+    score -= 100; // Penalizacija za korišćenje
+    scoreDisplay.textContent = `Score: ${score}`;
+    
+    generateNewPiece();
     draw();
 }
+
+function gameLoop(timestamp) {
+    if (gameOver || isPaused) return;
+
+    if (isAnimating) {
+        const elapsedTime = timestamp - animationStart;
+        if (elapsedTime < animationDuration) {
+            drawBoard();
+            drawCurrentPiece();
+            drawFlashLines(elapsedTime);
+        } else {
+            isAnimating = false;
+            removeLines();
+            generateNewPiece();
+        }
+    } else {
+        const currentTime = performance.now();
+        const deltaTime = currentTime - lastDropTime;
+        if (deltaTime > dropInterval) {
+            moveDown();
+            lastDropTime = currentTime;
+        }
+
+        if (currentMode === 'ultra') {
+            const timeElapsed = (performance.now() - startTime) / 1000;
+            const timeLeft = ultraTimeLimit - timeElapsed;
+            if (timeLeft <= 0) {
+                endGame();
+                return;
+            }
+            ultraTimerDisplay.textContent = `TIME: ${timeLeft.toFixed(2)}s`;
+        }
+
+        draw();
+    }
+
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+    startScreen.style.display = 'none';
+    
+    initBoard();
+    score = 0;
+    level = 1;
+    linesClearedThisLevel = 0;
+    linesClearedTotal = 0;
+    dropInterval = 1000;
+    gameOver = false;
+    isPaused = false;
+    combo = 0;
+    scoreDisplay.textContent = 'Score: 0';
+    levelDisplay.textContent = 'Level: 1';
+    
+    if (currentMode === 'sprint') {
+        sprintTimerDisplay.style.display = 'block';
+    } else if (currentMode === 'ultra') {
+        ultraTimerDisplay.style.display = 'block';
+        startTime = performance.now();
+    }
+    
+    generateNewPiece();
+    
+    startCountdown.style.display = 'flex';
+    let countdown = 3;
+    startCountdown.textContent = countdown;
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        startCountdown.textContent = countdown;
+        if (countdown === 0) {
+            startCountdown.textContent = 'GO!';
+        } else if (countdown < 0) {
+            clearInterval(countdownInterval);
+            startCountdown.style.display = 'none';
+            gameLoop(performance.now());
+            playBackgroundMusic();
+        }
+    }, 1000);
+}
+
+function endGame(manual=false, fromHome=false) {
+    gameOver = true;
+    cancelAnimationFrame(animationFrameId);
+    pauseBackgroundMusic();
+    gameOverSound.currentTime = 0;
+    gameOverSound.play().catch(e => console.error("Greška pri puštanju gameOver zvuka:", e));
+    
+    const finalScore = score;
+    const finalTime = currentMode === 'sprint' ? (performance.now() - startTime) / 1000 : null;
+    
+    if (finalScore > bestScore) {
+        bestScore = finalScore;
+        localStorage.setItem('bestScore', bestScore);
+        bestScoreDisplay.textContent = `${bestScore}`;
+    }
+    
+    finalScoreDisplay.textContent = finalScore;
+    if (currentMode === 'sprint') {
+        finalTimeDisplay.textContent = `${finalTime.toFixed(2)}s`;
+        finalTimeDisplay.parentNode.style.display = 'block';
+        
+        if (linesClearedTotal < 40) {
+            finalScoreDisplay.textContent = "Niste očistili 40 linija";
+            continueButton.style.display = 'none';
+        } else {
+            continueButton.style.display = 'block';
+        }
+        
+    } else if (currentMode === 'ultra') {
+        finalTimeDisplay.textContent = `${ultraTimeLimit.toFixed(2)}s`;
+        finalTimeDisplay.parentNode.style.display = 'block';
+        continueButton.style.display = 'none';
+    } else {
+        finalTimeDisplay.parentNode.style.display = 'none';
+        continueButton.style.display = 'none';
+    }
+
+    sprintTimerDisplay.style.display = 'none';
+    ultraTimerDisplay.style.display = 'none';
+
+    gameOverScreen.style.display = 'flex';
+    
+    if (fromHome) {
+        gameOverScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+    }
+}
+
+function continueGame() {
+    gameOverScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+}
+
+function togglePause() {
+    isPaused = !isPaused;
+    if (isPaused) {
+        pauseScreen.style.display = 'flex';
+        cancelAnimationFrame(animationFrameId);
+        pauseBackgroundMusic();
+    } else {
+        pauseScreen.style.display = 'none';
+        gameLoop(performance.now());
+        playBackgroundMusic();
+    }
+}
+
+function showExitModal() {
+    if (gameOver) return;
+    togglePause();
+    exitModal.style.display = 'block';
+}
+
+function draw() {
+    drawBoard();
+    drawGhostPiece();
+    drawCurrentPiece();
+}
+
+function moveDown() {
+    if (isValidMove(0, 1, currentPiece.shape)) {
+        currentPiece.y++;
+    } else {
+        mergePiece();
+    }
+}
+
+function removeLines() {
+    linesToClear.sort((a,b) => a-b);
+    for (const r of linesToClear.reverse()) {
+        board.splice(r, 1);
+        board.unshift(Array(COLS).fill(0));
+    }
+    linesToClear = [];
+    draw();
+}
+
+function drawFlashLines(elapsedTime) {
+    const progress = elapsedTime / animationDuration;
+    let flashOpacity;
+    if (progress < 0.5) {
+        flashOpacity = progress * 2; 
+    } else {
+        flashOpacity = (1 - progress) * 2;
+    }
+
+    ctx.save();
+    ctx.globalAlpha = flashOpacity;
+    ctx.fillStyle = THEMES[currentTheme].flashColor;
+    
+    linesToClear.forEach(r => {
+        ctx.fillRect(0, r * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE);
+    });
+    ctx.restore();
+}
+
+function clearLinesAnimated() {
+    isAnimating = true;
+    animationStart = performance.now();
+}
+
+function handleKeydown(e) {
+    if (gameOver || isPaused || !currentPiece) return;
+
+    if (e.key === keyBindings.left) {
+        if (isValidMove(-1, 0, currentPiece.shape)) {
+            currentPiece.x--;
+            draw();
+        }
+    } else if (e.key === keyBindings.right) {
+        if (isValidMove(1, 0, currentPiece.shape)) {
+            currentPiece.x++;
+            draw();
+        }
+    } else if (e.key === keyBindings.down) {
+        if (isValidMove(0, 1, currentPiece.shape)) {
+            currentPiece.y++;
+            lastDropTime = performance.now();
+            draw();
+        } else {
+            mergePiece();
+        }
+    } else if (e.key === keyBindings.rotate) {
+        rotatePiece();
+        draw();
+    } else if (e.key === keyBindings.drop) {
+        e.preventDefault();
+        dropPiece();
+    } else if (e.key === keyBindings.bomb) {
+        useBombAssist();
+    } else if (e.key === keyBindings.hammer) {
+        toggleHammerMode();
+    } else if (e.key === keyBindings.undo) {
+        useUndoAssist();
+    }
+}
+
+function showCombo(comboCount) {
+    comboDisplay.style.display = 'block';
+    comboDisplay.textContent = `COMBO x${comboCount}`;
+    comboDisplay.style.animation = 'comboFlash 0.5s forwards';
+    setTimeout(() => {
+        comboDisplay.style.display = 'none';
+        comboDisplay.style.animation = '';
+    }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
+
+window.onresize = () => {
+    setCanvasSize();
+};
