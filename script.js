@@ -140,16 +140,19 @@ function setCanvasSize() {
     
     BLOCK_SIZE = Math.max(12, tempBlockSize);
 
-    // DODAJEŠ OVU LINIJU
+    // Ova linija je ključna za dinamičko prilagođavanje
     root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
     
-    // Malo prilagodjena logika za next block canvas
-    const nextCanvasDim = Math.floor(BLOCK_SIZE * 4);
-    nextBlockCanvas.width = nextCanvasDim;
-    nextBlockCanvas.height = nextCanvasDim;
+    // I ove dve su dodate da bi se osiguralo da se platno ispravno prikazuje
+    canvas.style.width = `${canvas.width}px`;
+    canvas.style.height = `${canvas.height}px`;
+
+    const sideCanvasSize = Math.floor(BLOCK_SIZE * 4);
+    nextBlockCanvas.width = sideCanvasSize;
+    nextBlockCanvas.height = sideCanvasSize;
     
     TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
     TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
@@ -793,23 +796,6 @@ function updateScore(lines, isCurrentSpecial) {
         lastClearWasSpecial = false;
     }
 
-    if (currentMode === 'sprint') {
-        linesClearedTotal += lines;
-        if (linesClearedTotal >= 40) {
-            endGame(true);
-        }
-    } else if (currentMode === 'classic' || currentMode === 'marathon') {
-        linesClearedThisLevel += lines;
-        if (linesClearedThisLevel >= 10) {
-            level++;
-            linesClearedThisLevel -= 10;
-            levelDisplay.textContent = `Level: ${level}`;
-            if (currentMode === 'classic' || currentMode === 'marathon') {
-                dropInterval = Math.max(100, 1000 - level * 50);
-            }
-        }
-    }
-
     if (score >= nextAssistReward) {
         let assistType = ['bomb', 'hammer', 'undo'][Math.floor(Math.random() * 3)];
         assists[assistType]++;
@@ -984,6 +970,305 @@ function endGame(isSprintWin = false, exitToMainMenu = false) {
     
     gameOverScreen.style.display = 'flex';
     homeButton.style.display = 'none';
+}
+
+function continueGame() {
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    isPaused = false;
+    gameOver = false;
     
-    // ... ostatak koda
+    if (currentMode === 'classic' || currentMode === 'marathon') {
+        dropInterval = Math.max(100, 1000 - (level - 1) * 60);
+    }
+    
+    playBackgroundMusic();
+    if (!animationFrameId) {
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+}
+
+function startGame() {
+    initBoard();
+    score = 0;
+    level = 1;
+    linesClearedTotal = 0;
+    linesClearedThisLevel = 0;
+    dropInterval = 1000;
+    
+    updateScoreDisplay();
+    updateLevelDisplay();
+    updateAssistsDisplay();
+
+    startTime = performance.now();
+    
+    if (currentMode === 'sprint') {
+        sprintTimerDisplay.style.display = 'block';
+        ultraTimerDisplay.style.display = 'none';
+    } else if (currentMode === 'ultra') {
+        sprintTimerDisplay.style.display = 'none';
+        ultraTimerDisplay.style.display = 'block';
+    } else {
+        sprintTimerDisplay.style.display = 'none';
+        ultraTimerDisplay.style.display = 'none';
+    }
+    
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    pauseScreen.style.display = 'none';
+    homeButton.style.display = 'block';
+    
+    gameOver = false;
+    isPaused = false;
+
+    currentPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
+    nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
+    generateNewPiece();
+    
+    playBackgroundMusic();
+    lastDropTime = performance.now();
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function updateScoreDisplay() {
+    scoreDisplay.textContent = `Score: ${score}`;
+}
+
+function updateLevelDisplay() {
+    levelDisplay.textContent = `Level: ${level}`;
+}
+
+function updateAssistsDisplay() {
+    assistsBombCountDisplay.textContent = assists.bomb;
+    assistsHammerCountDisplay.textContent = assists.hammer;
+    assistsUndoCountDisplay.textContent = assists.undo;
+}
+
+function togglePause() {
+    if (gameOver) return;
+    isPaused = !isPaused;
+    if (isPaused) {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        pauseScreen.style.display = 'flex';
+        pauseBackgroundMusic();
+    } else {
+        pauseScreen.style.display = 'none';
+        lastDropTime = performance.now();
+        animationFrameId = requestAnimationFrame(gameLoop);
+        playBackgroundMusic();
+    }
+}
+
+function showExitModal() {
+    if (isPaused) return;
+    isPaused = true;
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    pauseBackgroundMusic();
+    exitModal.style.display = 'flex';
+}
+
+function handleKeydown(e) {
+    if (isPaused || gameOver) return;
+    
+    const key = e.key;
+
+    if (key === keyBindings.left && currentPiece && isValidMove(-1, 0, currentPiece.shape)) {
+        currentPiece.x--;
+    } else if (key === keyBindings.right && currentPiece && isValidMove(1, 0, currentPiece.shape)) {
+        currentPiece.x++;
+    } else if (key === keyBindings.down && currentPiece && isValidMove(0, 1, currentPiece.shape)) {
+        currentPiece.y++;
+        lastDropTime = performance.now();
+    } else if (key === keyBindings.rotate && currentPiece) {
+        rotatePiece();
+    } else if (key === keyBindings.drop && currentPiece) {
+        dropPiece();
+    } else if (key === keyBindings.bomb) {
+        e.preventDefault();
+        useBombAssist();
+    } else if (key === keyBindings.hammer) {
+        e.preventDefault();
+        toggleHammerMode();
+    } else if (key === keyBindings.undo) {
+        e.preventDefault();
+        useUndoAssist();
+    } else if (key === 'p') {
+        togglePause();
+    } else {
+        return;
+    }
+    
+    draw();
+}
+
+function useBombAssist() {
+    if (assists.bomb > 0) {
+        assists.bomb--;
+        
+        let rowsToClear = [];
+        let rowsWithBlocks = [];
+        for (let r = 0; r < ROWS; r++) {
+            let hasBlock = false;
+            for (let c = 0; c < COLS; c++) {
+                if (board[r][c] !== 0) {
+                    hasBlock = true;
+                    break;
+                }
             }
+            if (hasBlock) {
+                rowsWithBlocks.push(r);
+            }
+        }
+        
+        if (rowsWithBlocks.length === 0) {
+            assists.bomb++;
+            return;
+        }
+
+        const randomIndex = Math.floor(Math.random() * rowsWithBlocks.length);
+        const randomRow = rowsWithBlocks[randomIndex];
+        rowsToClear.push(randomRow);
+
+        let adjacentRows = [randomRow - 1, randomRow + 1];
+        
+        adjacentRows.forEach(adjRow => {
+            if (adjRow >= 0 && adjRow < ROWS) {
+                rowsToClear.push(adjRow);
+            }
+        });
+        
+        rowsToClear = [...new Set(rowsToClear)];
+
+        rowsToClear.forEach(r => {
+            for (let c = 0; c < COLS; c++) {
+                board[r][c] = 0;
+            }
+        });
+
+        bombSound.currentTime = 0;
+        bombSound.play().catch(e => console.error("Greška pri puštanju zvuka za bombu:", e));
+
+        const middleRow = Math.floor((rowsToClear[0] + rowsToClear[rowsToClear.length - 1]) / 2);
+        
+        const bombAnimation = document.createElement('div');
+        bombAnimation.classList.add('bomb-animation');
+        document.getElementById('main-game-wrapper').appendChild(bombAnimation);
+
+        bombAnimation.style.left = `${Math.floor(COLS / 2) * BLOCK_SIZE}px`;
+        bombAnimation.style.top = `${middleRow * BLOCK_SIZE}px`;
+
+        setTimeout(() => {
+            bombAnimation.remove();
+        }, 800);
+
+        score += bombBonus;
+        scoreDisplay.textContent = `Score: ${score}`;
+        updateAssistsDisplay();
+        localStorage.setItem('assists', JSON.stringify(assists));
+        
+        setTimeout(() => {
+            const linesToRemove = rowsToClear.sort((a,b) => b-a);
+            for(const r of linesToRemove){
+                board.splice(r, 1);
+            }
+            for(let i=0; i<linesToRemove.length; i++){
+                board.unshift(Array(COLS).fill(0));
+            }
+            draw();
+        }, 400);
+
+    }
+}
+
+function toggleHammerMode() {
+    if (assists.hammer > 0) {
+        hammerMode = !hammerMode;
+        if (hammerMode) {
+            canvas.classList.add('hammer-mode-cursor');
+        } else {
+            canvas.classList.remove('hammer-mode-cursor');
+            hammerLine = -1;
+            draw();
+        }
+    }
+}
+
+function handleCanvasClick(e) {
+    if (hammerMode) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const col = Math.floor(x / BLOCK_SIZE);
+        const row = Math.floor(y / BLOCK_SIZE);
+        
+        if (board[row] && board[row][col] !== 0) {
+            assists.hammer--;
+            board[row][col] = 0;
+            score += 100;
+            scoreDisplay.textContent = `Score: ${score}`;
+            updateAssistsDisplay();
+            localStorage.setItem('assists', JSON.stringify(assists));
+            toggleHammerMode();
+            draw();
+        }
+    }
+}
+
+function handleCanvasHover(e) {
+    if (hammerMode) {
+        const rect = canvas.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const row = Math.floor(y / BLOCK_SIZE);
+        
+        if (row !== hammerLine) {
+            hammerLine = row;
+            draw();
+        }
+    }
+}
+
+function useUndoAssist() {
+    if (assists.undo > 0 && boardHistory.length > 0) {
+        assists.undo--;
+        board = boardHistory.pop();
+        score -= 50;
+        scoreDisplay.textContent = `Score: ${score}`;
+        updateAssistsDisplay();
+        localStorage.setItem('assists', JSON.stringify(assists));
+        
+        generateNewPiece();
+        draw();
+    }
+}
+
+function handleLinesCleared(lines) {
+    let scoreMultiplier = 0;
+    if (lines === 1) scoreMultiplier = 1;
+    else if (lines === 2) scoreMultiplier = 3;
+    else if (lines === 3) scoreMultiplier = 5;
+    else if (lines === 4) scoreMultiplier = 8;
+    
+    score += scoreMultiplier * level * 10;
+    
+    linesClearedTotal += lines;
+    linesClearedThisLevel += lines;
+
+    if (currentMode === 'sprint' && linesClearedTotal >= 40) {
+        endGame(true);
+    }
+    
+    if (linesClearedThisLevel >= 10) {
+        linesClearedThisLevel -= 10;
+        level++;
+        updateLevelDisplay();
+        
+        if (currentMode === 'classic' || currentMode === 'marathon') {
+            dropInterval = Math.max(100, 1000 - (level - 1) * 60);
+        }
+    }
+    
+    updateScoreDisplay();
+}
+
+document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
