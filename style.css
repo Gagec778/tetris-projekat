@@ -111,7 +111,7 @@ body {
 #info-section {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: stretch;
     width: 100%;
     gap: 5px;
     margin-bottom: 5px;
@@ -134,11 +134,30 @@ body {
     min-width: 0;
     overflow: hidden;
 }
-
-#next-block-container, #right-controls {
-    flex: 1;
+.panel-header {
+    font-size: 0.8em;
+    width: 100%;
+    text-align: center;
 }
-
+#next-block-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+#next-block-container canvas {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+}
+#right-controls {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    justify-content: space-between;
+}
 #game-stats {
     flex-grow: 2;
     padding: 8px 5px;
@@ -186,21 +205,13 @@ body {
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
 
-#next-block-container canvas {
-    width: 100%;
-    height: 100%;
-    background-color: #0d0d1a;
-    border: 1px solid #4fa3d1;
-    border-radius: 5px;
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-}
-
 canvas#gameCanvas {
     position: relative;
     z-index: 1;
     background-color: var(--board-bg-color);
     display: block;
     border-radius: 5px;
+    flex-grow: 1;
     width: 100%;
     height: 100%;
 }
