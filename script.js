@@ -614,13 +614,13 @@ function drawBoard() {
     ctx.strokeStyle = THEMES[currentTheme].gridColor;
     ctx.lineWidth = 1;
     ctx.globalAlpha = 0.8;
-    for (let i = 0; i <= COLS; i++) {
+    for (let i = 1; i < COLS; i++) {
         ctx.beginPath();
         ctx.moveTo(i * BLOCK_SIZE, 0);
         ctx.lineTo(i * BLOCK_SIZE, ROWS * BLOCK_SIZE);
         ctx.stroke();
     }
-    for (let i = 0; i <= ROWS; i++) {
+    for (let i = 1; i < ROWS; i++) {
         ctx.beginPath();
         ctx.moveTo(0, i * BLOCK_SIZE);
         ctx.lineTo(COLS * BLOCK_SIZE, i * BLOCK_SIZE);
