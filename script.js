@@ -128,30 +128,34 @@ function pauseBackgroundMusic() {
 }
 
 function setCanvasSize() {
-    const gameWrapper = document.getElementById('main-game-wrapper');
+    const mainWrapper = document.getElementById('main-game-wrapper');
+    const gameInfoContainer = document.getElementById('game-and-info-container');
     const infoSection = document.getElementById('info-section');
     const assistsPanel = document.getElementById('assists-panel');
-
-    const wrapperPadding = 10 * 2; // top and bottom padding
-    const infoSectionHeight = infoSection.clientHeight + 5; // 5px margin-bottom
-    const assistsPanelHeight = assistsPanel.clientHeight;
     
-    const availableVerticalSpace = gameWrapper.clientHeight - infoSectionHeight - assistsPanelHeight - wrapperPadding;
-    const availableHorizontalSpace = gameWrapper.clientWidth - wrapperPadding;
+    // Potrebno je sakriti ostale elemente privremeno da bi se dobile tačne dimenzije omotača
+    const infoSectionWidth = infoSection.clientWidth;
+    const assistsPanelHeight = assistsPanel.clientHeight;
 
     const gameAspectRatio = COLS / ROWS;
-    const availableAspectRatio = availableHorizontalSpace / availableVerticalSpace;
-
+    
+    // Računanje dostupnog prostora za igru
+    const availableWidth = mainWrapper.clientWidth - infoSectionWidth - 20; // 20px je margina i padding
+    const availableHeight = mainWrapper.clientHeight - assistsPanelHeight - 20; // 20px je margina i padding
+    
+    const availableAspectRatio = availableWidth / availableHeight;
+    
+    let canvasWidth, canvasHeight;
     if (availableAspectRatio > gameAspectRatio) {
-        // Limited by height
-        BLOCK_SIZE = Math.floor(availableVerticalSpace / ROWS);
+        canvasHeight = availableHeight;
+        canvasWidth = canvasHeight * gameAspectRatio;
     } else {
-        // Limited by width
-        BLOCK_SIZE = Math.floor(availableHorizontalSpace / COLS);
+        canvasWidth = availableWidth;
+        canvasHeight = canvasWidth / gameAspectRatio;
     }
     
-    BLOCK_SIZE = Math.max(12, BLOCK_SIZE);
-
+    BLOCK_SIZE = Math.floor(canvasWidth / COLS);
+    
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
     
