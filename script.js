@@ -93,6 +93,7 @@ let linesClearedThisLevel = 0;
 let linesClearedTotal = 0;
 let startTime;
 const ultraTimeLimit = 120;
+let sprintLinesToClear = 40;
 
 let lastDropTime = 0;
 let animationFrameId;
@@ -104,14 +105,17 @@ let resizeObserver;
 let keyBindings;
 
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, continueButton, exitModal, confirmExitButton, cancelExitButton;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalStatsDisplay, comboDisplay, startButton, restartButton, resumeButton, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, continueButton, exitModal, confirmExitButton, cancelExitButton;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
 
-let TOUCH_MOVE_THRESHOLD_X;
-let TOUCH_MOVE_THRESHOLD_Y;
-let TAP_THRESHOLD;
+let touchStartX = 0;
+let touchStartY = 0;
+let lastTouchX = 0;
+let lastTouchY = 0;
+let isTapping = false;
+let touchTimeout;
 
 function playBackgroundMusic() {
     if (!backgroundMusicPlaying) {
@@ -132,43 +136,66 @@ function setCanvasSize() {
     const gameInfoContainer = document.getElementById('game-and-info-container');
     const infoSection = document.getElementById('info-section');
     const assistsPanel = document.getElementById('assists-panel');
-    
-    // Potrebno je sakriti ostale elemente privremeno da bi se dobile tačne dimenzije omotača
-    const infoSectionWidth = infoSection.clientWidth;
-    const assistsPanelHeight = assistsPanel.clientHeight;
 
-    const gameAspectRatio = COLS / ROWS;
+    const boardAspectRatio = COLS / ROWS;
     
-    // Računanje dostupnog prostora za igru
-    const availableWidth = mainWrapper.clientWidth - infoSectionWidth - 20; // 20px je margina i padding
-    const availableHeight = mainWrapper.clientHeight - assistsPanelHeight - 20; // 20px je margina i padding
+    // Računanje dostupnog prostora na osnovu viewporta
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
     
-    const availableAspectRatio = availableWidth / availableHeight;
+    // Podesi wrapper da zauzme 95% viewporta
+    const wrapperWidth = viewportWidth * 0.95;
+    const wrapperHeight = viewportHeight * 0.95;
     
+    let infoSectionWidth = 0;
+    if (viewportWidth > 768) {
+        infoSectionWidth = 180; // Fiksna širina za info panel
+    } else {
+        infoSectionWidth = 0; // Sakrij info panel na manjim ekranima
+    }
+
+    const availableWidth = wrapperWidth - infoSectionWidth - 20;
+    const availableHeight = wrapperHeight - assistsPanel.clientHeight - 20;
+
     let canvasWidth, canvasHeight;
-    if (availableAspectRatio > gameAspectRatio) {
+    const availableAspectRatio = availableWidth / availableHeight;
+
+    if (availableAspectRatio > boardAspectRatio) {
         canvasHeight = availableHeight;
-        canvasWidth = canvasHeight * gameAspectRatio;
+        canvasWidth = canvasHeight * boardAspectRatio;
     } else {
         canvasWidth = availableWidth;
-        canvasHeight = canvasWidth / gameAspectRatio;
+        canvasHeight = canvasWidth / boardAspectRatio;
     }
-    
+
     BLOCK_SIZE = Math.floor(canvasWidth / COLS);
+    if (BLOCK_SIZE < 10) BLOCK_SIZE = 10;
     
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
-    
-    const sideCanvasSize = Math.floor(BLOCK_SIZE * 4);
-    nextBlockCanvas.width = sideCanvasSize;
-    nextBlockCanvas.height = sideCanvasSize;
-    
-    TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
-    TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
-    TAP_THRESHOLD = BLOCK_SIZE * 0.5;
-    
-    const root = document.documentElement;
-    root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
+
+    const nextBlockSize = Math.floor(BLOCK_SIZE * 4);
+    nextBlockCanvas.width = nextBlockSize;
+    nextBlockCanvas.height = nextBlockSize;
+
+    // Ažuriraj CSS varijable
+    document.documentElement.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
+
+    // Prilagodi UI za mobilne uređaje
+    if (viewportWidth <= 768) {
+        document.getElementById('main-game-wrapper').style.flexDirection = 'column';
+        document.getElementById('info-section').style.flexDirection = 'row';
+        document.getElementById('info-section').style.width = '100%';
+        document.getElementById('right-controls').style.flexDirection = 'row';
+        document.getElementById('assists-panel').style.display = 'flex';
+        document.getElementById('next-block-container').style.display = 'none';
+    } else {
+        document.getElementById('main-game-wrapper').style.flexDirection = 'row';
+        document.getElementById('info-section').style.flexDirection = 'column';
+        document.getElementById('right-controls').style.flexDirection = 'column';
+        document.getElementById('assists-panel').style.display = 'block';
+        document.getElementById('next-block-container').style.display = 'flex';
+    }
 
     if (!gameOver && !isPaused) {
         draw();
@@ -197,8 +224,7 @@ function initDOMAndEventListeners() {
     exitModal = document.getElementById('exit-modal');
     scoreDisplay = document.getElementById('score-display');
     finalScoreDisplay = document.getElementById('final-score');
-    finalTimeDisplay = document.getElementById('final-time');
-    comboDisplay = document.getElementById('combo-display');
+    finalStatsDisplay = document.getElementById('final-stats-text');
     startButton = document.getElementById('start-button');
     restartButton = document.getElementById('restart-button');
     continueButton = document.getElementById('continue-button');
@@ -215,7 +241,6 @@ function initDOMAndEventListeners() {
     assistsUndoCountDisplay = document.getElementById('assists-undo-count');
     bestScoreDisplay = document.getElementById('best-score-display');
     levelDisplay = document.getElementById('level-display');
-    themeSwitcher = document.getElementById('theme-switcher');
     modeSelector = document.getElementById('mode-selector');
     sprintTimerDisplay = document.getElementById('sprint-timer');
     ultraTimerDisplay = document.getElementById('ultra-timer');
@@ -235,7 +260,8 @@ function initDOMAndEventListeners() {
         startScreen.style.display = 'flex';
     });
     continueButton.addEventListener('click', () => {
-        continueGame();
+        gameOverScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
     });
     pauseButton.addEventListener('click', togglePause);
     resumeButton.addEventListener('click', togglePause);
@@ -248,7 +274,6 @@ function initDOMAndEventListeners() {
         exitModal.style.display = 'none';
         togglePause();
     });
-    // themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
     
     assistsBombButton.addEventListener('click', () => {
         if (gameOver || isPaused) return;
@@ -298,21 +323,30 @@ function initDOMAndEventListeners() {
     
     const savedTheme = localStorage.getItem('theme') || 'classic';
     setTheme(savedTheme);
-    // themeSwitcher.value = savedTheme;
 
     loadKeyBindings();
+    setupTouchControls();
 
+    setCanvasSize();
+}
+
+function setupTouchControls() {
     let touchStartX = 0;
     let touchStartY = 0;
     let lastTouchX = 0;
     let lastTouchY = 0;
+    let isDragging = false;
+    let touchMoveThresholdX = 40;
+    let touchMoveThresholdY = 50;
 
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
+        e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         lastTouchX = touchStartX;
         lastTouchY = touchStartY;
+        isDragging = false;
     });
 
     canvas.addEventListener('touchmove', e => {
@@ -321,52 +355,52 @@ function initDOMAndEventListeners() {
         
         const currentTouchX = e.touches[0].clientX;
         const currentTouchY = e.touches[0].clientY;
+        
         const dx = currentTouchX - lastTouchX;
         const dy = currentTouchY - lastTouchY;
-        const totalDy = currentTouchY - touchStartY;
         
-        if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
+        if (Math.abs(dx) > touchMoveThresholdX) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
             lastTouchX = currentTouchX;
+            isDragging = true;
             draw();
         }
 
-        if (dy > TOUCH_MOVE_THRESHOLD_Y && dy > Math.abs(dx)) {
+        if (dy > touchMoveThresholdY) {
             if (isValidMove(0, 1, currentPiece.shape)) {
                 currentPiece.y++;
                 lastDropTime = performance.now();
                 draw();
-                lastTouchY = currentTouchY;
-            } else {
-                mergePiece();
-                lastTouchY = currentTouchY;
             }
+            lastTouchY = currentTouchY;
+            isDragging = true;
         }
     });
 
     canvas.addEventListener('touchend', e => {
         if (gameOver || isPaused || !currentPiece) return;
+        e.preventDefault();
         
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
+        if (!isDragging && Math.abs(dx) < 20 && Math.abs(dy) < 20) {
             rotatePiece();
         } 
-        else if (dy > BLOCK_SIZE * 3 && dy > Math.abs(dx)) { 
+        
+        // Hard drop gesture: swipe down and then quickly release
+        if (dy > 100 && dy > Math.abs(dx)) { 
             dropPiece();
         }
         
         draw();
     });
-
-    setCanvasSize();
 }
 
 function loadKeyBindings() {
@@ -665,9 +699,7 @@ function dropPiece() {
         currentPiece.y++;
     }
     const rowsDropped = currentPiece.y - originalY;
-    if (currentMode === 'classic' || currentMode === 'marathon') {
-        score += rowsDropped * 2;
-    }
+    score += rowsDropped * 2;
     scoreDisplay.textContent = `Score: ${score}`;
     screenShake();
     mergePiece();
@@ -713,17 +745,6 @@ function isTSpin() {
     return filledCorners >= 3;
 }
 
-function isBoardEmpty() {
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            if (board[r][c] !== 0) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
 function checkLines() {
     linesToClear = [];
     for (let r = ROWS - 1; r >= 0; r--) {
@@ -767,28 +788,23 @@ function playClearSound(lines, isTSpin) {
 
 function updateScore(lines, isCurrentSpecial) {
     let points = 0;
-    let type = '';
     const backToBackMultiplier = lastClearWasSpecial && isCurrentSpecial ? 1.5 : 1;
     if (isTSpin()) {
         if (lines === 1) {
             points = 800;
-            type = 'T-Spin Single';
         } else if (lines === 2) {
             points = 1200;
-            type = 'T-Spin Double';
         } else if (lines === 3) {
             points = 1600;
-            type = 'T-Spin Triple';
         } else {
             points = 400;
-            type = 'T-Spin';
         }
     } else {
         switch (lines) {
-            case 1: points = 100; type = 'Single'; break;
-            case 2: points = 300; type = 'Double'; break;
-            case 3: points = 500; type = 'Triple'; break;
-            case 4: points = 800; type = 'Tetris'; break;
+            case 1: points = 100; break;
+            case 2: points = 300; break;
+            case 3: points = 500; break;
+            case 4: points = 800; break;
         }
     }
     
@@ -813,8 +829,10 @@ function updateScore(lines, isCurrentSpecial) {
         nextAssistReward += 5000;
     }
 
-    if (currentMode === 'classic' || currentMode === 'marathon') {
+    if (currentMode === 'classic') {
         updateLevel();
+    } else if (currentMode === 'sprint') {
+        updateSprint();
     }
     
     lastClearWasSpecial = isCurrentSpecial;
@@ -826,6 +844,13 @@ function updateLevel() {
         levelDisplay.textContent = `Level: ${level}`;
         linesClearedThisLevel = 0;
         dropInterval = Math.max(100, dropInterval - 50);
+    }
+}
+
+function updateSprint() {
+    sprintTimerDisplay.textContent = `LINES: ${linesClearedTotal}/${sprintLinesToClear}`;
+    if (linesClearedTotal >= sprintLinesToClear) {
+        endGame();
     }
 }
 
@@ -1039,6 +1064,14 @@ function gameLoop(timestamp) {
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
+function screenShake() {
+    const mainWrapper = document.getElementById('main-game-wrapper');
+    mainWrapper.classList.add('shake');
+    setTimeout(() => {
+        mainWrapper.classList.remove('shake');
+    }, 300);
+}
+
 function startGame() {
     startScreen.style.display = 'none';
     
@@ -1056,9 +1089,18 @@ function startGame() {
     
     if (currentMode === 'sprint') {
         sprintTimerDisplay.style.display = 'block';
-    } else if (currentMode === 'ultra') {
-        ultraTimerDisplay.style.display = 'block';
+        sprintTimerDisplay.textContent = `LINES: 0/40`;
         startTime = performance.now();
+    } else {
+        sprintTimerDisplay.style.display = 'none';
+    }
+    
+    if (currentMode === 'ultra') {
+        ultraTimerDisplay.style.display = 'block';
+        ultraTimerDisplay.textContent = `TIME: 120.00s`;
+        startTime = performance.now();
+    } else {
+        ultraTimerDisplay.style.display = 'none';
     }
     
     generateNewPiece();
@@ -1088,35 +1130,37 @@ function endGame(manual=false, fromHome=false) {
     gameOverSound.play().catch(e => console.error("Greška pri puštanju gameOver zvuka:", e));
     
     const finalScore = score;
-    const finalTime = currentMode === 'sprint' ? (performance.now() - startTime) / 1000 : null;
     
     if (finalScore > bestScore) {
         bestScore = finalScore;
         localStorage.setItem('bestScore', bestScore);
+        document.getElementById('best-score-display-start').textContent = `Best Score: ${bestScore}`;
         bestScoreDisplay.textContent = `${bestScore}`;
     }
     
     finalScoreDisplay.textContent = finalScore;
+    
+    finalStatsDisplay.innerHTML = '';
+    
     if (currentMode === 'sprint') {
-        finalTimeDisplay.textContent = `${finalTime.toFixed(2)}s`;
-        finalTimeDisplay.parentNode.style.display = 'block';
-        
-        if (linesClearedTotal < 40) {
-            finalScoreDisplay.textContent = "Niste očistili 40 linija";
-            continueButton.style.display = 'none';
+        const sprintTime = (performance.now() - startTime) / 1000;
+        finalStatsDisplay.innerHTML = `Vreme: ${sprintTime.toFixed(2)}s<br>Linije: ${linesClearedTotal}/${sprintLinesToClear}`;
+        if (linesClearedTotal >= sprintLinesToClear) {
+            finalStatsDisplay.textContent = `Vreme: ${sprintTime.toFixed(2)}s`;
         } else {
-            continueButton.style.display = 'block';
+            document.getElementById('game-over-text').textContent = "IGRA PREKINUTA";
+            finalStatsDisplay.textContent = `Niste očistili ${sprintLinesToClear} linija.`;
         }
-        
+        continueButton.style.display = 'none';
     } else if (currentMode === 'ultra') {
-        finalTimeDisplay.textContent = `${ultraTimeLimit.toFixed(2)}s`;
-        finalTimeDisplay.parentNode.style.display = 'block';
+        const ultraFinalTime = (performance.now() - startTime) / 1000;
+        finalStatsDisplay.textContent = `Vreme: ${ultraFinalTime.toFixed(2)}s`;
         continueButton.style.display = 'none';
     } else {
-        finalTimeDisplay.parentNode.style.display = 'none';
+        finalStatsDisplay.textContent = '';
         continueButton.style.display = 'none';
     }
-
+    
     sprintTimerDisplay.style.display = 'none';
     ultraTimerDisplay.style.display = 'none';
 
@@ -1128,12 +1172,8 @@ function endGame(manual=false, fromHome=false) {
     }
 }
 
-function continueGame() {
-    gameOverScreen.style.display = 'none';
-    startScreen.style.display = 'flex';
-}
-
 function togglePause() {
+    if (gameOver) return;
     isPaused = !isPaused;
     if (isPaused) {
         pauseScreen.style.display = 'flex';
@@ -1235,6 +1275,9 @@ function handleKeydown(e) {
 }
 
 function showCombo(comboCount) {
+    const comboDisplay = document.getElementById('combo-display');
+    if (!comboDisplay) return;
+    
     comboDisplay.style.display = 'block';
     comboDisplay.textContent = `COMBO x${comboCount}`;
     comboDisplay.style.animation = 'comboFlash 0.5s forwards';
@@ -1245,7 +1288,3 @@ function showCombo(comboCount) {
 }
 
 document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
-
-window.onresize = () => {
-    setCanvasSize();
-};
