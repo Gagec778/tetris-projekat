@@ -70,49 +70,50 @@ let TOUCH_MOVE_THRESHOLD_X;
 let TOUCH_MOVE_THRESHOLD_Y;
 let TAP_THRESHOLD;
 
-// IZMENA: Finalna verzija funkcije za veličinu kanvasa
+// IZMENA: Konačna verzija funkcije za veličinu koja rešava problem preklapanja
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) return;
 
-    const containerWidth = canvasContainer.clientWidth;
-    const containerHeight = canvasContainer.clientHeight;
-    
-    // FIX 2: Veličina bloka se sada bazira na širini kontejnera kao glavnom faktoru
-    BLOCK_SIZE = Math.floor(containerWidth / COLS);
+    // Čekamo da browser završi sa layoutom pre merenja
+    requestAnimationFrame(() => {
+        const containerWidth = canvasContainer.clientWidth;
+        const containerHeight = canvasContainer.clientHeight;
+        
+        // Izračunamo veličinu bloka na osnovu manjeg ograničenja (širine ili visine)
+        // da bi se sačuvali kvadratni blokovi i da sve stane u kontejner
+        const blockSizeW = containerWidth / COLS;
+        const blockSizeH = containerHeight / ROWS;
+        BLOCK_SIZE = Math.floor(Math.min(blockSizeW, blockSizeH));
 
-    // Izračunamo visinu table na osnovu nove veličine bloka da sačuvamo kvadrate
-    const newCanvasHeight = ROWS * BLOCK_SIZE;
+        // Postavimo INTERNU rezoluciju kanvasa za crtanje
+        const canvasWidth = COLS * BLOCK_SIZE;
+        const canvasHeight = ROWS * BLOCK_SIZE;
 
-    // Proverimo da li izračunata visina staje u kontejner. Ako ne staje, smanjujemo BLOCK_SIZE na osnovu visine.
-    if (newCanvasHeight > containerHeight) {
-        BLOCK_SIZE = Math.floor(containerHeight / ROWS);
-    }
-    
-    // Postavimo INTERNU rezoluciju kanvasa za crtanje
-    canvas.width = COLS * BLOCK_SIZE;
-    canvas.height = ROWS * BLOCK_SIZE;
-    
-    // Postavimo i vizuelnu veličinu da bi se pravilno prikazalo unutar flex kontejnera
-    canvas.style.width = `${canvas.width}px`;
-    canvas.style.height = `${canvas.height}px`;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
 
+        // Postavimo i vizuelnu veličinu da bi se pravilno prikazalo unutar flex kontejnera
+        // Ovo je važno ako kanvas ne zauzima 100% kontejnera (npr. zbog aspect-ratio)
+        canvas.style.width = `${canvasWidth}px`;
+        canvas.style.height = `${canvasHeight}px`;
 
-    // Ažuriramo i kanvas za sledeći blok
-    const sideCanvasSize = Math.floor(BLOCK_SIZE * 4.5);
-    nextBlockCanvas.width = sideCanvasSize;
-    nextBlockCanvas.height = sideCanvasSize;
+        // Ažuriramo i kanvas za sledeći blok
+        const sideCanvasSize = Math.floor(BLOCK_SIZE * 4.5);
+        nextBlockCanvas.width = sideCanvasSize;
+        nextBlockCanvas.height = sideCanvasSize;
 
-    // Ažuriramo pragove za dodir na osnovu veličine bloka
-    TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
-    TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
-    TAP_THRESHOLD = BLOCK_SIZE * 0.5;
+        // Ažuriramo pragove za dodir na osnovu veličine bloka
+        TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
+        TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
+        TAP_THRESHOLD = BLOCK_SIZE * 0.5;
 
-    // Ponovo iscrtavamo sve ako igra traje
-    if (!gameOver) {
-        draw();
-        drawNextPiece();
-    }
+        // Ponovo iscrtavamo sve ako igra traje
+        if (!gameOver) {
+            draw();
+            drawNextPiece();
+        }
+    });
 }
 
 
