@@ -350,39 +350,6 @@ function initDOMAndEventListeners() {
     setCanvasSize();
 }
 
-function loadKeyBindings() {
-    const savedBindings = JSON.parse(localStorage.getItem('keyBindings'));
-    keyBindings = savedBindings || {
-        left: 'ArrowLeft',
-        right: 'ArrowRight',
-        down: 'ArrowDown',
-        rotate: 'ArrowUp',
-        drop: ' ',
-        bomb: 'b',
-        hammer: 'h',
-        undo: 'u'
-    };
-
-    controlInputs.forEach(input => {
-        const action = input.dataset.action;
-        if (keyBindings[action]) {
-            input.value = keyBindings[action];
-        }
-    });
-}
-
-function saveKeyBindings() {
-    controlInputs.forEach(input => {
-        const action = input.dataset.action;
-        keyBindings[action] = input.value;
-    });
-    localStorage.setItem('keyBindings', JSON.stringify(keyBindings));
-}
-
-function showControlsModal() {
-    controlsModal.style.display = 'block';
-}
-
 function initBoard() {
     board = [];
     for (let r = 0; r < ROWS; r++) {
