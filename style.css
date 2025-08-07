@@ -45,15 +45,11 @@ body {
     padding: 10px;
     max-width: 600px;
     max-height: 900px;
+    width: 100%; /* Podeseno da se prilagodi */
+    height: 100%; /* Podeseno da se prilagodi */
     box-sizing: border-box;
     position: relative;
     transition: all 0.3s ease-in-out;
-}
-
-@media (min-width: 600px) {
-    #main-game-wrapper {
-        width: auto;
-    }
 }
 
 .screen-shake {
@@ -208,8 +204,9 @@ canvas#gameCanvas {
     background-color: var(--board-bg-color);
     display: block;
     border-radius: 5px;
-    width: 100%;
     flex-grow: 1;
+    width: 100%;
+    height: 100%;
 }
 .hammer-mode-cursor { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="fill:%23fff;"><text x="0" y="24" font-size="24">🔨</text></svg>') 16 16, pointer; }
 #right-controls {
@@ -253,7 +250,6 @@ canvas#gameCanvas {
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s, transform 0.1s;
-    font-family: 'Press Start 2P', cursive;
 }
 .btn:hover {
     background-color: #c72c38;
