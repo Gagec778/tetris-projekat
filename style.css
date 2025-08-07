@@ -1,4 +1,5 @@
 :root {
+  --app-height: var(--app-height);
     --main-color: #61dafb;
     --background-color: #1a1a2e;
     --board-bg-color: #000;
