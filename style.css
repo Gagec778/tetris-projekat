@@ -43,7 +43,7 @@ body {
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Promenjeno sa space-between */
+    justify-content: flex-start;
     align-items: center;
     padding: 10px;
     width: 98vw;
@@ -119,6 +119,7 @@ body {
     gap: 5px;
     margin-bottom: 5px;
     flex-wrap: nowrap;
+    flex-shrink: 0;
 }
  
 .info-panel {
@@ -217,7 +218,8 @@ canvas#gameCanvas {
     flex-grow: 1;
     width: 100%;
     height: auto;
-    margin: 5px 0; /* Dodato */
+    margin: 0;
+    box-sizing: border-box;
 }
 .hammer-mode-cursor {
     cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="fill:%23fff;"><text x="0" y="24" font-size="24">🔨</text></svg>') 16 16, pointer;
@@ -241,11 +243,12 @@ canvas#gameCanvas {
     justify-content: center;
     align-items: center;
     width: 100%;
-    margin-top: 5px; /* Promenjeno sa 10px */
-    padding: 10px;
+    padding: 0;
+    margin: 0;
     background-color: transparent;
     border: none;
     box-shadow: none;
+    flex-shrink: 0;
 }
 #assist-content-wrapper {
     display: flex;
