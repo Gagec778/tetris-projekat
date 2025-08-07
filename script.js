@@ -133,13 +133,19 @@ function setCanvasSize() {
     const assistsPanel = document.getElementById('assists-panel');
     const wrapper = document.getElementById('main-game-wrapper');
 
-    const availableWidth = wrapper.clientWidth - 20;
-    const availableHeight = wrapper.clientHeight - infoSection.offsetHeight - assistsPanel.offsetHeight - 20;
+    const wrapperWidth = wrapper.clientWidth;
+    const wrapperHeight = wrapper.clientHeight;
 
-    const tempBlockSize = Math.floor(Math.min(availableWidth / COLS, availableHeight / ROWS));
+    const availableWidth = wrapperWidth - 20;
+    const availableHeight = wrapperHeight - infoSection.offsetHeight - assistsPanel.offsetHeight - 20;
+
+    const tempBlockSizeWidth = Math.floor(availableWidth / COLS);
+    const tempBlockSizeHeight = Math.floor(availableHeight / ROWS);
     
-    BLOCK_SIZE = Math.max(12, tempBlockSize);
-
+    BLOCK_SIZE = Math.min(tempBlockSizeWidth, tempBlockSizeHeight);
+    
+    BLOCK_SIZE = Math.max(12, BLOCK_SIZE);
+    
     root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
     canvas.width = COLS * BLOCK_SIZE;
