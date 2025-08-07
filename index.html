@@ -27,13 +27,13 @@
                     </div>
                     <div id="score-display">Score: 0</div>
                     <div id="level-display" class="stat-line">Level: 1</div>
-                    <div id="sprint-timer" class="stat-line" style="display: none;">TIME: 0.00s</div>
-                    <div id="ultra-timer" class="stat-line" style="display: none;">TIME: 0.00s</div>
+                    <div id="sprint-timer" class="stat-line" style="display: none;">LINES: 0/40</div>
+                    <div id="ultra-timer" class="stat-line" style="display: none;">TIME: 120s</div>
                 </div>
 
                 <div id="right-controls">
-                    <button id="pause-button" class="btn">Pause</button>
-                    <button id="home-button" class="btn">Home</button>
+                    <button id="pause-button" class="btn">Pauza</button>
+                    <button id="home-button" class="btn">Početna</button>
                 </div>
             </div>
         </div>
@@ -72,15 +72,15 @@
     </div>
 
     <div id="pause-screen" class="overlay" style="display: none;">
-        <h1>PAUSE</h1>
+        <h1>PAUZA</h1>
         <button id="resume-button" class="btn">Nastavi</button>
         <button id="home-button-pause" class="btn">Početni ekran</button>
     </div>
 
     <div id="game-over-screen" class="overlay" style="display: none;">
-        <h1 id="game-over-text">GAME OVER</h1>
+        <h1 id="game-over-text">KRAJ IGRE</h1>
         <h2>Vaš rezultat: <span id="final-score">0</span></h2>
-        <h2 class="stat-line" style="display: none;">Vreme: <span id="final-time">0.00s</span></h2>
+        <h2 id="final-stats-text"></h2>
         <button id="restart-button" class="btn">Počni ponovo</button>
         <button id="continue-button" class="btn" style="display: none;">Nastavi</button>
     </div>
