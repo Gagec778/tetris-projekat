@@ -13,7 +13,9 @@
         <div id="info-section">
             <div id="next-block-container" class="info-panel">
                 <div class="panel-header">Next:</div>
-                <canvas id="nextBlockCanvas"></canvas>
+                <div id="next-block-placeholder">
+                    <canvas id="nextBlockCanvas"></canvas>
+                </div>
             </div>
             
             <div id="game-stats" class="info-panel">
@@ -30,7 +32,6 @@
             <div id="right-controls" class="info-panel">
                 <button id="home-button" class="btn">🏠</button>
                 <button id="pause-button" class="btn">II</button>
-                <button id="restart-button-inline" class="btn" style="display: none;">RESTART</button>
             </div>
         </div>
         
@@ -102,6 +103,14 @@
     <div id="pause-screen" class="overlay" style="display: none;">
         <h1>PAUSED</h1>
         <button id="resume-button">NASTAVI IGRU</button>
+    </div>
+
+    <div id="exit-modal" class="overlay" style="display: none;">
+        <h2>Da li želite da napustite igru?</h2>
+        <div class="modal-buttons">
+            <button id="confirm-exit-button" class="btn">Da</button>
+            <button id="cancel-exit-button" class="btn">Ne</button>
+        </div>
     </div>
     
     <div id="controls-modal" style="display: none;">
