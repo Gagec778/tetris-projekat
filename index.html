@@ -10,30 +10,33 @@
 <body>
     <div id="background-image"></div>
     <div id="main-game-wrapper">
-        <div id="info-section">
-            <div id="next-block-container" class="info-panel">
-                <div class="panel-header">Next:</div>
-                <canvas id="nextBlockCanvas"></canvas>
-            </div>
+        
+        <div id="game-and-info-container">
+            <canvas id="gameCanvas"></canvas>
             
-            <div id="game-stats" class="info-panel">
-                <div id="best-score-wrapper">
-                    <span id="crown-icon">👑</span>
-                    <div id="best-score-display" class="golden-frame">0</div>
+            <div id="info-section">
+                <div id="next-block-container" class="info-panel">
+                    <div class="panel-header">Next:</div>
+                    <canvas id="nextBlockCanvas"></canvas>
                 </div>
-                <div id="score-display">Score: 0</div>
-                <div id="level-display" class="stat-line">Level: 1</div>
-                <div id="sprint-timer" class="stat-line" style="display: none;">TIME: 0.00s</div>
-                <div id="ultra-timer" class="stat-line" style="display: none;">TIME: 0.00s</div>
-            </div>
+                
+                <div id="game-stats" class="info-panel">
+                    <div id="best-score-wrapper">
+                        <span id="crown-icon">👑</span>
+                        <div id="best-score-display" class="golden-frame">0</div>
+                    </div>
+                    <div id="score-display">Score: 0</div>
+                    <div id="level-display" class="stat-line">Level: 1</div>
+                    <div id="sprint-timer" class="stat-line" style="display: none;">TIME: 0.00s</div>
+                    <div id="ultra-timer" class="stat-line" style="display: none;">TIME: 0.00s</div>
+                </div>
 
-            <div id="right-controls">
-                <button id="pause-button" class="btn">Pause</button>
-                <button id="home-button" class="btn">Home</button>
+                <div id="right-controls">
+                    <button id="pause-button" class="btn">Pause</button>
+                    <button id="home-button" class="btn">Home</button>
+                </div>
             </div>
         </div>
-
-        <canvas id="gameCanvas"></canvas>
 
         <div id="assists-panel">
             <div id="assist-content-wrapper">
