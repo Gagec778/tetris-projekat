@@ -137,8 +137,8 @@ function setCanvasSize() {
     const assistsHeight = assistsPanel.offsetHeight;
     const padding = 20;
 
-    const availableHeight = wrapperRect.height - infoHeight - assistsHeight - padding;
-    const availableWidth = wrapperRect.width - padding;
+    const availableHeight = window.innerHeight - infoHeight - assistsHeight - padding;
+    const availableWidth = window.innerWidth - padding;
 
     const tempBlockSize = Math.floor(Math.min(availableWidth / COLS, availableHeight / ROWS));
     
@@ -151,8 +151,6 @@ function setCanvasSize() {
     nextBlockCanvas.width = sideCanvasSize;
     nextBlockCanvas.height = sideCanvasSize;
 
-    // Postavi veličinu wrapper-a na osnovu izračunatih dimenzija canvasa
-    // Ovo osigurava da se igra uklapa i ne seče se
     wrapper.style.width = `${canvas.width + padding}px`;
     wrapper.style.height = `${canvas.height + infoHeight + assistsHeight + padding}px`;
     
@@ -570,7 +568,6 @@ function drawBoard() {
         }
     }
     
-    // Draw grid lines
     ctx.strokeStyle = THEMES[currentTheme].gridColor;
     ctx.lineWidth = 1;
     ctx.globalAlpha = 0.8;
@@ -686,7 +683,7 @@ function mergePiece() {
             }
         }
     }
-    currentPiece = null; // Dodato: Postavi trenutni komad na null da bi se izbeglo duplo renderovanje
+    currentPiece = null;
     checkLines();
 }
 
@@ -733,25 +730,29 @@ function checkLines() {
         }
     }
     if (linesToClear.length > 0) {
-        isAnimating = true;
-        animationStart = performance.now();
         let isCurrentSpecial = isTSpin() || linesToClear.length === 4;
         updateScore(linesToClear.length, isCurrentSpecial);
-        if (linesToClear.length === 4) {
-            tetrisSound.currentTime = 0;
-            if (tetrisSound.readyState >= 2) tetrisSound.play().catch(e => console.error("Greška pri puštanju Tetris zvuka:", e));
-        } else if (isTSpin()) {
-            tSpinSound.currentTime = 0;
-            if (tSpinSound.readyState >= 2) tSpinSound.play().catch(e => console.error("Greška pri puštanju T-Spin zvuka:", e));
-        } else {
-            clearSound.currentTime = 0;
-            if (clearSound.readyState >= 2) clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
-        }
-        return;
+        isAnimating = true;
+        animationStart = performance.now();
+        playClearSound(linesToClear.length, isTSpin());
+        removeLines();
     } else {
         lastClearWasSpecial = false;
         combo = 0;
         generateNewPiece();
+    }
+}
+
+function playClearSound(lines, isTSpin) {
+    if (lines === 4) {
+        tetrisSound.currentTime = 0;
+        if (tetrisSound.readyState >= 2) tetrisSound.play().catch(e => console.error("Greška pri puštanju Tetris zvuka:", e));
+    } else if (isTSpin) {
+        tSpinSound.currentTime = 0;
+        if (tSpinSound.readyState >= 2) tSpinSound.play().catch(e => console.error("Greška pri puštanju T-Spin zvuka:", e));
+    } else {
+        clearSound.currentTime = 0;
+        if (clearSound.readyState >= 2) clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
     }
 }
 
@@ -773,8 +774,6 @@ function updateScore(lines, isCurrentSpecial) {
             points = 400;
             type = 'T-Spin';
         }
-        tSpinSound.currentTime = 0;
-        tSpinSound.play().catch(e => console.error("Greška pri puštanju T-Spin zvuka:", e));
     } else {
         switch (lines) {
             case 1: points = 100; type = 'Single'; break;
@@ -984,7 +983,7 @@ function useUndoAssist() {
     localStorage.setItem('assists', JSON.stringify(assists));
     
     board = boardHistory.pop();
-    score -= 100; // Penalizacija za korišćenje
+    score -= 100; 
     scoreDisplay.textContent = `Score: ${score}`;
     
     generateNewPiece();
@@ -998,11 +997,13 @@ function gameLoop(timestamp) {
         const elapsedTime = timestamp - animationStart;
         if (elapsedTime < animationDuration) {
             drawBoard();
-            drawCurrentPiece();
+            if (currentPiece) {
+                drawCurrentPiece();
+            }
             drawFlashLines(elapsedTime);
         } else {
             isAnimating = false;
-            removeLines();
+            linesToClear = [];
             generateNewPiece();
         }
     } else {
@@ -1162,8 +1163,6 @@ function removeLines() {
         board.splice(r, 1);
         board.unshift(Array(COLS).fill(0));
     }
-    linesToClear = [];
-    draw();
 }
 
 function drawFlashLines(elapsedTime) {
