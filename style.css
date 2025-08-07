@@ -40,6 +40,7 @@ body {
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     align-items: center;
     padding: 10px;
     width: 98vw;
@@ -110,7 +111,7 @@ body {
 #info-section {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
     width: 100%;
     gap: 5px;
     margin-bottom: 5px;
@@ -185,7 +186,7 @@ body {
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
 
-#nextBlockCanvas {
+#next-block-placeholder {
     background-color: #0d0d1a;
     border: 1px solid #4fa3d1;
     border-radius: 5px;
@@ -194,6 +195,13 @@ body {
     aspect-ratio: 1 / 1;
     max-width: 70px;
     max-height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#nextBlockCanvas {
+    width: 100%;
+    height: 100%;
 }
 
 canvas#gameCanvas {
@@ -219,11 +227,6 @@ canvas#gameCanvas {
     width: 100%;
     height: auto;
     font-size: 1.2em;
-    padding: 5px;
-}
-#restart-button-inline {
-    width: 100%;
-    font-size: 0.8em;
     padding: 5px;
 }
 
@@ -303,6 +306,7 @@ canvas#gameCanvas {
 }
 
 .overlay h1 { font-size: 1.8em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
+.overlay h2 { font-size: 1.5em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
 .overlay p { font-size: 1em; margin-bottom: 15px; }
 .overlay .final-score { font-size: 1.5em; color: #e0e0e0; margin-bottom: 15px; }
 .overlay button, .overlay select {
@@ -391,4 +395,9 @@ canvas#gameCanvas {
 }
 .continue-button:hover {
     background-color: #268981;
+}
+#exit-modal .modal-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
 }
