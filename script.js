@@ -104,7 +104,7 @@ let resizeObserver;
 let keyBindings;
 
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, restartButtonInline, continueButton;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, continueButton, exitModal, confirmExitButton, cancelExitButton;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
@@ -177,6 +177,7 @@ function initDOMAndEventListeners() {
     startScreen = document.getElementById('start-screen');
     gameOverScreen = document.getElementById('game-over-screen');
     pauseScreen = document.getElementById('pause-screen');
+    exitModal = document.getElementById('exit-modal');
     scoreDisplay = document.getElementById('score-display');
     finalScoreDisplay = document.getElementById('final-score');
     finalTimeDisplay = document.getElementById('final-time');
@@ -187,7 +188,8 @@ function initDOMAndEventListeners() {
     resumeButton = document.getElementById('resume-button');
     homeButton = document.getElementById('home-button');
     pauseButton = document.getElementById('pause-button');
-    restartButtonInline = document.getElementById('restart-button-inline');
+    confirmExitButton = document.getElementById('confirm-exit-button');
+    cancelExitButton = document.getElementById('cancel-exit-button');
     assistsBombButton = document.getElementById('assist-bomb-button');
     assistsBombCountDisplay = document.getElementById('assists-bomb-count');
     assistsHammerButton = document.getElementById('assist-hammer-button');
@@ -220,17 +222,14 @@ function initDOMAndEventListeners() {
     });
     pauseButton.addEventListener('click', togglePause);
     resumeButton.addEventListener('click', togglePause);
-    homeButton.addEventListener('click', () => {
-        gameOver = true;
-        pauseBackgroundMusic();
-        startScreen.style.display = 'flex';
-        pauseButton.style.display = 'none';
-        restartButtonInline.style.display = 'none';
-        document.getElementById('assists-panel').style.display = 'none';
+    homeButton.addEventListener('click', showExitModal);
+    confirmExitButton.addEventListener('click', () => {
+        exitModal.style.display = 'none';
+        endGame();
     });
-    restartButtonInline.addEventListener('click', () => {
-        gameOver = true;
-        startGame();
+    cancelExitButton.addEventListener('click', () => {
+        exitModal.style.display = 'none';
+        togglePause();
     });
     themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
     
@@ -407,7 +406,7 @@ function createCurrentPiece() {
         shape: shape,
         color: color,
         x: startX,
-        y: -2
+        y: 0
     };
 }
 
@@ -564,7 +563,7 @@ function drawBoard() {
     // Draw grid lines
     ctx.strokeStyle = THEMES[currentTheme].gridColor;
     ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.2;
+    ctx.globalAlpha = 0.4;
     for (let i = 0; i <= COLS; i++) {
         ctx.beginPath();
         ctx.moveTo(i * BLOCK_SIZE, 0);
@@ -978,10 +977,7 @@ function endGame(isSprintWin = false) {
     gameOverScreen.style.display = 'flex';
     homeButton.style.display = 'none';
     pauseButton.style.display = 'none';
-    restartButtonInline.style.display = 'none';
     document.getElementById('assists-panel').style.display = 'none';
-    
-    restartButton.style.display = 'block';
     
     if (assists.bomb > 0 && !isSprintWin) {
         continueButton.style.display = 'block';
@@ -1002,11 +998,15 @@ function continueGame() {
     
     homeButton.style.display = 'block';
     pauseButton.style.display = 'block';
-    restartButtonInline.style.display = 'block';
     document.getElementById('assists-panel').style.display = 'flex';
 
     playBackgroundMusic();
     animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function showExitModal() {
+    togglePause();
+    exitModal.style.display = 'flex';
 }
 
 function startGame() {
@@ -1117,7 +1117,7 @@ function initGame() {
 }
 
 function togglePause() {
-    if (gameOver || isAnimating) return;
+    if (gameOver || isAnimating || exitModal.style.display === 'flex') return;
     isPaused = !isPaused;
     if (isPaused) {
         cancelAnimationFrame(animationFrameId);
@@ -1284,7 +1284,7 @@ function handleCanvasClick(e) {
         const row = Math.floor(y / BLOCK_SIZE);
 
         if (row >= 0 && row < ROWS) {
-            const isLineFull = board[row].every(cell => cell !== 0);
+            const isLineFull = board[row].some(cell => cell !== 0);
             if (isLineFull) {
                 assists.hammer--;
                 localStorage.setItem('assists', JSON.stringify(assists));
