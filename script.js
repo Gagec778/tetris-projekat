@@ -11,6 +11,7 @@ const THEMES = {
         lineColor: '#61dafb',
         blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000'],
         flashColor: '#FFFFFF',
+        gridColor: '#333333',
         backgroundImage: null
     },
     'dark': {
@@ -19,6 +20,7 @@ const THEMES = {
         lineColor: '#999999',
         blockColors: ['#00FFFF', '#3366FF', '#FF9933', '#FFFF00', '#33CC66', '#9966CC', '#FF3333'],
         flashColor: '#CCCCCC',
+        gridColor: '#333333',
         backgroundImage: null
     },
     'forest': {
@@ -27,6 +29,7 @@ const THEMES = {
         lineColor: '#b4cf66',
         blockColors: ['#66FFB2', '#339966', '#FF9900', '#FFFF66', '#33CC66', '#9966CC', '#FF3333'],
         flashColor: '#E0FF8C',
+        gridColor: '#4d6451',
         backgroundImage: 'url("images/forest-bg.jpg")'
     },
     'modern': {
@@ -35,6 +38,7 @@ const THEMES = {
         lineColor: '#bb86fc',
         blockColors: ['#03dac6', '#cf6679', '#f3a469', '#f0e68c', '#aaff00', '#8c5eff', '#e74c3c'],
         flashColor: '#ffffff',
+        gridColor: '#3d3d3d',
         backgroundImage: 'url("images/modern-bg.jpg")'
     },
     'lava': {
@@ -43,6 +47,7 @@ const THEMES = {
         lineColor: '#FF4500',
         blockColors: ['#FFD700', '#FF4500', '#FF1493', '#FF6347', '#FF8C00', '#DC143C', '#B22222'],
         flashColor: '#FF6347',
+        gridColor: '#660000',
         backgroundImage: 'url("images/lava-bg.jpg")'
     }
 };
@@ -65,15 +70,22 @@ const TETROMINOES = [
 ];
 
 let board = [];
+let boardHistory = [];
 let currentPiece, nextPiece;
 let score = 0;
 let gameOver = true;
 let isPaused = false;
 let combo = 0;
-let assists = 0;
+let assists = {
+    bomb: 0,
+    hammer: 0,
+    undo: 0
+};
 let bestScore = 0;
 let nextAssistReward = 5000;
 let bombBonus = 1500;
+let hammerMode = false;
+let hammerLine = -1;
 
 let dropInterval = 1000;
 let level = 1;
@@ -92,7 +104,7 @@ let resizeObserver;
 let keyBindings;
 
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsButton, assistsCountDisplay, bestScoreDisplay, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, restartButtonInline, continueButton;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, restartButtonInline, continueButton;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
@@ -118,11 +130,11 @@ function pauseBackgroundMusic() {
 function setCanvasSize() {
     const root = document.documentElement;
     const infoSection = document.getElementById('info-section');
-    const gameControls = document.getElementById('game-controls');
+    const assistsPanel = document.getElementById('assists-panel');
     const wrapper = document.getElementById('main-game-wrapper');
 
     const availableWidth = wrapper.clientWidth - 20;
-    const availableHeight = wrapper.clientHeight - infoSection.offsetHeight - gameControls.offsetHeight - 20;
+    const availableHeight = wrapper.clientHeight - infoSection.offsetHeight - assistsPanel.offsetHeight - 20;
 
     let tempBlockSize = Math.floor(Math.min(availableWidth / COLS, availableHeight / ROWS));
     
@@ -173,10 +185,15 @@ function initDOMAndEventListeners() {
     restartButton = document.getElementById('restart-button');
     continueButton = document.getElementById('continue-button');
     resumeButton = document.getElementById('resume-button');
+    homeButton = document.getElementById('home-button');
     pauseButton = document.getElementById('pause-button');
     restartButtonInline = document.getElementById('restart-button-inline');
-    assistsButton = document.getElementById('assist-button');
-    assistsCountDisplay = document.getElementById('assists-count');
+    assistsBombButton = document.getElementById('assist-bomb-button');
+    assistsBombCountDisplay = document.getElementById('assists-bomb-count');
+    assistsHammerButton = document.getElementById('assist-hammer-button');
+    assistsHammerCountDisplay = document.getElementById('assists-hammer-count');
+    assistsUndoButton = document.getElementById('assist-undo-button');
+    assistsUndoCountDisplay = document.getElementById('assists-undo-count');
     bestScoreDisplay = document.getElementById('best-score-display');
     levelDisplay = document.getElementById('level-display');
     themeSwitcher = document.getElementById('theme-switcher');
@@ -203,14 +220,31 @@ function initDOMAndEventListeners() {
     });
     pauseButton.addEventListener('click', togglePause);
     resumeButton.addEventListener('click', togglePause);
+    homeButton.addEventListener('click', () => {
+        gameOver = true;
+        pauseBackgroundMusic();
+        startScreen.style.display = 'flex';
+        pauseButton.style.display = 'none';
+        restartButtonInline.style.display = 'none';
+        document.getElementById('assists-panel').style.display = 'none';
+    });
     restartButtonInline.addEventListener('click', () => {
         gameOver = true;
         startGame();
     });
     themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
-    assistsButton.addEventListener('click', () => {
+    
+    assistsBombButton.addEventListener('click', () => {
         if (gameOver || isPaused) return;
-        useAssist();
+        useBombAssist();
+    });
+    assistsHammerButton.addEventListener('click', () => {
+        if (gameOver || isPaused) return;
+        toggleHammerMode();
+    });
+    assistsUndoButton.addEventListener('click', () => {
+        if (gameOver || isPaused) return;
+        useUndoAssist();
     });
 
     controlsButton.addEventListener('click', showControlsModal);
@@ -226,20 +260,23 @@ function initDOMAndEventListeners() {
         });
     });
 
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('mousemove', handleCanvasHover);
+
     window.addEventListener('resize', setCanvasSize);
     
     const storedBestScore = localStorage.getItem('bestScore');
     if (storedBestScore) {
         bestScore = parseInt(storedBestScore, 10);
-        bestScoreDisplay.textContent = `BEST: ${bestScore}`;
+        bestScoreDisplay.textContent = `${bestScore}`;
     }
 
-    const storedAssists = localStorage.getItem('assists');
+    const storedAssists = JSON.parse(localStorage.getItem('assists'));
     if (storedAssists) {
-        assists = parseInt(storedAssists, 10);
+        assists = storedAssists;
     } else {
-        assists = 0;
-        localStorage.setItem('assists', 0);
+        assists = { bomb: 0, hammer: 0, undo: 0 };
+        localStorage.setItem('assists', JSON.stringify(assists));
     }
     updateAssistsDisplay();
     
@@ -324,8 +361,9 @@ function loadKeyBindings() {
         down: 'ArrowDown',
         rotate: 'ArrowUp',
         drop: ' ',
-        hold: 'c',
-        assist: 'b'
+        bomb: 'b',
+        hammer: 'h',
+        undo: 'u'
     };
 
     controlInputs.forEach(input => {
@@ -522,6 +560,29 @@ function drawBoard() {
             }
         }
     }
+    
+    // Draw grid lines
+    ctx.strokeStyle = THEMES[currentTheme].gridColor;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.2;
+    for (let i = 0; i <= COLS; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * BLOCK_SIZE, 0);
+        ctx.lineTo(i * BLOCK_SIZE, ROWS * BLOCK_SIZE);
+        ctx.stroke();
+    }
+    for (let i = 0; i <= ROWS; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * BLOCK_SIZE);
+        ctx.lineTo(COLS * BLOCK_SIZE, i * BLOCK_SIZE);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1.0;
+
+    if (hammerLine !== -1) {
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
+        ctx.fillRect(0, hammerLine * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE);
+    }
 }
 
 function drawCurrentPiece() {
@@ -607,6 +668,9 @@ function dropPiece() {
 
 function mergePiece() {
     if (!currentPiece) return;
+    boardHistory.push(JSON.parse(JSON.stringify(board)));
+    if(boardHistory.length > 5) boardHistory.shift();
+
     for (let r = 0; r < currentPiece.shape.length; r++) {
         for (let c = 0; c < currentPiece.shape[r].length; c++) {
             if (currentPiece.shape[r][c]) {
@@ -746,9 +810,10 @@ function updateScore(lines, isCurrentSpecial) {
     }
 
     if (score >= nextAssistReward) {
-        assists++;
+        let assistType = ['bomb', 'hammer', 'undo'][Math.floor(Math.random() * 3)];
+        assists[assistType]++;
         nextAssistReward += 5000;
-        localStorage.setItem('assists', assists);
+        localStorage.setItem('assists', JSON.stringify(assists));
         updateAssistsDisplay();
     }
 }
@@ -907,17 +972,18 @@ function endGame(isSprintWin = false) {
     if (score > bestScore) {
         bestScore = score;
         localStorage.setItem('bestScore', bestScore);
-        bestScoreDisplay.textContent = `BEST: ${bestScore}`;
+        bestScoreDisplay.textContent = `${bestScore}`;
     }
     
     gameOverScreen.style.display = 'flex';
+    homeButton.style.display = 'none';
     pauseButton.style.display = 'none';
     restartButtonInline.style.display = 'none';
-    assistsButton.style.display = 'none';
+    document.getElementById('assists-panel').style.display = 'none';
     
     restartButton.style.display = 'block';
     
-    if (assists > 0 && !isSprintWin) {
+    if (assists.bomb > 0 && !isSprintWin) {
         continueButton.style.display = 'block';
     } else {
         continueButton.style.display = 'none';
@@ -925,8 +991,8 @@ function endGame(isSprintWin = false) {
 }
 
 function continueGame() {
-    assists--;
-    localStorage.setItem('assists', assists);
+    assists.bomb--;
+    localStorage.setItem('assists', JSON.stringify(assists));
     updateAssistsDisplay();
     
     gameOverScreen.style.display = 'none';
@@ -934,9 +1000,10 @@ function continueGame() {
     gameOver = false;
     isPaused = false;
     
+    homeButton.style.display = 'block';
     pauseButton.style.display = 'block';
     restartButtonInline.style.display = 'block';
-    assistsButton.style.display = 'flex';
+    document.getElementById('assists-panel').style.display = 'flex';
 
     playBackgroundMusic();
     animationFrameId = requestAnimationFrame(gameLoop);
@@ -1001,11 +1068,15 @@ function initGame() {
     gameOver = false;
     isPaused = false;
     isAnimating = false;
+    hammerMode = false;
+    hammerLine = -1;
+    canvas.classList.remove('hammer-mode-cursor');
+    boardHistory = [];
     
-    pauseButton.textContent = "PAUSE";
+    pauseButton.textContent = "II";
+    homeButton.style.display = 'block';
     pauseButton.style.display = 'block';
-    restartButtonInline.style.display = 'block';
-    assistsButton.style.display = 'flex';
+    document.getElementById('assists-panel').style.display = 'flex';
 
     levelDisplay.style.display = 'none';
     sprintTimerDisplay.style.display = 'none';
@@ -1051,15 +1122,16 @@ function togglePause() {
     if (isPaused) {
         cancelAnimationFrame(animationFrameId);
         pauseScreen.style.display = 'flex';
-        pauseButton.textContent = "RESUME";
+        pauseButton.textContent = "▶";
         pauseBackgroundMusic();
     } else {
         pauseScreen.style.display = 'none';
         animationFrameId = requestAnimationFrame(gameLoop);
-        pauseButton.textContent = "PAUSE";
+        pauseButton.textContent = "II";
         playBackgroundMusic();
     }
 }
+
 function handleKeydown(e) {
     if (gameOver || isPaused) return;
 
@@ -1093,8 +1165,14 @@ function handleKeydown(e) {
             dropPiece();
             draw();
             break;
-        case keyBindings.assist.toLowerCase():
-            useAssist();
+        case keyBindings.bomb.toLowerCase():
+            useBombAssist();
+            break;
+        case keyBindings.hammer.toLowerCase():
+            toggleHammerMode();
+            break;
+        case keyBindings.undo.toLowerCase():
+            useUndoAssist();
             break;
         case 'p':
         case 'P':
@@ -1104,18 +1182,24 @@ function handleKeydown(e) {
 }
 
 function updateAssistsDisplay() {
-    assistsCountDisplay.textContent = assists;
-    if (assists > 0) {
-        assistsButton.classList.remove('disabled');
-    } else {
-        assistsButton.classList.add('disabled');
-    }
+    assistsBombCountDisplay.textContent = assists.bomb;
+    assistsHammerCountDisplay.textContent = assists.hammer;
+    assistsUndoCountDisplay.textContent = assists.undo;
+    
+    if (assists.bomb > 0) assistsBombButton.classList.remove('disabled');
+    else assistsBombButton.classList.add('disabled');
+    
+    if (assists.hammer > 0) assistsHammerButton.classList.remove('disabled');
+    else assistsHammerButton.classList.add('disabled');
+    
+    if (assists.undo > 0) assistsUndoButton.classList.remove('disabled');
+    else assistsUndoButton.classList.add('disabled');
 }
 
-function useAssist() {
-    if (assists > 0 && !isAnimating) {
-        assists--;
-        localStorage.setItem('assists', assists);
+function useBombAssist() {
+    if (assists.bomb > 0 && !isAnimating) {
+        assists.bomb--;
+        localStorage.setItem('assists', JSON.stringify(assists));
         updateAssistsDisplay();
         
         bombSound.currentTime = 0;
@@ -1130,7 +1214,6 @@ function useAssist() {
             }
         }
         
-        let explosionDelay = 0;
         const explosionDuration = 1500;
         
         fragments.forEach((frag) => {
@@ -1138,8 +1221,8 @@ function useAssist() {
             fragmentEl.classList.add('bomb-animation');
             fragmentEl.style.width = `${BLOCK_SIZE}px`;
             fragmentEl.style.height = `${BLOCK_SIZE}px`;
-            fragmentEl.style.left = `${frag.x}px`;
-            fragmentEl.style.top = `${frag.y}px`;
+            fragmentEl.style.left = `${canvas.offsetLeft + frag.x}px`;
+            fragmentEl.style.top = `${canvas.offsetTop + frag.y}px`;
             fragmentEl.style.backgroundColor = frag.color;
 
             const dx = (Math.random() - 0.5) * 400; 
@@ -1163,6 +1246,72 @@ function useAssist() {
             generateNewPiece();
             isAnimating = false;
         }, explosionDuration);
+    }
+}
+
+function toggleHammerMode() {
+    if (assists.hammer > 0) {
+        hammerMode = !hammerMode;
+        if (hammerMode) {
+            canvas.classList.add('hammer-mode-cursor');
+        } else {
+            canvas.classList.remove('hammer-mode-cursor');
+            hammerLine = -1;
+            draw();
+        }
+    }
+}
+
+function handleCanvasHover(e) {
+    if (hammerMode) {
+        const rect = canvas.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const row = Math.floor(y / BLOCK_SIZE);
+        
+        if (row >= 0 && row < ROWS) {
+            hammerLine = row;
+        } else {
+            hammerLine = -1;
+        }
+        draw();
+    }
+}
+
+function handleCanvasClick(e) {
+    if (hammerMode && hammerLine !== -1 && assists.hammer > 0) {
+        const rect = canvas.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const row = Math.floor(y / BLOCK_SIZE);
+
+        if (row >= 0 && row < ROWS) {
+            const isLineFull = board[row].every(cell => cell !== 0);
+            if (isLineFull) {
+                assists.hammer--;
+                localStorage.setItem('assists', JSON.stringify(assists));
+                updateAssistsDisplay();
+                
+                linesToClear = [row];
+                isAnimating = true;
+                animationStart = performance.now();
+                updateScore(1, false);
+
+                hammerMode = false;
+                canvas.classList.remove('hammer-mode-cursor');
+                hammerLine = -1;
+            }
+        }
+    }
+}
+
+function useUndoAssist() {
+    if (assists.undo > 0 && boardHistory.length > 0) {
+        assists.undo--;
+        localStorage.setItem('assists', JSON.stringify(assists));
+        updateAssistsDisplay();
+
+        board = boardHistory.pop();
+        generateNewPiece();
+        draw();
     }
 }
 
