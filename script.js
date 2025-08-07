@@ -128,13 +128,17 @@ function pauseBackgroundMusic() {
 }
 
 function setCanvasSize() {
-    const root = document.documentElement;
+    const wrapper = document.getElementById('main-game-wrapper');
     const infoSection = document.getElementById('info-section');
     const assistsPanel = document.getElementById('assists-panel');
-    const wrapper = document.getElementById('main-game-wrapper');
 
-    const availableWidth = wrapper.clientWidth - 20;
-    const availableHeight = wrapper.clientHeight - infoSection.offsetHeight - assistsPanel.offsetHeight - 20;
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const infoHeight = infoSection.offsetHeight;
+    const assistsHeight = assistsPanel.offsetHeight;
+    const padding = 20;
+
+    const availableHeight = wrapperRect.height - infoHeight - assistsHeight - padding;
+    const availableWidth = wrapperRect.width - padding;
 
     const tempBlockSize = Math.floor(Math.min(availableWidth / COLS, availableHeight / ROWS));
     
@@ -142,14 +146,22 @@ function setCanvasSize() {
 
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
-    
+
     const sideCanvasSize = Math.floor(BLOCK_SIZE * 4);
     nextBlockCanvas.width = sideCanvasSize;
     nextBlockCanvas.height = sideCanvasSize;
+
+    // Postavi veličinu wrapper-a na osnovu izračunatih dimenzija canvasa
+    // Ovo osigurava da se igra uklapa i ne seče se
+    wrapper.style.width = `${canvas.width + padding}px`;
+    wrapper.style.height = `${canvas.height + infoHeight + assistsHeight + padding}px`;
     
     TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
     TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
     TAP_THRESHOLD = BLOCK_SIZE * 0.5;
+    
+    const root = document.documentElement;
+    root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
     if (!gameOver && !isPaused) {
         draw();
@@ -674,6 +686,7 @@ function mergePiece() {
             }
         }
     }
+    currentPiece = null; // Dodato: Postavi trenutni komad na null da bi se izbeglo duplo renderovanje
     checkLines();
 }
 
