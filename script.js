@@ -140,13 +140,11 @@ function setCanvasSize() {
     
     BLOCK_SIZE = Math.max(12, tempBlockSize);
 
-    // Ova linija je ključna za dinamičko prilagođavanje
     root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
 
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
     
-    // I ove dve su dodate da bi se osiguralo da se platno ispravno prikazuje
     canvas.style.width = `${canvas.width}px`;
     canvas.style.height = `${canvas.height}px`;
 
@@ -189,7 +187,6 @@ function initDOMAndEventListeners() {
     comboDisplay = document.getElementById('combo-display');
     startButton = document.getElementById('start-button');
     restartButton = document.getElementById('restart-button');
-    continueButton = document.getElementById('continue-button');
     resumeButton = document.getElementById('resume-button');
     homeButton = document.getElementById('home-button');
     pauseButton = document.getElementById('pause-button');
@@ -565,7 +562,6 @@ function drawBoard() {
         }
     }
     
-    // Draw grid lines
     ctx.strokeStyle = THEMES[currentTheme].gridColor;
     ctx.lineWidth = 1;
     ctx.globalAlpha = 0.8;
