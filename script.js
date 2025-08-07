@@ -70,48 +70,37 @@ let TOUCH_MOVE_THRESHOLD_X;
 let TOUCH_MOVE_THRESHOLD_Y;
 let TAP_THRESHOLD;
 
-// IZMENA: Potpuno nova, pouzdanija funkcija za veličinu kanvasa
+// IZMENA: Najpouzdanija verzija funkcije do sada
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) return;
 
-    // Pustimo CSS da odredi veličinu kontejnera
+    // Pročitamo dimenzije kontejnera koje je CSS postavio
     const containerWidth = canvasContainer.clientWidth;
     const containerHeight = canvasContainer.clientHeight;
     
-    // Odredimo veličinu bloka tako da tabla stane u kontejner, čuvajući odnos 2:1
-    // jer je naša tabla 20 (visina) x 10 (širina) blokova.
-    if (containerHeight / containerWidth > ROWS / COLS) {
-        // Ako je kontejner "viši" od naše table, širina je ograničavajući faktor
-        BLOCK_SIZE = Math.floor(containerWidth / COLS);
-    } else {
-        // Ako je kontejner "širi" od naše table, visina je ograničavajući faktor
-        BLOCK_SIZE = Math.floor(containerHeight / ROWS);
-    }
-    
-    // Postavljamo stvarnu (internu) rezoluciju kanvasa
-    const canvasWidth = COLS * BLOCK_SIZE;
-    const canvasHeight = ROWS * BLOCK_SIZE;
+    // Izračunamo veličinu bloka na osnovu manjeg ograničenja (širine ili visine)
+    // da bi se sačuvao odnos 10x20
+    const blockSizeW = containerWidth / COLS;
+    const blockSizeH = containerHeight / ROWS;
+    BLOCK_SIZE = Math.floor(Math.min(blockSizeW, blockSizeH));
 
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    
-    // Ažuriramo stilove da se kanvas vizuelno centrira i ne razvlači
-    canvas.style.width = `${canvasWidth}px`;
-    canvas.style.height = `${canvasHeight}px`;
+    // Postavimo INTERNU rezoluciju kanvasa za crtanje
+    canvas.width = COLS * BLOCK_SIZE;
+    canvas.height = ROWS * BLOCK_SIZE;
 
     // Ažuriramo i kanvas za sledeći blok
     const sideCanvasSize = Math.floor(BLOCK_SIZE * 4.5);
     nextBlockCanvas.width = sideCanvasSize;
     nextBlockCanvas.height = sideCanvasSize;
-    
+
     // Ažuriramo pragove za dodir na osnovu veličine bloka
     TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
     TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
     TAP_THRESHOLD = BLOCK_SIZE * 0.5;
 
     // Ponovo iscrtavamo sve ako igra traje
-    if (!gameOver || isPaused) {
+    if (!gameOver) {
         draw();
         drawNextPiece();
     }
@@ -248,6 +237,7 @@ function initDOMAndEventListeners() {
         if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             movePiece(dx > 0 ? 1 : -1);
             lastTouchX = currentTouchX;
+            draw(); // Iscrtaj odmah za bolji odziv
         }
         const dy = currentTouchY - lastTouchY;
         if (dy > TOUCH_MOVE_THRESHOLD_Y && dy > Math.abs(dx)) {
@@ -263,7 +253,7 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) rotatePiece();
-        else if (dy < -BLOCK_SIZE * 3 && Math.abs(dy) > Math.abs(dx)) dropPiece();
+        else if (dy > BLOCK_SIZE * 3 && dy > Math.abs(dx)) dropPiece();
         draw();
     });
 
@@ -363,38 +353,20 @@ function drawPieceInCanvas(piece, context, canvasEl) {
 }
 function drawNextPiece() { drawPieceInCanvas(nextPiece, nextBlockCtx, nextBlockCanvas); }
 
-// IZMENA: Jednostavnije i pouzdanije iscrtavanje mreže
 function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Iscrtaj pozadinu table
     ctx.fillStyle = THEMES[currentTheme].boardBackground;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Iscrtaj linije mreže
     ctx.strokeStyle = THEMES[currentTheme].gridColor;
     ctx.lineWidth = 1;
-
     for (let i = 1; i < COLS; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * BLOCK_SIZE, 0);
-        ctx.lineTo(i * BLOCK_SIZE, canvas.height);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(i * BLOCK_SIZE, 0); ctx.lineTo(i * BLOCK_SIZE, canvas.height); ctx.stroke();
     }
     for (let i = 1; i < ROWS; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, i * BLOCK_SIZE);
-        ctx.lineTo(canvas.width, i * BLOCK_SIZE);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * BLOCK_SIZE); ctx.lineTo(canvas.width, i * BLOCK_SIZE); ctx.stroke();
     }
-
-    // Iscrtaj postavljene blokove
     board.forEach((row, r) => row.forEach((cell, c) => { if (cell) drawBlock(c, r, cell); }));
-    
-    if (hammerLine !== -1) { 
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; 
-        ctx.fillRect(0, hammerLine * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE); 
-    }
+    if (hammerLine !== -1) { ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; ctx.fillRect(0, hammerLine * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE); }
 }
 
 function drawCurrentPiece() { if (currentPiece) currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); })); }
@@ -494,10 +466,10 @@ function updateAssistsDisplay() { assistsBombCountDisplay.textContent = assists.
 function togglePause() { if (gameOver) return; isPaused = !isPaused; if (isPaused) { cancelAnimationFrame(animationFrameId); pauseScreen.style.display = 'flex'; pauseBackgroundMusic(); } else { pauseScreen.style.display = 'none'; lastDropTime = performance.now(); animationFrameId = requestAnimationFrame(gameLoop); if (currentMode !== 'zen') playBackgroundMusic(); } }
 function showExitModal() { if (isPaused || gameOver) return; isPaused = true; cancelAnimationFrame(animationFrameId); pauseBackgroundMusic(); exitModal.style.display = 'flex'; }
 function handleKeydown(e) {
-    if (isPaused || gameOver) return;
+    if (isPaused || gameOver || !currentPiece) return;
     const key = e.key === ' ' ? 'Space' : e.key;
     const action = Object.keys(keyBindings).find(k => keyBindings[k] === key);
-    if (!action || !currentPiece) return;
+    if (!action) return;
     e.preventDefault();
     if (action === 'left') movePiece(-1);
     else if (action === 'right') movePiece(1);
@@ -507,8 +479,7 @@ function handleKeydown(e) {
     else if (action === 'bomb') useBombAssist();
     else if (action === 'hammer') toggleHammerMode();
     else if (action === 'undo') useUndoAssist();
-    if (action !== 'down' && action !== 'right' && action !== 'left') draw();
-    else { requestAnimationFrame(draw); }
+    draw();
 }
 function useBombAssist() { if (assists.bomb > 0) { assists.bomb--; let r = Math.floor(Math.random() * 5) + 10; for (let i = 0; i < 3; i++) if (r + i < ROWS) for (let c = 0; c < COLS; c++) board[r + i][c] = 0; bombSound.play().catch(console.error); score += bombBonus; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); draw(); } }
 function toggleHammerMode() { if (assists.hammer > 0) { hammerMode = !hammerMode; canvas.style.cursor = hammerMode ? 'crosshair' : 'default'; if (!hammerMode) { hammerLine = -1; draw(); } } }
