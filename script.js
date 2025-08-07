@@ -128,19 +128,27 @@ function pauseBackgroundMusic() {
 }
 
 function setCanvasSize() {
-    const wrapper = document.getElementById('main-game-wrapper');
+    const gameWrapper = document.getElementById('main-game-wrapper');
     const infoSection = document.getElementById('info-section');
     const assistsPanel = document.getElementById('assists-panel');
 
-    const wrapperRect = wrapper.getBoundingClientRect();
-    const infoHeight = infoSection.offsetHeight;
-    const assistsHeight = assistsPanel.offsetHeight;
-    const padding = 20;
+    const padding = 10 * 2; // Gornji i donji padding za wrapper
+    const totalVerticalPadding = padding + infoSection.offsetHeight + assistsPanel.offsetHeight;
+    const availableHeight = window.innerHeight - totalVerticalPadding;
+    const availableWidth = window.innerWidth;
 
-    const availableHeight = window.innerHeight - infoHeight - assistsHeight - padding;
-    const availableWidth = window.innerWidth - padding;
+    const canvasAspectRatio = COLS / ROWS;
+    const screenAspectRatio = availableWidth / availableHeight;
 
-    const tempBlockSize = Math.floor(Math.min(availableWidth / COLS, availableHeight / ROWS));
+    let tempBlockSize;
+
+    if (screenAspectRatio > canvasAspectRatio) {
+        // Ograničeno visinom
+        tempBlockSize = Math.floor(availableHeight / ROWS);
+    } else {
+        // Ograničeno širinom
+        tempBlockSize = Math.floor(availableWidth / COLS);
+    }
     
     BLOCK_SIZE = Math.max(12, tempBlockSize);
 
@@ -151,8 +159,7 @@ function setCanvasSize() {
     nextBlockCanvas.width = sideCanvasSize;
     nextBlockCanvas.height = sideCanvasSize;
 
-    wrapper.style.width = `${canvas.width + padding}px`;
-    wrapper.style.height = `${canvas.height + infoHeight + assistsHeight + padding}px`;
+    gameWrapper.style.width = `${canvas.width + 20}px`; // Dodatni padding za wrapper
     
     TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
     TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
