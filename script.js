@@ -93,7 +93,6 @@ let linesClearedThisLevel = 0;
 let linesClearedTotal = 0;
 let startTime;
 const ultraTimeLimit = 120;
-let sprintLinesToClear = 40;
 
 let lastDropTime = 0;
 let animationFrameId;
@@ -105,17 +104,14 @@ let resizeObserver;
 let keyBindings;
 
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalStatsDisplay, comboDisplay, startButton, restartButton, resumeButton, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, continueButton, exitModal, confirmExitButton, cancelExitButton;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, continueButton, exitModal, confirmExitButton, cancelExitButton;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
 
-let touchStartX = 0;
-let touchStartY = 0;
-let lastTouchX = 0;
-let lastTouchY = 0;
-let isTapping = false;
-let touchTimeout;
+let TOUCH_MOVE_THRESHOLD_X;
+let TOUCH_MOVE_THRESHOLD_Y;
+let TAP_THRESHOLD;
 
 function playBackgroundMusic() {
     if (!backgroundMusicPlaying) {
@@ -132,70 +128,28 @@ function pauseBackgroundMusic() {
 }
 
 function setCanvasSize() {
-    const mainWrapper = document.getElementById('main-game-wrapper');
-    const gameInfoContainer = document.getElementById('game-and-info-container');
+    const root = document.documentElement;
     const infoSection = document.getElementById('info-section');
     const assistsPanel = document.getElementById('assists-panel');
+    const wrapper = document.getElementById('main-game-wrapper');
 
-    const boardAspectRatio = COLS / ROWS;
+    const availableWidth = wrapper.clientWidth - 20;
+    const availableHeight = wrapper.clientHeight - infoSection.offsetHeight - assistsPanel.offsetHeight - 20;
+
+    const tempBlockSize = Math.floor(Math.min(availableWidth / COLS, availableHeight / ROWS));
     
-    // Računanje dostupnog prostora na osnovu viewporta
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    // Podesi wrapper da zauzme 95% viewporta
-    const wrapperWidth = viewportWidth * 0.95;
-    const wrapperHeight = viewportHeight * 0.95;
-    
-    let infoSectionWidth = 0;
-    if (viewportWidth > 768) {
-        infoSectionWidth = 180; // Fiksna širina za info panel
-    } else {
-        infoSectionWidth = 0; // Sakrij info panel na manjim ekranima
-    }
+    BLOCK_SIZE = Math.max(12, tempBlockSize);
 
-    const availableWidth = wrapperWidth - infoSectionWidth - 20;
-    const availableHeight = wrapperHeight - assistsPanel.clientHeight - 20;
-
-    let canvasWidth, canvasHeight;
-    const availableAspectRatio = availableWidth / availableHeight;
-
-    if (availableAspectRatio > boardAspectRatio) {
-        canvasHeight = availableHeight;
-        canvasWidth = canvasHeight * boardAspectRatio;
-    } else {
-        canvasWidth = availableWidth;
-        canvasHeight = canvasWidth / boardAspectRatio;
-    }
-
-    BLOCK_SIZE = Math.floor(canvasWidth / COLS);
-    if (BLOCK_SIZE < 10) BLOCK_SIZE = 10;
-    
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
-
-    const nextBlockSize = Math.floor(BLOCK_SIZE * 4);
-    nextBlockCanvas.width = nextBlockSize;
-    nextBlockCanvas.height = nextBlockSize;
-
-    // Ažuriraj CSS varijable
-    document.documentElement.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
-
-    // Prilagodi UI za mobilne uređaje
-    if (viewportWidth <= 768) {
-        document.getElementById('main-game-wrapper').style.flexDirection = 'column';
-        document.getElementById('info-section').style.flexDirection = 'row';
-        document.getElementById('info-section').style.width = '100%';
-        document.getElementById('right-controls').style.flexDirection = 'row';
-        document.getElementById('assists-panel').style.display = 'flex';
-        document.getElementById('next-block-container').style.display = 'none';
-    } else {
-        document.getElementById('main-game-wrapper').style.flexDirection = 'row';
-        document.getElementById('info-section').style.flexDirection = 'column';
-        document.getElementById('right-controls').style.flexDirection = 'column';
-        document.getElementById('assists-panel').style.display = 'block';
-        document.getElementById('next-block-container').style.display = 'flex';
-    }
+    
+    const sideCanvasSize = Math.floor(BLOCK_SIZE * 4);
+    nextBlockCanvas.width = sideCanvasSize;
+    nextBlockCanvas.height = sideCanvasSize;
+    
+    TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
+    TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
+    TAP_THRESHOLD = BLOCK_SIZE * 0.5;
 
     if (!gameOver && !isPaused) {
         draw();
@@ -224,7 +178,8 @@ function initDOMAndEventListeners() {
     exitModal = document.getElementById('exit-modal');
     scoreDisplay = document.getElementById('score-display');
     finalScoreDisplay = document.getElementById('final-score');
-    finalStatsDisplay = document.getElementById('final-stats-text');
+    finalTimeDisplay = document.getElementById('final-time');
+    comboDisplay = document.getElementById('combo-display');
     startButton = document.getElementById('start-button');
     restartButton = document.getElementById('restart-button');
     continueButton = document.getElementById('continue-button');
@@ -241,6 +196,7 @@ function initDOMAndEventListeners() {
     assistsUndoCountDisplay = document.getElementById('assists-undo-count');
     bestScoreDisplay = document.getElementById('best-score-display');
     levelDisplay = document.getElementById('level-display');
+    themeSwitcher = document.getElementById('theme-switcher');
     modeSelector = document.getElementById('mode-selector');
     sprintTimerDisplay = document.getElementById('sprint-timer');
     ultraTimerDisplay = document.getElementById('ultra-timer');
@@ -260,8 +216,7 @@ function initDOMAndEventListeners() {
         startScreen.style.display = 'flex';
     });
     continueButton.addEventListener('click', () => {
-        gameOverScreen.style.display = 'none';
-        startScreen.style.display = 'flex';
+        continueGame();
     });
     pauseButton.addEventListener('click', togglePause);
     resumeButton.addEventListener('click', togglePause);
@@ -274,6 +229,7 @@ function initDOMAndEventListeners() {
         exitModal.style.display = 'none';
         togglePause();
     });
+    themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
     
     assistsBombButton.addEventListener('click', () => {
         if (gameOver || isPaused) return;
@@ -323,30 +279,21 @@ function initDOMAndEventListeners() {
     
     const savedTheme = localStorage.getItem('theme') || 'classic';
     setTheme(savedTheme);
+    themeSwitcher.value = savedTheme;
 
     loadKeyBindings();
-    setupTouchControls();
 
-    setCanvasSize();
-}
-
-function setupTouchControls() {
     let touchStartX = 0;
     let touchStartY = 0;
     let lastTouchX = 0;
     let lastTouchY = 0;
-    let isDragging = false;
-    let touchMoveThresholdX = 40;
-    let touchMoveThresholdY = 50;
 
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
-        e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         lastTouchX = touchStartX;
         lastTouchY = touchStartY;
-        isDragging = false;
     });
 
     canvas.addEventListener('touchmove', e => {
@@ -355,52 +302,52 @@ function setupTouchControls() {
         
         const currentTouchX = e.touches[0].clientX;
         const currentTouchY = e.touches[0].clientY;
-        
         const dx = currentTouchX - lastTouchX;
         const dy = currentTouchY - lastTouchY;
+        const totalDy = currentTouchY - touchStartY;
         
-        if (Math.abs(dx) > touchMoveThresholdX) {
+        if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             if (dx > 0) {
                 if (isValidMove(1, 0, currentPiece.shape)) currentPiece.x++;
             } else {
                 if (isValidMove(-1, 0, currentPiece.shape)) currentPiece.x--;
             }
             lastTouchX = currentTouchX;
-            isDragging = true;
             draw();
         }
 
-        if (dy > touchMoveThresholdY) {
+        if (dy > TOUCH_MOVE_THRESHOLD_Y && dy > Math.abs(dx)) {
             if (isValidMove(0, 1, currentPiece.shape)) {
                 currentPiece.y++;
                 lastDropTime = performance.now();
                 draw();
+                lastTouchY = currentTouchY;
+            } else {
+                mergePiece();
+                lastTouchY = currentTouchY;
             }
-            lastTouchY = currentTouchY;
-            isDragging = true;
         }
     });
 
     canvas.addEventListener('touchend', e => {
         if (gameOver || isPaused || !currentPiece) return;
-        e.preventDefault();
         
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        if (!isDragging && Math.abs(dx) < 20 && Math.abs(dy) < 20) {
+        if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
             rotatePiece();
         } 
-        
-        // Hard drop gesture: swipe down and then quickly release
-        if (dy > 100 && dy > Math.abs(dx)) { 
+        else if (dy > BLOCK_SIZE * 3 && dy > Math.abs(dx)) { 
             dropPiece();
         }
         
         draw();
     });
+
+    setCanvasSize();
 }
 
 function loadKeyBindings() {
@@ -611,6 +558,7 @@ function drawBoard() {
         }
     }
     
+    // Draw grid lines
     ctx.strokeStyle = THEMES[currentTheme].gridColor;
     ctx.lineWidth = 1;
     ctx.globalAlpha = 0.8;
@@ -627,6 +575,7 @@ function drawBoard() {
         ctx.stroke();
     }
     ctx.globalAlpha = 1.0;
+
     if (hammerLine !== -1) {
         ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
         ctx.fillRect(0, hammerLine * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE);
@@ -646,14 +595,17 @@ function drawCurrentPiece() {
 
 function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y) {
     if (!currentPiece) return false;
+    
     for (let r = 0; r < newShape.length; r++) {
         for (let c = 0; c < newShape[r].length; c++) {
             if (newShape[r][c]) {
                 const newX = currentPiece.x + c + offsetX;
                 const newY = currentY + r + offsetY;
+
                 if (newX < 0 || newX >= COLS || newY >= ROWS) {
                     return false;
                 }
+                
                 if (newY >= 0 && board[newY] && board[newY][newX]) {
                     return false;
                 }
@@ -668,11 +620,13 @@ function rotatePiece() {
     const originalShape = currentPiece.shape;
     const N = originalShape.length;
     const newShape = Array(N).fill(0).map(() => Array(N).fill(0));
+
     for (let r = 0; r < N; r++) {
         for (let c = 0; c < N; c++) {
             newShape[c][N - 1 - r] = originalShape[r][c];
         }
     }
+    
     if (isValidMove(0, 0, newShape)) {
         currentPiece.shape = newShape;
         rotateSound.currentTime = 0;
@@ -699,9 +653,11 @@ function dropPiece() {
         currentPiece.y++;
     }
     const rowsDropped = currentPiece.y - originalY;
-    score += rowsDropped * 2;
+    if (currentMode === 'classic' || currentMode === 'marathon') {
+        score += rowsDropped * 2;
+    }
     scoreDisplay.textContent = `Score: ${score}`;
-    screenShake();
+    screenShake(); 
     mergePiece();
     dropSound.currentTime = 0;
     dropSound.play().catch(e => console.error("Greška pri puštanju dropSounda:", e));
@@ -711,6 +667,7 @@ function mergePiece() {
     if (!currentPiece) return;
     boardHistory.push(JSON.parse(JSON.stringify(board)));
     if(boardHistory.length > 5) boardHistory.shift();
+
     for (let r = 0; r < currentPiece.shape.length; r++) {
         for (let c = 0; c < currentPiece.shape[r].length; c++) {
             if (currentPiece.shape[r][c]) {
@@ -724,12 +681,12 @@ function mergePiece() {
             }
         }
     }
-    currentPiece = null;
     checkLines();
 }
 
 function isTSpin() {
     if (currentPieceIndex !== T_SHAPE_INDEX) return false;
+
     let filledCorners = 0;
     const corners = [
         { x: currentPiece.x, y: currentPiece.y },
@@ -737,12 +694,25 @@ function isTSpin() {
         { x: currentPiece.x, y: currentPiece.y + 2 },
         { x: currentPiece.x + 2, y: currentPiece.y + 2 }
     ];
+
     for (const corner of corners) {
         if (corner.x < 0 || corner.x >= COLS || corner.y < 0 || corner.y >= ROWS || (board[corner.y] && board[corner.y][corner.x])) {
             filledCorners++;
         }
     }
+
     return filledCorners >= 3;
+}
+
+function isBoardEmpty() {
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (board[r][c] !== 0) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 function checkLines() {
@@ -759,13 +729,27 @@ function checkLines() {
             linesToClear.push(r);
         }
     }
+
     if (linesToClear.length > 0) {
-        let isCurrentSpecial = isTSpin() || linesToClear.length === 4;
-        updateScore(linesToClear.length, isCurrentSpecial);
         isAnimating = true;
         animationStart = performance.now();
-        playClearSound(linesToClear.length, isTSpin());
-        removeLines();
+        
+        let isCurrentSpecial = isTSpin() || linesToClear.length === 4;
+
+        updateScore(linesToClear.length, isCurrentSpecial);
+        
+        if (linesToClear.length === 4) {
+            tetrisSound.currentTime = 0;
+            if (tetrisSound.readyState >= 2) tetrisSound.play().catch(e => console.error("Greška pri puštanju Tetris zvuka:", e));
+        } else if (isTSpin()) {
+            tSpinSound.currentTime = 0;
+            if (tSpinSound.readyState >= 2) tSpinSound.play().catch(e => console.error("Greška pri puštanju T-Spin zvuka:", e));
+        } else {
+            clearSound.currentTime = 0;
+            if (clearSound.readyState >= 2) clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
+        }
+        
+        return;
     } else {
         lastClearWasSpecial = false;
         combo = 0;
@@ -773,518 +757,566 @@ function checkLines() {
     }
 }
 
-function playClearSound(lines, isTSpin) {
-    if (lines === 4) {
-        tetrisSound.currentTime = 0;
-        if (tetrisSound.readyState >= 2) tetrisSound.play().catch(e => console.error("Greška pri puštanju Tetris zvuka:", e));
-    } else if (isTSpin) {
-        tSpinSound.currentTime = 0;
-        if (tSpinSound.readyState >= 2) tSpinSound.play().catch(e => console.error("Greška pri puštanju T-Spin zvuka:", e));
-    } else {
-        clearSound.currentTime = 0;
-        if (clearSound.readyState >= 2) clearSound.play().catch(e => console.error("Greška pri puštanju clearSounda:", e));
-    }
-}
-
 function updateScore(lines, isCurrentSpecial) {
     let points = 0;
+    let type = '';
     const backToBackMultiplier = lastClearWasSpecial && isCurrentSpecial ? 1.5 : 1;
+
     if (isTSpin()) {
-        if (lines === 1) {
-            points = 800;
-        } else if (lines === 2) {
-            points = 1200;
-        } else if (lines === 3) {
-            points = 1600;
-        } else {
-            points = 400;
-        }
+        if (lines === 1) { points = 800; type = 'T-Spin Single'; }
+        else if (lines === 2) { points = 1200; type = 'T-Spin Double'; }
+        else if (lines === 3) { points = 1600; type = 'T-Spin Triple'; }
+        else { points = 400; type = 'T-Spin'; }
     } else {
-        switch (lines) {
-            case 1: points = 100; break;
-            case 2: points = 300; break;
-            case 3: points = 500; break;
-            case 4: points = 800; break;
+        if (lines === 1) { points = 100; type = 'Single'; }
+        else if (lines === 2) { points = 300; type = 'Double'; }
+        else if (lines === 3) { points = 500; type = 'Triple'; }
+        else if (lines === 4) { points = 800; type = 'Tetris'; }
+    }
+    
+    score += Math.floor(points * backToBackMultiplier);
+    scoreDisplay.textContent = `Score: ${score}`;
+    
+    if (lines > 0) {
+        combo++;
+        if (isCurrentSpecial && backToBackMultiplier > 1) {
+            type = 'B2B ' + type;
+        }
+        showComboMessage(type, combo);
+        lastClearWasSpecial = isCurrentSpecial;
+    } else {
+        combo = 0;
+        lastClearWasSpecial = false;
+    }
+
+    if (currentMode === 'sprint') {
+        linesClearedTotal += lines;
+        if (linesClearedTotal >= 40) {
+            endGame(true);
+        }
+    } else if (currentMode === 'classic' || currentMode === 'marathon') {
+        linesClearedThisLevel += lines;
+        if (linesClearedThisLevel >= 10) {
+            level++;
+            linesClearedThisLevel -= 10;
+            levelDisplay.textContent = `Level: ${level}`;
+            if (currentMode === 'classic' || currentMode === 'marathon') {
+                dropInterval = Math.max(100, 1000 - level * 50);
+            }
         }
     }
-    
-    score += points * backToBackMultiplier;
-    
-    if (combo > 0) {
-        score += combo * 50;
-    }
-    
-    if (combo > 1) {
-        showCombo(combo);
-    }
-    
-    combo++;
-    
-    scoreDisplay.textContent = `Score: ${score}`;
-    linesClearedThisLevel += lines;
-    linesClearedTotal += lines;
 
     if (score >= nextAssistReward) {
-        gainRandomAssist();
+        let assistType = ['bomb', 'hammer', 'undo'][Math.floor(Math.random() * 3)];
+        assists[assistType]++;
         nextAssistReward += 5000;
+        localStorage.setItem('assists', JSON.stringify(assists));
+        updateAssistsDisplay();
+    }
+}
+
+function showComboMessage(type, comboCount) {
+    let message = '';
+    if (type) message = type;
+    if (comboCount > 1) message += `\n${comboCount}x Combo!`;
+
+    if (message) {
+        comboDisplay.textContent = message;
+        comboDisplay.style.display = 'block';
+        setTimeout(() => {
+            comboDisplay.style.display = 'none';
+        }, 1500);
+    }
+}
+
+function showPerfectClearMessage() {
+    let message = 'Perfect Clear!';
+    score += 5000;
+    scoreDisplay.textContent = `Score: ${score}`;
+    comboDisplay.textContent = message;
+    comboDisplay.style.display = 'block';
+    setTimeout(() => {
+        comboDisplay.style.display = 'none';
+        generateNewPiece();
+    }, 2000);
+}
+
+function gameLoop(timestamp) {
+    if (gameOver || isPaused) {
+        return;
     }
 
-    if (currentMode === 'classic') {
-        updateLevel();
-    } else if (currentMode === 'sprint') {
-        updateSprint();
+    if (isAnimating) {
+        animateLineClear(timestamp);
+        return;
     }
     
-    lastClearWasSpecial = isCurrentSpecial;
+    if (currentMode === 'sprint') {
+        const elapsed = (performance.now() - startTime) / 1000;
+        sprintTimerDisplay.textContent = `TIME: ${elapsed.toFixed(2)}s`;
+    } else if (currentMode === 'ultra') {
+        const elapsed = (performance.now() - startTime) / 1000;
+        const remainingTime = ultraTimeLimit - elapsed;
+        if (remainingTime <= 0) {
+            endGame();
+            return;
+        }
+        ultraTimerDisplay.textContent = `TIME: ${remainingTime.toFixed(2)}s`;
+    }
+
+    if (timestamp - lastDropTime > dropInterval) {
+        if (currentPiece) {
+            if (isValidMove(0, 1, currentPiece.shape)) {
+                currentPiece.y++;
+            } else {
+                mergePiece();
+            }
+        }
+        lastDropTime = timestamp;
+    }
+    
+    draw();
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function updateLevel() {
-    if (linesClearedThisLevel >= 10) {
-        level++;
-        levelDisplay.textContent = `Level: ${level}`;
-        linesClearedThisLevel = 0;
-        dropInterval = Math.max(100, dropInterval - 50);
+function animateLineClear(timestamp) {
+    const elapsed = timestamp - animationStart;
+    const progress = elapsed / animationDuration;
+    
+    if (progress >= 1) {
+        isAnimating = false;
+        
+        linesToClear.sort((a, b) => b - a);
+        const linesClearedCount = linesToClear.length;
+
+        for (const r of linesToClear) {
+            board.splice(r, 1);
+        }
+
+        for (let i = 0; i < linesClearedCount; i++) {
+            board.unshift(Array(COLS).fill(0));
+        }
+
+        linesToClear = [];
+        
+        if (isBoardEmpty()) {
+            showPerfectClearMessage();
+        } else {
+            generateNewPiece();
+        }
+        animationFrameId = requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    drawBoard();
+    
+    for (const r of linesToClear) {
+        const lineProgress = Math.sin(progress * Math.PI);
+        
+        for (let c = 0; c < COLS; c++) {
+            const block = board[r][c];
+            if (block) {
+                const color = block;
+                const shrinkSize = BLOCK_SIZE * (1 - lineProgress);
+                const offset = (BLOCK_SIZE - shrinkSize) / 2;
+                
+                ctx.fillStyle = color;
+                ctx.fillRect(c * BLOCK_SIZE + offset, r * BLOCK_SIZE + offset, shrinkSize, shrinkSize);
+            }
+        }
+    }
+    
+    drawCurrentPiece();
+    
+    requestAnimationFrame(animateLineClear);
+}
+
+function screenShake() {
+    const wrapper = document.getElementById('main-game-wrapper');
+    wrapper.classList.add('screen-shake');
+    setTimeout(() => {
+        wrapper.classList.remove('screen-shake');
+    }, 200);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBoard();
+    drawGhostPiece();
+    drawCurrentPiece();
+}
+
+function endGame(isSprintWin = false, exitToMainMenu = false) {
+    gameOver = true;
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    pauseBackgroundMusic();
+
+    if (exitToMainMenu) {
+        startScreen.style.display = 'flex';
+        gameOverScreen.style.display = 'none';
+        return;
+    }
+    
+    if (isSprintWin) {
+        finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`;
+        finalTimeDisplay.style.display = 'block';
+        document.getElementById('game-over-title').textContent = 'PERFECT!';
+    } else {
+        gameOverSound.currentTime = 0;
+        if (gameOverSound.readyState >= 2) {
+            gameOverSound.play().catch(e => console.error("Greška pri puštanju gameOverSounda:", e));
+        }
+        finalTimeDisplay.style.display = 'none';
+        document.getElementById('game-over-title').textContent = 'GAME OVER!';
+    }
+
+    finalScoreDisplay.textContent = `Your Score: ${score}`;
+    
+    if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem('bestScore', bestScore);
+        bestScoreDisplay.textContent = `${bestScore}`;
+    }
+    
+    gameOverScreen.style.display = 'flex';
+    homeButton.style.display = 'none';
+    pauseButton.style.display = 'none';
+    document.getElementById('assists-panel').style.display = 'none';
+    
+    if (assists.bomb > 0 && !isSprintWin) {
+        continueButton.style.display = 'block';
+    } else {
+        continueButton.style.display = 'none';
     }
 }
 
-function updateSprint() {
-    sprintTimerDisplay.textContent = `LINES: ${linesClearedTotal}/${sprintLinesToClear}`;
-    if (linesClearedTotal >= sprintLinesToClear) {
-        endGame();
-    }
-}
-
-function gainRandomAssist() {
-    const assistTypes = ['bomb', 'hammer', 'undo'];
-    const randomAssist = assistTypes[Math.floor(Math.random() * assistTypes.length)];
-    assists[randomAssist]++;
-    updateAssistsDisplay();
+function continueGame() {
+    assists.bomb--;
     localStorage.setItem('assists', JSON.stringify(assists));
+    updateAssistsDisplay();
+    
+    gameOverScreen.style.display = 'none';
+    
+    gameOver = false;
+    isPaused = false;
+    
+    homeButton.style.display = 'block';
+    pauseButton.style.display = 'block';
+    document.getElementById('assists-panel').style.display = 'flex';
+
+    playBackgroundMusic();
+    animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function showExitModal() {
+    togglePause();
+    exitModal.style.display = 'flex';
+}
+
+function startGame() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioContext = new AudioContext();
+        const buffer = audioContext.createBuffer(1, 1, 22050);
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        source.start();
+        source.onended = () => {
+            source.disconnect(audioContext.destination);
+        };
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+    } catch (e) {
+        console.error("Greška pri pokušaju inicijalizacije zvuka (verovatno autoplay blokiran):", e);
+    }
+    
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    pauseScreen.style.display = 'none';
+    
+    startCountdown.style.display = 'flex';
+    let countdown = 3;
+    startCountdown.textContent = countdown;
+
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+            startCountdown.textContent = countdown;
+        } else {
+            clearInterval(countdownInterval);
+            startCountdown.style.display = 'none';
+            initGame();
+        }
+    }, 1000);
+}
+
+function initGame() {
+    initBoard();
+    setCanvasSize();
+    
+    score = 0;
+    combo = 0;
+    level = 1;
+    linesClearedThisLevel = 0;
+    linesClearedTotal = 0;
+    nextAssistReward = 5000;
+    
+    scoreDisplay.textContent = `Score: ${score}`;
+    levelDisplay.textContent = `Level: ${level}`;
+    finalScoreDisplay.textContent = `Your Score: ${score}`;
+    
+    updateAssistsDisplay();
+    
+    gameOver = false;
+    isPaused = false;
+    isAnimating = false;
+    hammerMode = false;
+    hammerLine = -1;
+    canvas.classList.remove('hammer-mode-cursor');
+    boardHistory = [];
+    
+    pauseButton.textContent = "II";
+    homeButton.style.display = 'block';
+    pauseButton.style.display = 'block';
+    document.getElementById('assists-panel').style.display = 'flex';
+
+    levelDisplay.style.display = 'none';
+    sprintTimerDisplay.style.display = 'none';
+    ultraTimerDisplay.style.display = 'none';
+    
+    switch(currentMode) {
+        case 'classic':
+            dropInterval = 1000;
+            levelDisplay.style.display = 'block';
+            break;
+        case 'sprint':
+            dropInterval = 100;
+            sprintTimerDisplay.style.display = 'block';
+            startTime = performance.now();
+            break;
+        case 'zen':
+            dropInterval = 1500;
+            levelDisplay.textContent = `Level: ∞`;
+            levelDisplay.style.display = 'block';
+            break;
+        case 'marathon':
+            dropInterval = 1000;
+            levelDisplay.style.display = 'block';
+            break;
+        case 'ultra':
+            dropInterval = 100;
+            ultraTimerDisplay.style.display = 'block';
+            startTime = performance.now();
+            break;
+    }
+
+    playBackgroundMusic();
+    generateNewPiece();
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(gameLoop);
+    
+    draw();
+}
+
+function togglePause() {
+    if (gameOver || isAnimating || exitModal.style.display === 'flex') return;
+    isPaused = !isPaused;
+    if (isPaused) {
+        cancelAnimationFrame(animationFrameId);
+        pauseScreen.style.display = 'flex';
+        pauseButton.textContent = "▶";
+        pauseBackgroundMusic();
+    } else {
+        pauseScreen.style.display = 'none';
+        animationFrameId = requestAnimationFrame(gameLoop);
+        pauseButton.textContent = "II";
+        playBackgroundMusic();
+    }
+}
+
+function handleKeydown(e) {
+    if (gameOver || isPaused) return;
+
+    switch (e.key.toLowerCase()) {
+        case keyBindings.left.toLowerCase():
+            if (isValidMove(-1, 0, currentPiece.shape)) {
+                currentPiece.x--;
+                draw();
+            }
+            break;
+        case keyBindings.right.toLowerCase():
+            if (isValidMove(1, 0, currentPiece.shape)) {
+                currentPiece.x++;
+                draw();
+            }
+            break;
+        case keyBindings.down.toLowerCase():
+            if (isValidMove(0, 1, currentPiece.shape)) {
+                currentPiece.y++;
+                lastDropTime = performance.now();
+                draw();
+            } else {
+                mergePiece();
+            }
+            break;
+        case keyBindings.rotate.toLowerCase():
+            rotatePiece();
+            draw();
+            break;
+        case keyBindings.drop.toLowerCase():
+            dropPiece();
+            draw();
+            break;
+        case keyBindings.bomb.toLowerCase():
+            useBombAssist();
+            break;
+        case keyBindings.hammer.toLowerCase():
+            toggleHammerMode();
+            break;
+        case keyBindings.undo.toLowerCase():
+            useUndoAssist();
+            break;
+        case 'p':
+        case 'P':
+            togglePause();
+            break;
+    }
 }
 
 function updateAssistsDisplay() {
     assistsBombCountDisplay.textContent = assists.bomb;
     assistsHammerCountDisplay.textContent = assists.hammer;
     assistsUndoCountDisplay.textContent = assists.undo;
+    
+    if (assists.bomb > 0) assistsBombButton.classList.remove('disabled');
+    else assistsBombButton.classList.add('disabled');
+    
+    if (assists.hammer > 0) assistsHammerButton.classList.remove('disabled');
+    else assistsHammerButton.classList.add('disabled');
+    
+    if (assists.undo > 0) assistsUndoButton.classList.remove('disabled');
+    else assistsUndoButton.classList.add('disabled');
 }
 
 function useBombAssist() {
-    if (assists.bomb <= 0) return;
-    assists.bomb--;
-    updateAssistsDisplay();
-    localStorage.setItem('assists', JSON.stringify(assists));
-    
-    bombSound.currentTime = 0;
-    bombSound.play().catch(e => console.error("Greška pri puštanju zvuka za bombu:", e));
+    if (assists.bomb > 0 && !isAnimating) {
+        assists.bomb--;
+        localStorage.setItem('assists', JSON.stringify(assists));
+        updateAssistsDisplay();
+        
+        bombSound.currentTime = 0;
+        bombSound.play().catch(e => console.error("Greška pri puštanju zvuka bombe:", e));
 
-    const bombCount = 1 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < bombCount; i++) {
-        const x = Math.floor(Math.random() * COLS);
-        const y = Math.floor(Math.random() * ROWS);
-        explode(x, y);
-    }
-    score += bombBonus;
-    scoreDisplay.textContent = `Score: ${score}`;
-    
-    if (currentPiece) {
-        draw();
-    }
-    
-    checkLines();
-}
-
-function explode(cx, cy) {
-    const explosionRadius = 1;
-    const linesToFlash = new Set();
-    const blastCenter = { x: cx, y: cy };
-
-    for (let r = Math.max(0, cy - explosionRadius); r <= Math.min(ROWS - 1, cy + explosionRadius); r++) {
-        for (let c = Math.max(0, cx - explosionRadius); c <= Math.min(COLS - 1, cx + explosionRadius); c++) {
-            if (board[r][c] !== 0) {
-                board[r][c] = 0;
-                linesToFlash.add(r);
-                createBombAnimation(c, r);
+        const fragments = [];
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (board[r][c] !== 0) {
+                    fragments.push({ x: c * BLOCK_SIZE, y: r * BLOCK_SIZE, color: board[r][c] });
+                }
             }
         }
-    }
-    
-    linesToClear = Array.from(linesToFlash).sort((a,b) => a-b);
-    if(linesToClear.length > 0) {
-        clearLinesAnimated();
+        
+        const explosionDuration = 1500;
+        
+        fragments.forEach((frag) => {
+            const fragmentEl = document.createElement('div');
+            fragmentEl.classList.add('bomb-animation');
+            fragmentEl.style.width = `${BLOCK_SIZE}px`;
+            fragmentEl.style.height = `${BLOCK_SIZE}px`;
+            fragmentEl.style.left = `${canvas.offsetLeft + frag.x}px`;
+            fragmentEl.style.top = `${canvas.offsetTop + frag.y}px`;
+            fragmentEl.style.backgroundColor = frag.color;
+
+            const dx = (Math.random() - 0.5) * 400; 
+            const dy = (Math.random() - 0.5) * 400; 
+            fragmentEl.style.setProperty('--dx', `${dx}px`);
+            fragmentEl.style.setProperty('--dy', `${dy}px`);
+
+            canvas.parentElement.appendChild(fragmentEl);
+            
+            setTimeout(() => {
+                fragmentEl.remove();
+            }, explosionDuration);
+        });
+
+        isAnimating = true;
+
+        setTimeout(() => {
+            initBoard();
+            score += bombBonus;
+            scoreDisplay.textContent = `Score: ${score}`;
+            generateNewPiece();
+            isAnimating = false;
+        }, explosionDuration);
     }
 }
-
-function createBombAnimation(x, y) {
-    const animationEl = document.createElement('div');
-    animationEl.classList.add('bomb-animation');
-    
-    const wrapper = document.getElementById('main-game-wrapper');
-    const wrapperRect = wrapper.getBoundingClientRect();
-    const canvasRect = canvas.getBoundingClientRect();
-
-    const dx = canvasRect.left - wrapperRect.left;
-    const dy = canvasRect.top - wrapperRect.top;
-
-    animationEl.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
-    animationEl.style.left = `${dx + x * BLOCK_SIZE}px`;
-    animationEl.style.top = `${dy + y * BLOCK_SIZE}px`;
-    animationEl.style.backgroundColor = 'var(--flash-color)';
-    
-    const randomDx = (Math.random() - 0.5) * 50;
-    const randomDy = (Math.random() - 0.5) * 50;
-    animationEl.style.setProperty('--dx', `${randomDx}px`);
-    animationEl.style.setProperty('--dy', `${randomDy}px`);
-    
-    wrapper.appendChild(animationEl);
-    
-    animationEl.addEventListener('animationend', () => {
-        animationEl.remove();
-    });
-}
-
 
 function toggleHammerMode() {
-    if (assists.hammer <= 0) return;
-    hammerMode = !hammerMode;
-    const gameWrapper = document.getElementById('main-game-wrapper');
-    if (hammerMode) {
-        gameWrapper.classList.add('hammer-mode-cursor');
-    } else {
-        gameWrapper.classList.remove('hammer-mode-cursor');
-    }
-}
-
-function handleCanvasClick(e) {
-    if (hammerMode) {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        const c = Math.floor(x / BLOCK_SIZE);
-        const r = Math.floor(y / BLOCK_SIZE);
-        
-        if (c >= 0 && c < COLS && r >= 0 && r < ROWS) {
-            hammerBlock(c, r);
-        }
-    }
-}
-
-function handleCanvasHover(e) {
-    if (hammerMode && !gameOver && !isPaused) {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const r = Math.floor(y / BLOCK_SIZE);
-        
-        if (r >= 0 && r < ROWS) {
-            hammerLine = r;
-            draw();
+    if (assists.hammer > 0) {
+        hammerMode = !hammerMode;
+        if (hammerMode) {
+            canvas.classList.add('hammer-mode-cursor');
         } else {
-            if (hammerLine !== -1) {
-                hammerLine = -1;
-                draw();
-            }
-        }
-    } else {
-        if (hammerLine !== -1) {
+            canvas.classList.remove('hammer-mode-cursor');
             hammerLine = -1;
             draw();
         }
     }
 }
 
-function hammerBlock(c, r) {
-    if (assists.hammer <= 0 || !board[r][c]) return;
-    
-    assists.hammer--;
-    updateAssistsDisplay();
-    localStorage.setItem('assists', JSON.stringify(assists));
-    
-    board[r][c] = 0;
-    score += 50;
-    scoreDisplay.textContent = `Score: ${score}`;
-    
-    toggleHammerMode();
-    draw();
-    checkLines();
+function handleCanvasHover(e) {
+    if (hammerMode) {
+        const rect = canvas.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const row = Math.floor(y / BLOCK_SIZE);
+        
+        if (row >= 0 && row < ROWS) {
+            hammerLine = row;
+        } else {
+            hammerLine = -1;
+        }
+        draw();
+    }
+}
+
+function handleCanvasClick(e) {
+    if (hammerMode && hammerLine !== -1 && assists.hammer > 0) {
+        const rect = canvas.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const row = Math.floor(y / BLOCK_SIZE);
+
+        if (row >= 0 && row < ROWS) {
+            const isLineFull = board[row].some(cell => cell !== 0);
+            if (isLineFull) {
+                assists.hammer--;
+                localStorage.setItem('assists', JSON.stringify(assists));
+                updateAssistsDisplay();
+                
+                linesToClear = [row];
+                isAnimating = true;
+                animationStart = performance.now();
+                updateScore(1, false);
+
+                hammerMode = false;
+                canvas.classList.remove('hammer-mode-cursor');
+                hammerLine = -1;
+            }
+        }
+    }
 }
 
 function useUndoAssist() {
-    if (assists.undo <= 0 || boardHistory.length === 0) return;
-    
-    assists.undo--;
-    updateAssistsDisplay();
-    localStorage.setItem('assists', JSON.stringify(assists));
-    
-    board = boardHistory.pop();
-    score -= 100; 
-    scoreDisplay.textContent = `Score: ${score}`;
-    
-    generateNewPiece();
-    draw();
-}
+    if (assists.undo > 0 && boardHistory.length > 0) {
+        assists.undo--;
+        localStorage.setItem('assists', JSON.stringify(assists));
+        updateAssistsDisplay();
 
-function gameLoop(timestamp) {
-    if (gameOver || isPaused) return;
-
-    if (isAnimating) {
-        const elapsedTime = timestamp - animationStart;
-        if (elapsedTime < animationDuration) {
-            drawBoard();
-            if (currentPiece) {
-                drawCurrentPiece();
-            }
-            drawFlashLines(elapsedTime);
-        } else {
-            isAnimating = false;
-            linesToClear = [];
-            generateNewPiece();
-        }
-    } else {
-        const currentTime = performance.now();
-        const deltaTime = currentTime - lastDropTime;
-        if (deltaTime > dropInterval) {
-            moveDown();
-            lastDropTime = currentTime;
-        }
-
-        if (currentMode === 'ultra') {
-            const timeElapsed = (performance.now() - startTime) / 1000;
-            const timeLeft = ultraTimeLimit - timeElapsed;
-            if (timeLeft <= 0) {
-                endGame();
-                return;
-            }
-            ultraTimerDisplay.textContent = `TIME: ${timeLeft.toFixed(2)}s`;
-        }
-
+        board = boardHistory.pop();
+        generateNewPiece();
         draw();
     }
-
-    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function screenShake() {
-    const mainWrapper = document.getElementById('main-game-wrapper');
-    mainWrapper.classList.add('shake');
-    setTimeout(() => {
-        mainWrapper.classList.remove('shake');
-    }, 300);
-}
-
-function startGame() {
-    startScreen.style.display = 'none';
-    
-    initBoard();
-    score = 0;
-    level = 1;
-    linesClearedThisLevel = 0;
-    linesClearedTotal = 0;
-    dropInterval = 1000;
-    gameOver = false;
-    isPaused = false;
-    combo = 0;
-    scoreDisplay.textContent = 'Score: 0';
-    levelDisplay.textContent = 'Level: 1';
-    
-    if (currentMode === 'sprint') {
-        sprintTimerDisplay.style.display = 'block';
-        sprintTimerDisplay.textContent = `LINES: 0/40`;
-        startTime = performance.now();
-    } else {
-        sprintTimerDisplay.style.display = 'none';
-    }
-    
-    if (currentMode === 'ultra') {
-        ultraTimerDisplay.style.display = 'block';
-        ultraTimerDisplay.textContent = `TIME: 120.00s`;
-        startTime = performance.now();
-    } else {
-        ultraTimerDisplay.style.display = 'none';
-    }
-    
-    generateNewPiece();
-    
-    startCountdown.style.display = 'flex';
-    let countdown = 3;
-    startCountdown.textContent = countdown;
-    const countdownInterval = setInterval(() => {
-        countdown--;
-        startCountdown.textContent = countdown;
-        if (countdown === 0) {
-            startCountdown.textContent = 'GO!';
-        } else if (countdown < 0) {
-            clearInterval(countdownInterval);
-            startCountdown.style.display = 'none';
-            gameLoop(performance.now());
-            playBackgroundMusic();
-        }
-    }, 1000);
-}
-
-function endGame(manual=false, fromHome=false) {
-    gameOver = true;
-    cancelAnimationFrame(animationFrameId);
-    pauseBackgroundMusic();
-    gameOverSound.currentTime = 0;
-    gameOverSound.play().catch(e => console.error("Greška pri puštanju gameOver zvuka:", e));
-    
-    const finalScore = score;
-    
-    if (finalScore > bestScore) {
-        bestScore = finalScore;
-        localStorage.setItem('bestScore', bestScore);
-        document.getElementById('best-score-display-start').textContent = `Best Score: ${bestScore}`;
-        bestScoreDisplay.textContent = `${bestScore}`;
-    }
-    
-    finalScoreDisplay.textContent = finalScore;
-    
-    finalStatsDisplay.innerHTML = '';
-    
-    if (currentMode === 'sprint') {
-        const sprintTime = (performance.now() - startTime) / 1000;
-        finalStatsDisplay.innerHTML = `Vreme: ${sprintTime.toFixed(2)}s<br>Linije: ${linesClearedTotal}/${sprintLinesToClear}`;
-        if (linesClearedTotal >= sprintLinesToClear) {
-            finalStatsDisplay.textContent = `Vreme: ${sprintTime.toFixed(2)}s`;
-        } else {
-            document.getElementById('game-over-text').textContent = "IGRA PREKINUTA";
-            finalStatsDisplay.textContent = `Niste očistili ${sprintLinesToClear} linija.`;
-        }
-        continueButton.style.display = 'none';
-    } else if (currentMode === 'ultra') {
-        const ultraFinalTime = (performance.now() - startTime) / 1000;
-        finalStatsDisplay.textContent = `Vreme: ${ultraFinalTime.toFixed(2)}s`;
-        continueButton.style.display = 'none';
-    } else {
-        finalStatsDisplay.textContent = '';
-        continueButton.style.display = 'none';
-    }
-    
-    sprintTimerDisplay.style.display = 'none';
-    ultraTimerDisplay.style.display = 'none';
-
-    gameOverScreen.style.display = 'flex';
-    
-    if (fromHome) {
-        gameOverScreen.style.display = 'none';
-        startScreen.style.display = 'flex';
-    }
-}
-
-function togglePause() {
-    if (gameOver) return;
-    isPaused = !isPaused;
-    if (isPaused) {
-        pauseScreen.style.display = 'flex';
-        cancelAnimationFrame(animationFrameId);
-        pauseBackgroundMusic();
-    } else {
-        pauseScreen.style.display = 'none';
-        gameLoop(performance.now());
-        playBackgroundMusic();
-    }
-}
-
-function showExitModal() {
-    if (gameOver) return;
-    togglePause();
-    exitModal.style.display = 'block';
-}
-
-function draw() {
-    drawBoard();
-    drawGhostPiece();
-    drawCurrentPiece();
-}
-
-function moveDown() {
-    if (isValidMove(0, 1, currentPiece.shape)) {
-        currentPiece.y++;
-    } else {
-        mergePiece();
-    }
-}
-
-function removeLines() {
-    linesToClear.sort((a,b) => a-b);
-    for (const r of linesToClear.reverse()) {
-        board.splice(r, 1);
-        board.unshift(Array(COLS).fill(0));
-    }
-}
-
-function drawFlashLines(elapsedTime) {
-    const progress = elapsedTime / animationDuration;
-    let flashOpacity;
-    if (progress < 0.5) {
-        flashOpacity = progress * 2; 
-    } else {
-        flashOpacity = (1 - progress) * 2;
-    }
-
-    ctx.save();
-    ctx.globalAlpha = flashOpacity;
-    ctx.fillStyle = THEMES[currentTheme].flashColor;
-    
-    linesToClear.forEach(r => {
-        ctx.fillRect(0, r * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE);
-    });
-    ctx.restore();
-}
-
-function clearLinesAnimated() {
-    isAnimating = true;
-    animationStart = performance.now();
-}
-
-function handleKeydown(e) {
-    if (gameOver || isPaused || !currentPiece) return;
-
-    if (e.key === keyBindings.left) {
-        if (isValidMove(-1, 0, currentPiece.shape)) {
-            currentPiece.x--;
-            draw();
-        }
-    } else if (e.key === keyBindings.right) {
-        if (isValidMove(1, 0, currentPiece.shape)) {
-            currentPiece.x++;
-            draw();
-        }
-    } else if (e.key === keyBindings.down) {
-        if (isValidMove(0, 1, currentPiece.shape)) {
-            currentPiece.y++;
-            lastDropTime = performance.now();
-            draw();
-        } else {
-            mergePiece();
-        }
-    } else if (e.key === keyBindings.rotate) {
-        rotatePiece();
-        draw();
-    } else if (e.key === keyBindings.drop) {
-        e.preventDefault();
-        dropPiece();
-    } else if (e.key === keyBindings.bomb) {
-        useBombAssist();
-    } else if (e.key === keyBindings.hammer) {
-        toggleHammerMode();
-    } else if (e.key === keyBindings.undo) {
-        useUndoAssist();
-    }
-}
-
-function showCombo(comboCount) {
-    const comboDisplay = document.getElementById('combo-display');
-    if (!comboDisplay) return;
-    
-    comboDisplay.style.display = 'block';
-    comboDisplay.textContent = `COMBO x${comboCount}`;
-    comboDisplay.style.animation = 'comboFlash 0.5s forwards';
-    setTimeout(() => {
-        comboDisplay.style.display = 'none';
-        comboDisplay.style.animation = '';
-    }, 1000);
-}
-
-document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
+window.addEventListener('load', initDOMAndEventListeners);
