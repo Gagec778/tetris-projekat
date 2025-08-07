@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="background-image"></div>
     <div id="main-game-wrapper">
-        <div id="background-image"></div>
         <div id="info-section">
             <div id="next-block-container" class="info-panel">
                 <div class="panel-header">Next:</div>
@@ -27,150 +27,115 @@
                 <div id="ultra-timer" class="stat-line" style="display: none;">TIME: 0.00s</div>
             </div>
 
-            <div id="right-controls" class="info-panel">
-                <button id="home-button" class="btn">🏠</button>
-                <button id="pause-button" class="btn">II</button>
+            <div id="right-controls">
+                <button id="pause-button" class="btn">Pause</button>
+                <button id="home-button" class="btn">Home</button>
             </div>
         </div>
-        
-        <canvas id="gameCanvas" style="touch-action: none;"></canvas>
 
-        <div id="assists-panel" class="info-panel">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="assists-panel">
             <div id="assist-content-wrapper">
                 <div class="assist-item">
-                    <button id="assist-bomb-button" class="btn assist-btn">
-                        <span class="bomb-icon">💣</span>
-                    </button>
+                    <button id="assist-bomb-button" class="assist-btn">💣</button>
                     <span id="assists-bomb-count" class="count">0</span>
                 </div>
                 <div class="assist-item">
-                    <button id="assist-hammer-button" class="btn assist-btn">
-                        <span class="hammer-icon">🔨</span>
-                    </button>
+                    <button id="assist-hammer-button" class="assist-btn">🔨</button>
                     <span id="assists-hammer-count" class="count">0</span>
                 </div>
                 <div class="assist-item">
-                    <button id="assist-undo-button" class="btn assist-btn">
-                        <span class="undo-icon">↩️</span>
-                    </button>
+                    <button id="assist-undo-button" class="assist-btn">↩️</button>
                     <span id="assists-undo-count" class="count">0</span>
                 </div>
             </div>
         </div>
-        
-        <div id="combo-display"></div>
     </div>
-
+    
     <div id="start-screen" class="overlay">
         <h1>PROJEKAT PUZZLE</h1>
-        <div id="mode-selector-container">
-            <label for="mode-selector" style="font-size: 0.8em;">Mod igre:</label>
-            <select id="mode-selector">
-                <option value="classic">Classic Mode</option>
-                <option value="sprint">Sprint 40</option>
-                <option value="zen">Zen Mode</option>
-                <option value="marathon">Marathon</option>
-                <option value="ultra">Ultra 2min</option>
-            </select>
-        </div>
-        <div id="theme-switcher-container">
-            <label for="theme-switcher" style="font-size: 0.8em;">Theme:</label>
-            <select id="theme-switcher">
+        <div id="best-score-display-start">Best Score: 0</div>
+        <div class="modal-content">
+            <h2>Odaberi mod igre</h2>
+            <select id="mode-selector" class="btn">
                 <option value="classic">Classic</option>
-                <option value="dark">Dark</option>
-                <option value="forest">Forest</option>
-                <option value="modern">Modern</option>
-                <option value="lava">Lava</option>
+                <option value="sprint">Sprint (40 linija)</option>
+                <option value="ultra">Ultra (120s)</option>
             </select>
+            <button id="start-button" class="btn">Start</button>
         </div>
-        <button id="controls-button">Podesi kontrole</button>
-        <p>Pritisni dugme da započneš igru!</p>
-        <button id="start-button">Pokreni Igru</button>
-    </div>
-
-    <div id="start-countdown" class="overlay" style="display:none; font-size: 4em; color: var(--main-color);">3</div>
-
-    <div id="game-over-screen" class="overlay" style="display: none;">
-        <h1 id="game-over-title">GAME OVER</h1>
-        <div id="final-score-container">
-            <h2 style="margin-bottom: 5px;">Final Score:</h2>
-            <p id="final-score" class="golden-frame">0</p>
-        </div>
-        <div id="final-time-container">
-            <h2 style="margin-bottom: 5px;">Time:</h2>
-            <p id="final-time" class="stat-line">0.00s</p>
-        </div>
-        <div id="controls-panel">
-            <button id="restart-button" class="btn">Igraj ponovo</button>
-            <button id="continue-button" class="btn" style="display: none;">Nastavi</button>
-        </div>
+        <button id="controls-button" class="btn">Kontrole</button>
     </div>
 
     <div id="pause-screen" class="overlay" style="display: none;">
         <h1>PAUSE</h1>
-        <button id="resume-button" class="btn">Nastavi Igru</button>
-        <button id="home-button-pause" class="btn">Vrati se na početak</button>
+        <button id="resume-button" class="btn">Nastavi</button>
+        <button id="home-button-pause" class="btn">Početni ekran</button>
     </div>
 
-    <div id="exit-modal" class="modal" style="display: none;">
+    <div id="game-over-screen" class="overlay" style="display: none;">
+        <h1 id="game-over-text">GAME OVER</h1>
+        <h2>Vaš rezultat: <span id="final-score">0</span></h2>
+        <h2 class="stat-line" style="display: none;">Vreme: <span id="final-time">0.00s</span></h2>
+        <button id="restart-button" class="btn">Počni ponovo</button>
+        <button id="continue-button" class="btn" style="display: none;">Nastavi</button>
+    </div>
+
+    <div id="start-countdown" class="overlay" style="display: none;"></div>
+
+    <div id="exit-modal" class="modal">
         <div class="modal-content">
-            <p>Da li si siguran da želiš da se vratiš na početni ekran?</p>
+            <h2>Da li ste sigurni?</h2>
+            <p>Sva napredak u igri će biti izgubljen.</p>
             <div class="modal-buttons">
                 <button id="confirm-exit-button" class="btn">Da</button>
                 <button id="cancel-exit-button" class="btn">Ne</button>
             </div>
         </div>
     </div>
-
-    <div id="controls-modal" class="modal" style="display: none;">
+    
+    <div id="controls-modal" class="modal">
         <div class="modal-content">
-            <h2>Podesi kontrole</h2>
+            <h2>Kontrole</h2>
             <div class="controls-list">
                 <div class="control-item">
-                    <label for="control-left">Levo:</label>
-                    <input type="text" id="control-left" data-action="left" readonly>
+                    <span>Levo:</span><input type="text" data-action="left" readonly>
                 </div>
                 <div class="control-item">
-                    <label for="control-right">Desno:</label>
-                    <input type="text" id="control-right" data-action="right" readonly>
+                    <span>Desno:</span><input type="text" data-action="right" readonly>
                 </div>
                 <div class="control-item">
-                    <label for="control-down">Dole:</label>
-                    <input type="text" id="control-down" data-action="down" readonly>
+                    <span>Spusti:</span><input type="text" data-action="down" readonly>
                 </div>
                 <div class="control-item">
-                    <label for="control-rotate">Rotiraj:</label>
-                    <input type="text" id="control-rotate" data-action="rotate" readonly>
+                    <span>Rotiraj:</span><input type="text" data-action="rotate" readonly>
                 </div>
                 <div class="control-item">
-                    <label for="control-drop">Drop:</label>
-                    <input type="text" id="control-drop" data-action="drop" readonly>
+                    <span>Hard Drop:</span><input type="text" data-action="drop" readonly>
                 </div>
                 <div class="control-item">
-                    <label for="control-bomb">Bomba:</label>
-                    <input type="text" id="control-bomb" data-action="bomb" readonly>
+                    <span>Bomba:</span><input type="text" data-action="bomb" readonly>
                 </div>
                 <div class="control-item">
-                    <label for="control-hammer">Čekić:</label>
-                    <input type="text" id="control-hammer" data-action="hammer" readonly>
+                    <span>Čekić:</span><input type="text" data-action="hammer" readonly>
                 </div>
                 <div class="control-item">
-                    <label for="control-undo">Poništi:</label>
-                    <input type="text" id="control-undo" data-action="undo" readonly>
+                    <span>Poništi:</span><input type="text" data-action="undo" readonly>
                 </div>
             </div>
-            <button id="close-controls-modal" class="btn">Zatvori</button>
+            <button id="close-controls-modal">Zatvori</button>
         </div>
     </div>
-
-    <audio id="dropSound" src="sounds/drop.mp3"></audio>
-    <audio id="clearSound" src="sounds/clear.mp3"></audio>
-    <audio id="rotateSound" src="sounds/rotate.mp3"></audio>
-    <audio id="gameOverSound" src="sounds/gameOver.mp3"></audio>
-    <audio id="tSpinSound" src="sounds/t-spin.mp3"></audio>
-    <audio id="tetrisSound" src="sounds/tetris.mp3"></audio>
-    <audio id="backgroundMusic" src="sounds/background-music.mp3"></audio>
-    <audio id="bombSound" src="sounds/bomb.mp3"></audio>
+    
+    <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
+    <audio id="clearSound" src="sounds/clear.wav" preload="auto"></audio>
+    <audio id="rotateSound" src="sounds/rotate.wav" preload="auto"></audio>
+    <audio id="gameOverSound" src="sounds/gameover.wav" preload="auto"></audio>
+    <audio id="tSpinSound" src="sounds/tspin.wav" preload="auto"></audio>
+    <audio id="tetrisSound" src="sounds/tetris.wav" preload="auto"></audio>
+    <audio id="bombSound" src="sounds/bomb.wav" preload="auto"></audio>
+    <audio id="backgroundMusic" src="sounds/background.mp3" preload="auto"></audio>
 
     <script src="script.js"></script>
 </body>
