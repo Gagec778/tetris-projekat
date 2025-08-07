@@ -70,24 +70,33 @@ let TOUCH_MOVE_THRESHOLD_X;
 let TOUCH_MOVE_THRESHOLD_Y;
 let TAP_THRESHOLD;
 
-// IZMENA: Najpouzdanija verzija funkcije do sada
+// IZMENA: Finalna verzija funkcije za veličinu kanvasa
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) return;
 
-    // Pročitamo dimenzije kontejnera koje je CSS postavio
     const containerWidth = canvasContainer.clientWidth;
     const containerHeight = canvasContainer.clientHeight;
     
-    // Izračunamo veličinu bloka na osnovu manjeg ograničenja (širine ili visine)
-    // da bi se sačuvao odnos 10x20
-    const blockSizeW = containerWidth / COLS;
-    const blockSizeH = containerHeight / ROWS;
-    BLOCK_SIZE = Math.floor(Math.min(blockSizeW, blockSizeH));
+    // FIX 2: Veličina bloka se sada bazira na širini kontejnera kao glavnom faktoru
+    BLOCK_SIZE = Math.floor(containerWidth / COLS);
 
+    // Izračunamo visinu table na osnovu nove veličine bloka da sačuvamo kvadrate
+    const newCanvasHeight = ROWS * BLOCK_SIZE;
+
+    // Proverimo da li izračunata visina staje u kontejner. Ako ne staje, smanjujemo BLOCK_SIZE na osnovu visine.
+    if (newCanvasHeight > containerHeight) {
+        BLOCK_SIZE = Math.floor(containerHeight / ROWS);
+    }
+    
     // Postavimo INTERNU rezoluciju kanvasa za crtanje
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
+    
+    // Postavimo i vizuelnu veličinu da bi se pravilno prikazalo unutar flex kontejnera
+    canvas.style.width = `${canvas.width}px`;
+    canvas.style.height = `${canvas.height}px`;
+
 
     // Ažuriramo i kanvas za sledeći blok
     const sideCanvasSize = Math.floor(BLOCK_SIZE * 4.5);
@@ -237,7 +246,7 @@ function initDOMAndEventListeners() {
         if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             movePiece(dx > 0 ? 1 : -1);
             lastTouchX = currentTouchX;
-            draw(); // Iscrtaj odmah za bolji odziv
+            draw(); 
         }
         const dy = currentTouchY - lastTouchY;
         if (dy > TOUCH_MOVE_THRESHOLD_Y && dy > Math.abs(dx)) {
