@@ -42,19 +42,12 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 10px;
-    width: 98vw;
-    height: 98vh;
-    min-width: 300px;
+    /* Uklonjena fiksna širina i visina, sada se prilagođava automatski */
+    max-width: 98vw;
+    max-height: 98vh;
     box-sizing: border-box;
     position: relative;
     transition: all 0.3s ease-in-out;
-    aspect-ratio: 1 / 1.5;
-}
-
-@media (min-width: 600px) {
-    #main-game-wrapper {
-        width: auto;
-    }
 }
 
 .screen-shake {
@@ -209,9 +202,8 @@ canvas#gameCanvas {
     background-color: var(--board-bg-color);
     display: block;
     border-radius: 5px;
-    flex-grow: 1;
-    width: 100%;
-    height: 100%;
+    /* Uklonjene fiksne širine i visine */
+    flex-grow: 1; /* Omogućava da se Canvas element prilagodi dostupnom prostoru */
 }
 .hammer-mode-cursor {
     cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="fill:%23fff;"><text x="0" y="24" font-size="24">🔨</text></svg>') 16 16, pointer;
