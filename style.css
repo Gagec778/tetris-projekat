@@ -43,9 +43,6 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 10px;
-    /* OVE VREDNOSTI SU IZMENJENE! */
-    width: 100%;
-    height: 100%;
     max-width: 600px;
     max-height: 900px;
     box-sizing: border-box;
@@ -329,9 +326,6 @@ canvas#gameCanvas {
 #game-over-screen button {
     margin-top: 20px;
     font-size: 1.2em;
-}
-#game-over-screen .stat-line {
-    font-size: 1em;
 }
 #pause-screen {
     font-size: 2em;
