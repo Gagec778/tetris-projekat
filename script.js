@@ -11,7 +11,7 @@ const THEMES = {
         lineColor: '#61dafb',
         blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000'],
         flashColor: '#FFFFFF',
-        gridColor: '#333333',
+        gridColor: '#4d4d4d',
         backgroundImage: null
     },
     'dark': {
@@ -20,7 +20,7 @@ const THEMES = {
         lineColor: '#999999',
         blockColors: ['#00FFFF', '#3366FF', '#FF9933', '#FFFF00', '#33CC66', '#9966CC', '#FF3333'],
         flashColor: '#CCCCCC',
-        gridColor: '#333333',
+        gridColor: '#666666',
         backgroundImage: null
     },
     'forest': {
@@ -29,7 +29,7 @@ const THEMES = {
         lineColor: '#b4cf66',
         blockColors: ['#66FFB2', '#339966', '#FF9900', '#FFFF66', '#33CC66', '#9966CC', '#FF3333'],
         flashColor: '#E0FF8C',
-        gridColor: '#4d6451',
+        gridColor: '#6d8471',
         backgroundImage: 'url("images/forest-bg.jpg")'
     },
     'modern': {
@@ -38,7 +38,7 @@ const THEMES = {
         lineColor: '#bb86fc',
         blockColors: ['#03dac6', '#cf6679', '#f3a469', '#f0e68c', '#aaff00', '#8c5eff', '#e74c3c'],
         flashColor: '#ffffff',
-        gridColor: '#3d3d3d',
+        gridColor: '#6d6d6d',
         backgroundImage: 'url("images/modern-bg.jpg")'
     },
     'lava': {
@@ -47,7 +47,7 @@ const THEMES = {
         lineColor: '#FF4500',
         blockColors: ['#FFD700', '#FF4500', '#FF1493', '#FF6347', '#FF8C00', '#DC143C', '#B22222'],
         flashColor: '#FF6347',
-        gridColor: '#660000',
+        gridColor: '#880000',
         backgroundImage: 'url("images/lava-bg.jpg")'
     }
 };
@@ -136,11 +136,9 @@ function setCanvasSize() {
     const availableWidth = wrapper.clientWidth - 20;
     const availableHeight = wrapper.clientHeight - infoSection.offsetHeight - assistsPanel.offsetHeight - 20;
 
-    let tempBlockSize = Math.floor(Math.min(availableWidth / COLS, availableHeight / ROWS));
+    const tempBlockSize = Math.floor(Math.min(availableWidth / COLS, availableHeight / ROWS));
     
-    BLOCK_SIZE = Math.max(12, Math.min(tempBlockSize, 40));
-
-    root.style.setProperty('--block-size', `${BLOCK_SIZE}px`);
+    BLOCK_SIZE = Math.max(12, tempBlockSize);
 
     canvas.width = COLS * BLOCK_SIZE;
     canvas.height = ROWS * BLOCK_SIZE;
@@ -225,7 +223,7 @@ function initDOMAndEventListeners() {
     homeButton.addEventListener('click', showExitModal);
     confirmExitButton.addEventListener('click', () => {
         exitModal.style.display = 'none';
-        endGame();
+        endGame(false, true);
     });
     cancelExitButton.addEventListener('click', () => {
         exitModal.style.display = 'none';
@@ -563,7 +561,7 @@ function drawBoard() {
     // Draw grid lines
     ctx.strokeStyle = THEMES[currentTheme].gridColor;
     ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = 0.8;
     for (let i = 0; i <= COLS; i++) {
         ctx.beginPath();
         ctx.moveTo(i * BLOCK_SIZE, 0);
@@ -948,10 +946,16 @@ function draw() {
     drawCurrentPiece();
 }
 
-function endGame(isSprintWin = false) {
+function endGame(isSprintWin = false, exitToMainMenu = false) {
     gameOver = true;
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     pauseBackgroundMusic();
+
+    if (exitToMainMenu) {
+        startScreen.style.display = 'flex';
+        gameOverScreen.style.display = 'none';
+        return;
+    }
     
     if (isSprintWin) {
         finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`;
