@@ -65,7 +65,6 @@ let dasTimer = null;
 let arrTimer = null;
 let moveDirection = 0;
 
-// Varijabla za glatko klizanje
 let visualOffsetX = 0;
 
 // DOM elementi
@@ -75,8 +74,9 @@ let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
 
-let TOUCH_MOVE_THRESHOLD_Y;
-let TAP_THRESHOLD;
+// IZMENA: Pragovi osetljivosti
+let TAP_THRESHOLD;       // Maksimalna distanca za TAP
+let DROP_THRESHOLD;      // Minimalna distanca za HARD DROP
 
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
@@ -102,8 +102,9 @@ function setCanvasSize() {
         nextBlockCanvas.width = nextBlockCanvas.clientWidth;
         nextBlockCanvas.height = nextBlockCanvas.clientHeight;
 
-        TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5; // Vraćeno na razumnu vrednost
-        TAP_THRESHOLD = BLOCK_SIZE;
+        // IZMENA: Definicija pragova osetljivosti
+        TAP_THRESHOLD = BLOCK_SIZE * 0.8; // Smanjena "mrtva zona" za tap. I najmanje prevlačenje će biti slajd.
+        DROP_THRESHOLD = BLOCK_SIZE * 2.5;  // Povećana distanca potrebna za hard drop.
 
         if (!gameOver) {
             draw();
@@ -200,11 +201,9 @@ function initDOMAndEventListeners() {
     themeSwitcher.value = savedTheme;
     loadKeyBindings();
     
-    // ------------------------------------------------------------------------------------
-    // IZMENA: Konačna logika za kontrole koja rešava SAMO dva navedena problema
-    // ------------------------------------------------------------------------------------
+    // IZMENA: Logika za kontrole sa novim pragovima osetljivosti
     let touchStartX = 0, touchStartY = 0;
-    let gestureIntent = null; // null, 'slide', or 'drop'
+    let gestureIntent = null; 
     
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
@@ -212,7 +211,7 @@ function initDOMAndEventListeners() {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         visualOffsetX = 0;
-        gestureIntent = null; // Resetujemo nameru na svakom novom dodiru
+        gestureIntent = null;
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
@@ -224,21 +223,19 @@ function initDOMAndEventListeners() {
         const totalDeltaX = currentTouchX - touchStartX;
         const totalDeltaY = currentTouchY - touchStartY;
 
-        // Odlučujemo koja je namera pokreta, ali samo jednom
-        if (gestureIntent === null && (Math.abs(totalDeltaX) > TAP_THRESHOLD || totalDeltaY > TAP_THRESHOLD)) {
-            // Ako je horizontalni pokret veći, namera je KLIZANJE
-            if (Math.abs(totalDeltaX) > totalDeltaY) {
-                gestureIntent = 'slide';
-            } else { // Inače, namera je SPUŠTANJE
+        if (gestureIntent === null) {
+            // Prvo proveravamo da li je jasan pokret za hard drop
+            if (totalDeltaY > DROP_THRESHOLD && totalDeltaY > Math.abs(totalDeltaX)) {
                 gestureIntent = 'drop';
+            } 
+            // Zatim proveravamo da li je pokret veći od "tap" zone
+            else if (Math.abs(totalDeltaX) > TAP_THRESHOLD || totalDeltaY > TAP_THRESHOLD) {
+                gestureIntent = 'slide';
             }
         }
 
-        // Ponašamo se u skladu sa namerom
         if (gestureIntent === 'slide') {
             const potentialNewGridX = Math.round((currentPiece.x * BLOCK_SIZE + totalDeltaX) / BLOCK_SIZE);
-            
-            // Proveravamo da li je nova logička pozicija validna pre nego što dozvolimo vizuelni pomeraj
             if (isValidMove(potentialNewGridX - currentPiece.x, 0, currentPiece.shape)) {
                 visualOffsetX = totalDeltaX;
             }
@@ -251,20 +248,16 @@ function initDOMAndEventListeners() {
         if (gameOver || isPaused || !currentPiece) return;
         
         if (gestureIntent === 'drop') {
-            // Ako je namera bila spuštanje, izvrši Hard Drop
             dropPiece();
         } else if (gestureIntent === 'slide') {
-            // Ako je namera bila klizanje, fiksiraj figuru na najbližu validnu poziciju
             const movedCols = Math.round(visualOffsetX / BLOCK_SIZE);
             if (movedCols !== 0 && isValidMove(movedCols, 0, currentPiece.shape)) {
                 currentPiece.x += movedCols;
             }
-        } else {
-            // Ako namera nije ni određena (bio je prekratak dodir), to je TAP za rotaciju
+        } else { // Ako namera nije odlučena, bio je tap
             rotatePiece();
         }
         
-        // Resetujemo vizuelni pomeraj i iscrtavamo konačno stanje
         visualOffsetX = 0;
         draw();
     });
@@ -344,8 +337,6 @@ function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
 }
 function lightenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.min(255, r + a); g = Math.min(255, g + a); b = Math.min(255, b + a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
 function darkenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.max(0, r - a); g = Math.max(0, g - a); b = Math.max(0, b - a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
-
-// Senka ostaje "seckava" jer si rekao da radi savršeno - ne diramo je!
 function drawGhostPiece() {
     if (!currentPiece) return;
     
