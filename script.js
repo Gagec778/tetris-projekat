@@ -70,7 +70,6 @@ let TOUCH_MOVE_THRESHOLD_X;
 let TOUCH_MOVE_THRESHOLD_Y;
 let TAP_THRESHOLD;
 
-
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) return;
@@ -97,7 +96,7 @@ function setCanvasSize() {
         nextBlockCanvas.height = sideCanvasSize;
 
         TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
-        TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE; // Smanjujemo prag za detekciju vertikalnog pokreta
+        TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE;
         TAP_THRESHOLD = BLOCK_SIZE * 0.5;
 
         if (!gameOver) {
@@ -206,11 +205,18 @@ function initDOMAndEventListeners() {
     }
 
     const storedAssists = JSON.parse(localStorage.getItem('assists'));
-    if (storedAssists) assists = storedAssists;
-    else {
+    if (storedAssists) {
+        assists = storedAssists;
+    } else {
         assists = { bomb: 0, hammer: 0, undo: 0 };
-        localStorage.setItem('assists', JSON.stringify(assists));
     }
+    
+    // --- TEST KOD ---
+    // Dajemo jednu bombu na početku da bismo testirali da li se novi script.js učitao.
+    assists.bomb = 1; 
+    localStorage.setItem('assists', JSON.stringify(assists)); // Odmah snimamo da bude sigurno
+    // --- KRAJ TEST KODA ---
+
     updateAssistsDisplay();
     
     const savedTheme = localStorage.getItem('theme') || 'classic';
@@ -219,9 +225,8 @@ function initDOMAndEventListeners() {
 
     loadKeyBindings();
     
-    // IZMENA: Finalna, "zaključana" logika za kontrole na dodir
     let touchStartX = 0, touchStartY = 0, lastTouchX = 0;
-    let isSwipeLocked = false; // Nova varijabla za "zaključavanje"
+    let isSwipeLocked = false;
     
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
@@ -229,7 +234,7 @@ function initDOMAndEventListeners() {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         lastTouchX = touchStartX;
-        isSwipeLocked = false; // Resetujemo zaključavanje na svakom novom dodiru
+        isSwipeLocked = false;
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
@@ -239,14 +244,12 @@ function initDOMAndEventListeners() {
         const currentTouchX = e.touches[0].clientX;
         const currentTouchY = e.touches[0].clientY;
         const dx = currentTouchX - lastTouchX;
-        const totalDy = currentTouchY - touchStartY; // Gledamo ukupan vertikalni pokret od početka
+        const totalDy = currentTouchY - touchStartY;
 
-        // Ako je pokret dominantno na dole, zaključaj horizontalno pomeranje
         if (totalDy > TOUCH_MOVE_THRESHOLD_Y && !isSwipeLocked) {
             isSwipeLocked = true;
         }
 
-        // Pomeraj levo-desno je dozvoljen SAMO ako nismo u "zaključanom" (drop) modu
         if (!isSwipeLocked && Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             movePiece(dx > 0 ? 1 : -1);
             lastTouchX = currentTouchX;
@@ -262,11 +265,9 @@ function initDOMAndEventListeners() {
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
         
-        // Ako je bio brz i dug prevlačenje na dole -> Hard Drop
         if (dy > TOUCH_MOVE_THRESHOLD_Y * 2 && dy > Math.abs(dx)) {
             dropPiece();
         } 
-        // Ako je bio kratak dodir (tap) -> Rotacija
         else if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
             rotatePiece();
         }
@@ -277,6 +278,8 @@ function initDOMAndEventListeners() {
     setCanvasSize();
     startScreen.style.display = 'flex';
 }
+
+// Ostatak koda je nepromenjen...
 
 function playBackgroundMusic() {
     if (!backgroundMusicPlaying) {
@@ -467,7 +470,14 @@ function endGame(isSprintWin = false, exitToMainMenu = false) {
 }
 function startGame() {
     initBoard(); score = 0; level = 1; linesClearedTotal = 0; linesClearedThisLevel = 0; dropInterval = 1000;
-    updateScoreDisplay(); updateLevelDisplay(); updateAssistsDisplay(); startTime = performance.now();
+    updateScoreDisplay(); updateLevelDisplay();
+    // Vraćamo assistove na ono što je sačuvano za početak prave igre
+    const storedAssists = JSON.parse(localStorage.getItem('assists'));
+     if (storedAssists) {
+        assists = storedAssists;
+    }
+    updateAssistsDisplay(); 
+    startTime = performance.now();
     sprintTimerDisplay.style.display = currentMode === 'sprint' ? 'block' : 'none';
     ultraTimerDisplay.style.display = currentMode === 'ultra' ? 'block' : 'none';
     startScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; pauseScreen.style.display = 'none';
