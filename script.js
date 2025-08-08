@@ -70,45 +70,36 @@ let TOUCH_MOVE_THRESHOLD_X;
 let TOUCH_MOVE_THRESHOLD_Y;
 let TAP_THRESHOLD;
 
-// IZMENA: Konačna verzija funkcije za veličinu koja rešava problem preklapanja
+
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) return;
 
-    // requestAnimationFrame osigurava da je CSS layout završen pre merenja
     requestAnimationFrame(() => {
         const containerWidth = canvasContainer.clientWidth;
         const containerHeight = canvasContainer.clientHeight;
         
-        // Izračunamo veličinu bloka na osnovu manjeg ograničenja (širine ili visine)
-        // da bi se sačuvali kvadratni blokovi i da sve stane u kontejner
         const blockSizeW = containerWidth / COLS;
         const blockSizeH = containerHeight / ROWS;
         BLOCK_SIZE = Math.floor(Math.min(blockSizeW, blockSizeH));
 
-        // Postavimo INTERNU rezoluciju kanvasa za crtanje
         const canvasWidth = COLS * BLOCK_SIZE;
         const canvasHeight = ROWS * BLOCK_SIZE;
 
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
 
-        // Postavimo i vizuelnu veličinu da bi se pravilno prikazalo unutar flex kontejnera
-        // Ovo je važno ako kanvas ne zauzima 100% kontejnera (npr. zbog aspect-ratio)
         canvas.style.width = `${canvasWidth}px`;
         canvas.style.height = `${canvasHeight}px`;
 
-        // Ažuriramo i kanvas za sledeći blok
         const sideCanvasSize = Math.floor(BLOCK_SIZE * 4.5);
         nextBlockCanvas.width = sideCanvasSize;
         nextBlockCanvas.height = sideCanvasSize;
 
-        // Ažuriramo pragove za dodir na osnovu veličine bloka
         TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
         TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
         TAP_THRESHOLD = BLOCK_SIZE * 0.5;
 
-        // Ponovo iscrtavamo sve ako igra traje
         if (!gameOver) {
             draw();
             drawNextPiece();
@@ -228,42 +219,51 @@ function initDOMAndEventListeners() {
 
     loadKeyBindings();
     
-    let touchStartX = 0, touchStartY = 0, lastTouchX = 0, lastTouchY = 0;
+    // IZMENA: Kompletno nova, bolja logika za kontrole na dodir
+    let touchStartX = 0, touchStartY = 0, lastTouchX = 0;
+    
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
         e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         lastTouchX = touchStartX;
-        lastTouchY = touchStartY;
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
         if (gameOver || isPaused || !currentPiece) return;
         e.preventDefault();
+        
         const currentTouchX = e.touches[0].clientX;
-        const currentTouchY = e.touches[0].clientY;
         const dx = currentTouchX - lastTouchX;
+        
+        // Tokom prevlačenja, radi samo horizontalno pomeranje
         if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             movePiece(dx > 0 ? 1 : -1);
             lastTouchX = currentTouchX;
-            draw(); 
-        }
-        const dy = currentTouchY - lastTouchY;
-        if (dy > TOUCH_MOVE_THRESHOLD_Y && dy > Math.abs(dx)) {
-            movePieceDown();
-            lastTouchY = currentTouchY;
+            draw();
         }
     }, { passive: false });
 
     canvas.addEventListener('touchend', e => {
         if (gameOver || isPaused || !currentPiece) return;
+        
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
-        if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) rotatePiece();
-        else if (dy > BLOCK_SIZE * 3 && dy > Math.abs(dx)) dropPiece();
+        
+        // Odluka se donosi na kraju pokreta
+        
+        // Ako je bio brz i dug prevlačenje na dole -> Hard Drop
+        if (dy > TOUCH_MOVE_THRESHOLD_Y * 2 && dy > Math.abs(dx)) {
+            dropPiece();
+        } 
+        // Ako je bio kratak dodir (tap) -> Rotacija
+        else if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
+            rotatePiece();
+        }
+        
         draw();
     });
 
