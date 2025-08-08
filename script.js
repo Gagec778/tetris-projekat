@@ -103,7 +103,6 @@ function setCanvasSize() {
         nextBlockCanvas.height = nextBlockCanvas.clientHeight;
 
         TAP_DISTANCE_THRESHOLD = BLOCK_SIZE * 0.8; 
-        // IZMENA: Smanjen prag za Hard Drop da bude osetljiviji
         DROP_DISTANCE_THRESHOLD = BLOCK_SIZE * 1.5;  
 
         if (!gameOver) {
@@ -201,7 +200,11 @@ function initDOMAndEventListeners() {
     themeSwitcher.value = savedTheme;
     loadKeyBindings();
     
+    // ------------------------------------------------------------------------------------
+    // IZMENA: Finalna logika za touch kontrole koja rešava SVE finese
+    // ------------------------------------------------------------------------------------
     let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+    let gestureIntent = null; // null, 'slide', or 'drop'
     
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
@@ -210,6 +213,7 @@ function initDOMAndEventListeners() {
         touchStartY = e.touches[0].clientY;
         touchStartTime = performance.now();
         visualOffsetX = 0;
+        gestureIntent = null;
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
@@ -217,11 +221,24 @@ function initDOMAndEventListeners() {
         e.preventDefault();
         
         const currentTouchX = e.touches[0].clientX;
+        const currentTouchY = e.touches[0].clientY;
         const totalDeltaX = currentTouchX - touchStartX;
+        const totalDeltaY = currentTouchY - touchStartY;
 
-        const potentialNewGridX = Math.round((currentPiece.x * BLOCK_SIZE + totalDeltaX) / BLOCK_SIZE);
-        if (isValidMove(potentialNewGridX - currentPiece.x, 0, currentPiece.shape)) {
-            visualOffsetX = totalDeltaX;
+        // Odlučujemo koja je namera pokreta, ali samo jednom
+        if (gestureIntent === null && (Math.abs(totalDeltaX) > TAP_DISTANCE_THRESHOLD || totalDeltaY > TAP_DISTANCE_THRESHOLD)) {
+            if (totalDeltaY > DROP_DISTANCE_THRESHOLD && totalDeltaY > Math.abs(totalDeltaX)) {
+                gestureIntent = 'drop';
+            } else {
+                gestureIntent = 'slide';
+            }
+        }
+
+        if (gestureIntent === 'slide') {
+            const potentialGridX = Math.round((currentPiece.x * BLOCK_SIZE + totalDeltaX) / BLOCK_SIZE);
+            if (isValidMove(potentialGridX - currentPiece.x, 0, currentPiece.shape)) {
+                visualOffsetX = totalDeltaX;
+            }
         }
         
         draw();
@@ -230,23 +247,22 @@ function initDOMAndEventListeners() {
     canvas.addEventListener('touchend', e => {
         if (gameOver || isPaused || !currentPiece) return;
         
+        const touchDuration = performance.now() - touchStartTime;
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
         const totalDeltaX = touchEndX - touchStartX;
         const totalDeltaY = touchEndY - touchStartY;
-        const touchDuration = performance.now() - touchStartTime;
 
-        if (touchDuration < TAP_DURATION_THRESHOLD && Math.abs(totalDeltaX) < TAP_DISTANCE_THRESHOLD && Math.abs(totalDeltaY) < TAP_DISTANCE_THRESHOLD) {
-            rotatePiece();
-        }
-        else if (totalDeltaY > DROP_DISTANCE_THRESHOLD && totalDeltaY > Math.abs(totalDeltaX)) {
+        if (gestureIntent === 'drop') {
             dropPiece();
-        }
-        else {
+        } else if (gestureIntent === 'slide') {
             const movedCols = Math.round(visualOffsetX / BLOCK_SIZE);
             if (movedCols !== 0 && isValidMove(movedCols, 0, currentPiece.shape)) {
                 currentPiece.x += movedCols;
             }
+        } else if (touchDuration < TAP_DURATION_THRESHOLD) { 
+             // Ako namera nije odlučena, a dodir je bio kratak, to je TAP
+            rotatePiece();
         }
         
         visualOffsetX = 0;
@@ -257,7 +273,8 @@ function initDOMAndEventListeners() {
     startScreen.style.display = 'flex';
 }
 
-// ... ostatak koda je nepromenjen ...
+// ... ostatak koda ostaje nepromenjen ...
+
 function playBackgroundMusic() {
     if (!backgroundMusicPlaying) {
         backgroundMusic.loop = true;
@@ -329,11 +346,14 @@ function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
 }
 function lightenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.min(255, r + a); g = Math.min(255, g + a); b = Math.min(255, b + a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
 function darkenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.max(0, r - a); g = Math.max(0, g - a); b = Math.max(0, b - a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
+
+// IZMENA: Senka sada prati glatko kretanje i manje je vidljiva
 function drawGhostPiece() {
     if (!currentPiece) return;
     
     const potentialX = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
      if (!isValidMove(potentialX - currentPiece.x, 0, currentPiece.shape)) {
+        // Ne crtaj senku ako bi se sudarila na logičkoj poziciji
         return;
     }
     
@@ -342,11 +362,16 @@ function drawGhostPiece() {
         ghostY++;
     }
 
-    ctx.globalAlpha = 0.3; 
+    ctx.save();
+    ctx.translate(visualOffsetX, 0); // Pomeramo ceo svet da bi se senka crtala glatko
+    ctx.globalAlpha = 0.25; // Smanjena vidljivost
+    
+    // Crtamo na logičkoj poziciji, ali unutar pomerenog "sveta"
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(potentialX + c, ghostY + r, currentPiece.color); 
+        if (cell) drawBlock(currentPiece.x + c, ghostY + r, currentPiece.color); 
     }));
-    ctx.globalAlpha = 1.0;
+
+    ctx.restore(); // Vraćamo svet na mesto
 }
 
 
