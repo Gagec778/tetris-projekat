@@ -75,7 +75,7 @@ function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) return;
 
-    // Čekamo da browser završi sa layoutom pre merenja
+    // requestAnimationFrame osigurava da je CSS layout završen pre merenja
     requestAnimationFrame(() => {
         const containerWidth = canvasContainer.clientWidth;
         const containerHeight = canvasContainer.clientHeight;
