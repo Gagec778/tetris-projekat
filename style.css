@@ -43,7 +43,7 @@ body {
     border: 5px solid var(--border-color);
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
-    /* IZMENA: Uklonjen padding sa vrha da se panel zalepi za ivicu */
+    /* IZMENA: Padding je postavljen tako da nema razmaka na vrhu */
     padding: 0 10px 10px 10px; 
     width: 100%;
     height: 100%;
@@ -72,6 +72,7 @@ canvas#gameCanvas {
     box-shadow: 0 0 8px gold;
 }
 
+/* IZMENA: Dodata margina na vrh info panela da ga odvoji od vrha okvira */
 #info-section {
     display: flex;
     justify-content: space-between;
@@ -79,7 +80,7 @@ canvas#gameCanvas {
     width: 100%;
     gap: 10px;
     flex-shrink: 0;
-    margin-top: 10px; /* Dodajemo gornju marginu da zameni padding */
+    margin-top: 10px; /* Ovo stvara razmak od plave ivice */
 }
  
 .info-panel {
@@ -105,6 +106,7 @@ canvas#gameCanvas {
     text-align: center;
 }
 
+/* IZMENA: Smanjena visina panela */
 #next-block-container {
     min-height: 45px;
 }
@@ -233,7 +235,6 @@ canvas#gameCanvas {
     to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
 }
 
-/* Ostatak je isti i ispravan */
 #controls-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background-color: #1a1a2e; border: 3px solid var(--main-color); border-radius: 10px; padding: 20px; box-shadow: 0 0 20px rgba(97, 218, 251, 0.5); z-index: 2000; }
 .btn { padding: 8px; background-color: #e63946; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; font-family: 'Press Start 2P', cursive; }
 .btn:hover { background-color: #c72c38; }
