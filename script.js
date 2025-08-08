@@ -70,6 +70,7 @@ let TOUCH_MOVE_THRESHOLD_X;
 let TOUCH_MOVE_THRESHOLD_Y;
 let TAP_THRESHOLD;
 
+
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) return;
@@ -209,14 +210,8 @@ function initDOMAndEventListeners() {
         assists = storedAssists;
     } else {
         assists = { bomb: 0, hammer: 0, undo: 0 };
+        localStorage.setItem('assists', JSON.stringify(assists));
     }
-    
-    // --- TEST KOD ---
-    // Dajemo jednu bombu na početku da bismo testirali da li se novi script.js učitao.
-    assists.bomb = 1; 
-    localStorage.setItem('assists', JSON.stringify(assists)); // Odmah snimamo da bude sigurno
-    // --- KRAJ TEST KODA ---
-
     updateAssistsDisplay();
     
     const savedTheme = localStorage.getItem('theme') || 'classic';
@@ -226,7 +221,7 @@ function initDOMAndEventListeners() {
     loadKeyBindings();
     
     let touchStartX = 0, touchStartY = 0, lastTouchX = 0;
-    let isSwipeLocked = false;
+    let isSwipeLocked = false; 
     
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
@@ -278,8 +273,6 @@ function initDOMAndEventListeners() {
     setCanvasSize();
     startScreen.style.display = 'flex';
 }
-
-// Ostatak koda je nepromenjen...
 
 function playBackgroundMusic() {
     if (!backgroundMusicPlaying) {
@@ -360,17 +353,33 @@ function drawGhostPiece() {
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { if (cell) drawBlock(currentPiece.x + c, ghostY + r, currentPiece.color); }));
     ctx.globalAlpha = 1.0;
 }
+
 function drawPieceInCanvas(piece, context, canvasEl) {
     if (!piece || !context) return;
     context.clearRect(0, 0, canvasEl.width, canvasEl.height);
     const { shape, color } = piece;
     if (!shape) return;
+    
+    // IZMENA: Uklonjen "+ 1" da bi blok bio veći
     const maxDim = Math.max(...shape.map(r => r.length), shape.length);
-    const pieceBlockSize = Math.floor(canvasEl.width / (maxDim + 1));
-    const offsetX = (canvasEl.width - shape[0].length * pieceBlockSize) / 2;
-    const offsetY = (canvasEl.height - shape.length * pieceBlockSize) / 2;
-    shape.forEach((row, r) => row.forEach((cell, c) => { if (cell) { context.save(); context.translate(offsetX, offsetY); drawBlock(c, r, color, context, pieceBlockSize); context.restore(); } }));
+    const pieceBlockSize = Math.floor(canvasEl.width / maxDim); 
+    
+    const shapeWidth = shape.reduce((max, row) => Math.max(max, row.lastIndexOf(1) + 1), 0);
+    const shapeHeight = shape.filter(row => row.includes(1)).length;
+    
+    const offsetX = (canvasEl.width - shapeWidth * pieceBlockSize) / 2;
+    const offsetY = (canvasEl.height - shapeHeight * pieceBlockSize) / 2;
+
+    shape.forEach((row, r) => row.forEach((cell, c) => { 
+        if (cell) { 
+            context.save(); 
+            context.translate(offsetX, offsetY); 
+            drawBlock(c, r, color, context, pieceBlockSize); 
+            context.restore(); 
+        } 
+    }));
 }
+
 function drawNextPiece() { drawPieceInCanvas(nextPiece, nextBlockCtx, nextBlockCanvas); }
 
 function drawBoard() {
@@ -470,14 +479,7 @@ function endGame(isSprintWin = false, exitToMainMenu = false) {
 }
 function startGame() {
     initBoard(); score = 0; level = 1; linesClearedTotal = 0; linesClearedThisLevel = 0; dropInterval = 1000;
-    updateScoreDisplay(); updateLevelDisplay();
-    // Vraćamo assistove na ono što je sačuvano za početak prave igre
-    const storedAssists = JSON.parse(localStorage.getItem('assists'));
-     if (storedAssists) {
-        assists = storedAssists;
-    }
-    updateAssistsDisplay(); 
-    startTime = performance.now();
+    updateScoreDisplay(); updateLevelDisplay(); updateAssistsDisplay(); startTime = performance.now();
     sprintTimerDisplay.style.display = currentMode === 'sprint' ? 'block' : 'none';
     ultraTimerDisplay.style.display = currentMode === 'ultra' ? 'block' : 'none';
     startScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; pauseScreen.style.display = 'none';
