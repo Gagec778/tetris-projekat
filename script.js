@@ -360,9 +360,11 @@ function drawPieceInCanvas(piece, context, canvasEl) {
     const { shape, color } = piece;
     if (!shape) return;
     
-    // IZMENA: Uklonjen "+ 1" da bi blok bio veći
+    // IZMENA: Ispravljena formula za srazmerno prikazivanje
     const maxDim = Math.max(...shape.map(r => r.length), shape.length);
-    const pieceBlockSize = Math.floor(canvasEl.width / maxDim); 
+    const blockSizeW = canvasEl.width / maxDim;
+    const blockSizeH = canvasEl.height / maxDim;
+    const pieceBlockSize = Math.floor(Math.min(blockSizeW, blockSizeH));
     
     const shapeWidth = shape.reduce((max, row) => Math.max(max, row.lastIndexOf(1) + 1), 0);
     const shapeHeight = shape.filter(row => row.includes(1)).length;
