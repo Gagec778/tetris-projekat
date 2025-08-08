@@ -92,7 +92,6 @@ function setCanvasSize() {
         canvas.style.width = `${canvasWidth}px`;
         canvas.style.height = `${canvasHeight}px`;
 
-        // Sada kada je nextBlockCanvas kvadrat, JS ne mora da brine o tome
         nextBlockCanvas.width = nextBlockCanvas.clientWidth;
         nextBlockCanvas.height = nextBlockCanvas.clientHeight;
 
@@ -355,21 +354,20 @@ function drawGhostPiece() {
     ctx.globalAlpha = 1.0;
 }
 
-// IZMENA: Ispravljena formula za srazmerno prikazivanje "Next" bloka
+// IZMENA: Ispravljena i pojednostavljena formula za srazmerno prikazivanje "Next" bloka
 function drawPieceInCanvas(piece, context, canvasEl) {
     if (!piece || !context) return;
     context.clearRect(0, 0, canvasEl.width, canvasEl.height);
     const { shape, color } = piece;
     if (!shape) return;
     
-    const maxDim = Math.max(...shape.map(r => r.length), shape.length);
-
-    // Nova srazmerna kalkulacija
+    // Dodajemo "+ 1" da stvorimo malo "vazduha" oko figure
+    const maxDim = Math.max(...shape.map(r => r.length), shape.length) + 1;
+    
     const blockSizeW = canvasEl.width / maxDim;
     const blockSizeH = canvasEl.height / maxDim;
     const pieceBlockSize = Math.floor(Math.min(blockSizeW, blockSizeH));
     
-    // Centriranje
     const shapeWidth = shape.reduce((max, row) => Math.max(max, row.lastIndexOf(1) + 1), 0);
     const shapeHeight = shape.filter(row => row.includes(1)).length;
     
