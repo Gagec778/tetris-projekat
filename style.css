@@ -16,7 +16,7 @@
 
 html {
     box-sizing: border-box;
-    height: 100%; 
+    height: 100%;
 }
 
 *, *:before, *:after {
@@ -39,11 +39,11 @@ body {
 }
 
 #main-game-wrapper {
-    background-color: #000; 
+    background-color: #000;
     border: 5px solid var(--border-color);
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
-    padding: 5px;
+    padding: 0 5px 5px 5px; /* Smanjen padding, bez gornjeg */
     width: 100%;
     height: 100%;
     max-width: 500px;
@@ -60,37 +60,44 @@ body {
     align-items: stretch;
     width: 100%;
     gap: 5px;
-    height: 60px;
     flex-shrink: 0;
+    padding: 5px 0; /* Vertikalni padding za visinu */
+    /* IZMENA: Gornja ivica panela se sada lepi za vrh okvira */
 }
 
 #canvas-container {
-    flex-grow: 1; 
-    min-height: 0; 
+    flex-grow: 1;
+    min-height: 0;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-#assists-panel {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    margin: 0;
-    height: 45px; /* Povećana visina za veće simbole */
-    flex-shrink: 0;
+    /* IZMENA: Zlatni okvir je sada na kontejneru */
+    border: 2px solid gold;
+    box-shadow: 0 0 8px gold;
+    border-radius: 5px;
+    background-color: var(--board-bg-color);
 }
 
 canvas#gameCanvas {
     display: block;
-    background-color: var(--board-bg-color);
-    border-radius: 5px;
-    border: 2px solid gold;
-    box-shadow: 0 0 8px gold;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    /* Canvas će se prilagoditi kontejneru kroz JS */
 }
- 
+
+#assists-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 5px;
+    height: 45px;
+    flex-shrink: 0;
+    padding: 0 10px;
+}
+
 .info-panel {
     background-color: #1a1a2e;
     border: 2px solid var(--border-color);
@@ -117,18 +124,33 @@ canvas#gameCanvas {
 
 #next-block-container {
     min-height: initial;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
 }
 
 #next-block-container canvas {
-    height: 90%;
+    max-height: 90%;
+    max-width: 90%;
     aspect-ratio: 1 / 1;
     width: auto;
+    height: auto;
 }
 
 #game-stats {
     flex-grow: 2;
     padding: 5px;
     justify-content: space-around;
+    display: flex;
+}
+
+.stat-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
 }
 
 #best-score-wrapper {
@@ -151,7 +173,7 @@ canvas#gameCanvas {
 #best-score-display {
     font-weight: bold;
     color: #FFD700;
-    font-size: 1em;
+    font-size: 0.9em;
     padding: 2px 6px;
     border: 2px solid gold;
     border-radius: 5px;
@@ -159,73 +181,57 @@ canvas#gameCanvas {
     box-shadow: 0 0 8px gold;
 }
 
-#score-display, .stat-line {
+#score-display, #level-display {
     width: 100%;
     text-align: center;
-    font-size: 0.7em;
+    font-size: 0.8em;
     padding: 1px 0;
 }
 #level-display { color: #fff; }
-#sprint-timer, #ultra-timer { color: #ffcc00; }
+#sprint-timer, #ultra-timer { color: #ffcc00; font-size: 0.8em; }
 
 #right-controls {
     display: flex;
     flex-direction: column;
     gap: 5px;
     justify-content: space-around;
+    flex: 1;
 }
 
 #home-button, #pause-button {
     width: 100%;
     height: 45%;
-    font-size: 1.2em;
+    font-size: 1.1em;
     padding: 2px;
+    background-color: #e63946; /* Vraćena crvena boja ovde */
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
-#assist-content-wrapper {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    align-items: center;
-}
-.assist-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    flex-basis: 33%;
+#home-button:hover, #pause-button:hover {
+    background-color: #c72c38;
 }
 
-/* IZMENA: Uklonjena crvena pozadina i ulepšani simboli */
 .assist-btn {
-    background: transparent; /* Uklonjena pozadina */
+    background: transparent;
     border: none;
     padding: 0;
     cursor: pointer;
-    font-size: 2.2em; /* Dodatno povećani simboli */
+    font-size: 2em;
     line-height: 1;
     transition: transform 0.2s ease;
-    /* Novi, lepši sjaj */
-    text-shadow: 0 0 5px rgba(97, 218, 251, 0.5), 0 0 10px rgba(97, 218, 251, 0.5); 
+    text-shadow: 0 0 5px rgba(97, 218, 251, 0.7);
+    color: #eee;
 }
 .assist-btn:active {
     transform: scale(0.9);
 }
 
-/* Opšte .btn pravilo za ostale dugmiće */
-.btn { 
-    padding: 8px; 
-    background-color: #e63946; 
-    color: #fff; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    transition: background-color 0.2s, transform 0.1s; 
-    font-family: 'Press Start 2P', cursive; 
-}
-
 .count {
-    font-size: 1.1em;
+    font-size: 1em;
     color: var(--main-color);
     font-weight: bold;
 }
@@ -235,8 +241,6 @@ canvas#gameCanvas {
 #combo-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5em; color: #fff; text-shadow: 0 0 10px var(--main-color); text-align: center; z-index: 10; animation: fadeOut 1.5s forwards; display: none; white-space: pre-wrap; pointer-events: none; }
 @keyframes fadeOut { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
 #controls-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background-color: #1a1a2e; border: 3px solid var(--main-color); border-radius: 10px; padding: 20px; box-shadow: 0 0 20px rgba(97, 218, 251, 0.5); z-index: 2000; }
-.btn:hover { background-color: #c72c38; }
-.btn:active { transform: translateY(1px); }
 .disabled { opacity: 0.5; cursor: not-allowed; }
 .overlay h2 { font-size: 1.5em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
 .overlay p { font-size: 1em; margin-bottom: 15px; }
