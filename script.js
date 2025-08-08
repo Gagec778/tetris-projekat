@@ -43,6 +43,7 @@ let nextAssistReward = 5000;
 let bombBonus = 1500;
 let hammerMode = false;
 let hammerLine = -1;
+let lastMoveWasRotation = false;
 
 let dropInterval = 1000;
 let level = 1;
@@ -69,7 +70,7 @@ let visualOffsetX = 0;
 
 // DOM elementi
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, continueButton, exitModal, confirmExitButton, cancelExitButton;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay, continueButton, exitModal, confirmExitButton, cancelExitButton, animationOverlay;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
@@ -119,7 +120,7 @@ function initDOMAndEventListeners() {
     nextBlockCanvas = document.getElementById('nextBlockCanvas');
     nextBlockCtx = nextBlockCanvas.getContext('2d');
     
-    // ... ostatak DOM elemenata je isti ...
+    // Ostatak DOM elemenata...
     dropSound = document.getElementById('dropSound');
     clearSound = document.getElementById('clearSound');
     rotateSound = document.getElementById('rotateSound');
@@ -155,25 +156,40 @@ function initDOMAndEventListeners() {
     modeSelector = document.getElementById('mode-selector');
     sprintTimerDisplay = document.getElementById('sprint-timer');
     ultraTimerDisplay = document.getElementById('ultra-timer');
-    startCountdown = document.getElementById('start-countdown');
+    countdownOverlay = document.getElementById('countdown-overlay');
     controlsModal = document.getElementById('controls-modal');
     controlsButton = document.getElementById('controls-button');
     closeControlsModal = document.getElementById('close-controls-modal');
     controlInputs = document.querySelectorAll('#controls-modal input');
     backgroundImageElement = document.getElementById('background-image');
+    animationOverlay = document.getElementById('animation-overlay');
 
     // Event listeneri...
-    startButton.addEventListener('click', () => { currentMode = modeSelector.value; startGame(); });
-    restartButton.addEventListener('click', () => { gameOverScreen.style.display = 'none'; startScreen.style.display = 'flex'; });
+    startButton.addEventListener('click', () => {
+        currentMode = modeSelector.value;
+        startCountdown();
+    });
+    restartButton.addEventListener('click', () => {
+        gameOverScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+        loadBestScore(modeSelector.value);
+    });
+    modeSelector.addEventListener('change', (e) => loadBestScore(e.target.value));
     pauseButton.addEventListener('click', togglePause);
     resumeButton.addEventListener('click', togglePause);
     homeButton.addEventListener('click', showExitModal);
-    confirmExitButton.addEventListener('click', () => { exitModal.style.display = 'none'; endGame(false, true); });
-    cancelExitButton.addEventListener('click', () => { exitModal.style.display = 'none'; if (!gameOver) togglePause(); });
+    confirmExitButton.addEventListener('click', () => {
+        exitModal.style.display = 'none';
+        endGame(false, true);
+    });
+    cancelExitButton.addEventListener('click', () => {
+        exitModal.style.display = 'none';
+        if (!gameOver) togglePause();
+    });
     themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
-    assistsBombButton.addEventListener('click', () => { if (!gameOver && !isPaused) useBombAssist(); });
+    assistsBombButton.addEventListener('click', () => { if (!gameOver && !isPaused && !hammerMode) useBombAssist(); });
     assistsHammerButton.addEventListener('click', () => { if (!gameOver && !isPaused) toggleHammerMode(); });
-    assistsUndoButton.addEventListener('click', () => { if (!gameOver && !isPaused) useUndoAssist(); });
+    assistsUndoButton.addEventListener('click', () => { if (!gameOver && !isPaused && !hammerMode) useUndoAssist(); });
     controlsButton.addEventListener('click', () => { controlsModal.style.display = 'block'; });
     closeControlsModal.addEventListener('click', () => { controlsModal.style.display = 'none'; });
     document.addEventListener('keydown', handleKeydown);
@@ -190,79 +206,62 @@ function initDOMAndEventListeners() {
     window.addEventListener('resize', setCanvasSize);
     
     // Učitavanje podataka...
-    const storedBestScore = localStorage.getItem('bestScore');
-    if (storedBestScore) { bestScore = parseInt(storedBestScore, 10); bestScoreDisplay.textContent = `${bestScore}`; }
     const storedAssists = JSON.parse(localStorage.getItem('assists'));
-    if (storedAssists) { assists = storedAssists; } else { assists = { bomb: 0, hammer: 0, undo: 0 }; localStorage.setItem('assists', JSON.stringify(assists)); }
+    if (storedAssists) { assists = storedAssists; } else { assists = { bomb: 3, hammer: 3, undo: 3 }; localStorage.setItem('assists', JSON.stringify(assists)); }
     updateAssistsDisplay();
     const savedTheme = localStorage.getItem('theme') || 'classic';
     setTheme(savedTheme);
     themeSwitcher.value = savedTheme;
     loadKeyBindings();
+    loadBestScore(modeSelector.value);
     
-    // ------------------------------------------------------------------------------------
-    // IZMENA: Finalna logika za touch kontrole koja rešava SVE finese
-    // ------------------------------------------------------------------------------------
+    // Finalna logika za kontrole na dodir
     let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
-    let gestureIntent = null; // null, 'slide', or 'drop'
     
     canvas.addEventListener('touchstart', e => {
-        if (gameOver || isPaused || !currentPiece) return;
+        if (gameOver || isPaused || !currentPiece || hammerMode) return;
         e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         touchStartTime = performance.now();
         visualOffsetX = 0;
-        gestureIntent = null;
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
-        if (gameOver || isPaused || !currentPiece) return;
+        if (gameOver || isPaused || !currentPiece || hammerMode) return;
         e.preventDefault();
         
         const currentTouchX = e.touches[0].clientX;
-        const currentTouchY = e.touches[0].clientY;
         const totalDeltaX = currentTouchX - touchStartX;
-        const totalDeltaY = currentTouchY - touchStartY;
 
-        // Odlučujemo koja je namera pokreta, ali samo jednom
-        if (gestureIntent === null && (Math.abs(totalDeltaX) > TAP_DISTANCE_THRESHOLD || totalDeltaY > TAP_DISTANCE_THRESHOLD)) {
-            if (totalDeltaY > DROP_DISTANCE_THRESHOLD && totalDeltaY > Math.abs(totalDeltaX)) {
-                gestureIntent = 'drop';
-            } else {
-                gestureIntent = 'slide';
-            }
-        }
-
-        if (gestureIntent === 'slide') {
-            const potentialGridX = Math.round((currentPiece.x * BLOCK_SIZE + totalDeltaX) / BLOCK_SIZE);
-            if (isValidMove(potentialGridX - currentPiece.x, 0, currentPiece.shape)) {
-                visualOffsetX = totalDeltaX;
-            }
+        const potentialNewGridX = Math.round((currentPiece.x * BLOCK_SIZE + totalDeltaX) / BLOCK_SIZE);
+        if (isValidMove(potentialNewGridX - currentPiece.x, 0, currentPiece.shape)) {
+            visualOffsetX = totalDeltaX;
         }
         
         draw();
     }, { passive: false });
 
     canvas.addEventListener('touchend', e => {
-        if (gameOver || isPaused || !currentPiece) return;
+        if (gameOver || isPaused || !currentPiece || hammerMode) return;
         
-        const touchDuration = performance.now() - touchStartTime;
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
         const totalDeltaX = touchEndX - touchStartX;
         const totalDeltaY = touchEndY - touchStartY;
+        const touchDuration = performance.now() - touchStartTime;
 
-        if (gestureIntent === 'drop') {
+        if (touchDuration < TAP_DURATION_THRESHOLD && Math.abs(totalDeltaX) < TAP_DISTANCE_THRESHOLD && Math.abs(totalDeltaY) < TAP_DISTANCE_THRESHOLD) {
+            rotatePiece();
+        }
+        else if (totalDeltaY > DROP_DISTANCE_THRESHOLD && totalDeltaY > Math.abs(totalDeltaX)) {
             dropPiece();
-        } else if (gestureIntent === 'slide') {
+        }
+        else {
             const movedCols = Math.round(visualOffsetX / BLOCK_SIZE);
             if (movedCols !== 0 && isValidMove(movedCols, 0, currentPiece.shape)) {
                 currentPiece.x += movedCols;
             }
-        } else if (touchDuration < TAP_DURATION_THRESHOLD) { 
-             // Ako namera nije odlučena, a dodir je bio kratak, to je TAP
-            rotatePiece();
         }
         
         visualOffsetX = 0;
@@ -273,7 +272,33 @@ function initDOMAndEventListeners() {
     startScreen.style.display = 'flex';
 }
 
-// ... ostatak koda ostaje nepromenjen ...
+function startCountdown() {
+    startScreen.style.display = 'none';
+    countdownOverlay.style.display = 'flex';
+    let count = 3;
+    countdownOverlay.textContent = count;
+
+    const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownOverlay.textContent = count;
+        } else {
+            countdownOverlay.textContent = 'GO!';
+        }
+    }, 1000);
+
+    setTimeout(() => {
+        clearInterval(interval);
+        countdownOverlay.style.display = 'none';
+        startGame();
+    }, 4000);
+}
+
+function loadBestScore(mode) {
+    const storedBestScore = localStorage.getItem(`bestScore_${mode}`);
+    bestScore = storedBestScore ? parseInt(storedBestScore, 10) : 0;
+    bestScoreDisplay.textContent = `${bestScore}`;
+}
 
 function playBackgroundMusic() {
     if (!backgroundMusicPlaying) {
@@ -311,6 +336,7 @@ function createCurrentPiece() {
     currentPiece = { shape, color: COLORS[currentPieceIndex], x: Math.floor((COLS - shape[0].length) / 2), y: 0 };
 }
 function generateNewPiece() {
+    lastMoveWasRotation = false;
     currentPieceIndex = nextPieceIndex !== undefined ? nextPieceIndex : Math.floor(Math.random() * TETROMINOES.length);
     createCurrentPiece();
     nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
@@ -346,14 +372,11 @@ function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
 }
 function lightenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.min(255, r + a); g = Math.min(255, g + a); b = Math.min(255, b + a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
 function darkenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.max(0, r - a); g = Math.max(0, g - a); b = Math.max(0, b - a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
-
-// IZMENA: Senka sada prati glatko kretanje i manje je vidljiva
 function drawGhostPiece() {
     if (!currentPiece) return;
     
     const potentialX = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
      if (!isValidMove(potentialX - currentPiece.x, 0, currentPiece.shape)) {
-        // Ne crtaj senku ako bi se sudarila na logičkoj poziciji
         return;
     }
     
@@ -362,16 +385,11 @@ function drawGhostPiece() {
         ghostY++;
     }
 
-    ctx.save();
-    ctx.translate(visualOffsetX, 0); // Pomeramo ceo svet da bi se senka crtala glatko
-    ctx.globalAlpha = 0.25; // Smanjena vidljivost
-    
-    // Crtamo na logičkoj poziciji, ali unutar pomerenog "sveta"
+    ctx.globalAlpha = 0.3; 
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(currentPiece.x + c, ghostY + r, currentPiece.color); 
+        if (cell) drawBlock(potentialX + c, ghostY + r, currentPiece.color); 
     }));
-
-    ctx.restore(); // Vraćamo svet na mesto
+    ctx.globalAlpha = 1.0;
 }
 
 
@@ -418,7 +436,7 @@ function drawBoard() {
         ctx.beginPath(); ctx.moveTo(0, i * BLOCK_SIZE); ctx.lineTo(canvas.width, i * BLOCK_SIZE); ctx.stroke();
     }
     board.forEach((row, r) => row.forEach((cell, c) => { if (cell) drawBlock(c, r, cell); }));
-    if (hammerLine !== -1) { ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; ctx.fillRect(0, hammerLine * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE); }
+    if (hammerLine !== -1) { ctx.fillStyle = 'rgba(255, 120, 120, 0.4)'; ctx.fillRect(0, hammerLine * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE); }
 }
 
 function drawCurrentPiece() { 
@@ -439,25 +457,42 @@ function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y, curr
     }
     return true;
 }
-function movePiece(direction) { if (currentPiece && isValidMove(direction, 0, currentPiece.shape)) currentPiece.x += direction; }
-function movePieceDown() { if (currentPiece && isValidMove(0, 1, currentPiece.shape)) { currentPiece.y++; lastDropTime = performance.now(); } else { mergePiece(); } draw(); }
+function movePiece(direction) { if (currentPiece && isValidMove(direction, 0, currentPiece.shape)) { currentPiece.x += direction; lastMoveWasRotation = false; } }
+function movePieceDown() { if (currentPiece && isValidMove(0, 1, currentPiece.shape)) { currentPiece.y++; lastMoveWasRotation = false; } else { mergePiece(); } draw(); }
 function rotatePiece() {
     if (!currentPiece) return;
-    const N = currentPiece.shape.length, newShape = Array(N).fill(0).map(() => Array(N).fill(0));
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) newShape[c][N - 1 - r] = currentPiece.shape[r][c];
-    const kicks = [[0, 0], [-1, 0], [1, 0], [0, 1], [-1, 1], [1, 1], [0, -1], [0, -2], [-2, 0], [2, 0]];
-    for (const [kx, ky] of kicks) if (isValidMove(kx, ky, newShape)) {
-        currentPiece.x += kx; currentPiece.y += ky; currentPiece.shape = newShape;
-        rotateSound.currentTime = 0; rotateSound.play().catch(console.error); return;
+    const originalShape = currentPiece.shape;
+    const N = originalShape.length;
+    let newShape = Array(N).fill(0).map(() => Array(N).fill(0));
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) newShape[c][N - 1 - r] = originalShape[r][c];
+    
+    const kicks = [[0, 0], [-1, 0], [1, 0], [0, -1], [-1, -1], [1, -1], [0, 1], [-2, 0], [2, 0]];
+    for (const [kx, ky] of kicks) {
+        if (isValidMove(kx, ky, newShape)) {
+            currentPiece.x += kx;
+            currentPiece.y += ky;
+            currentPiece.shape = newShape;
+            lastMoveWasRotation = true;
+            rotateSound.currentTime = 0;
+            rotateSound.play().catch(console.error);
+            return;
+        }
     }
 }
 function dropPiece() {
     if (!currentPiece) return;
-    const startY = currentPiece.y;
-    while (isValidMove(0, 1, currentPiece.shape)) currentPiece.y++;
-    if (currentMode !== 'zen') score += (currentPiece.y - startY);
+    const originalY = currentPiece.y;
+    while (isValidMove(0, 1, currentPiece.shape)) {
+        currentPiece.y++;
+    }
+    const rowsDropped = currentPiece.y - originalY;
+    if (currentMode === 'classic' || currentMode === 'marathon' || currentMode === 'ultra') {
+        score += rowsDropped;
+    }
+    lastMoveWasRotation = false;
     mergePiece();
-    dropSound.currentTime = 0; dropSound.play().catch(console.error);
+    dropSound.currentTime = 0;
+    dropSound.play().catch(console.error);
 }
 function mergePiece() {
     if (!currentPiece) return;
@@ -472,12 +507,23 @@ function checkLines() {
     if (linesToClear.length > 0) { isAnimating = true; animationStart = performance.now(); updateScore(linesToClear.length, isTSpin()); if (linesToClear.length === 4) tetrisSound.play().catch(console.error); else if (isTSpin()) tSpinSound.play().catch(console.error); else clearSound.play().catch(console.error); }
     else { combo = 0; lastClearWasSpecial = false; generateNewPiece(); }
 }
-function isTSpin() { if (!currentPiece || currentPieceIndex !== T_SHAPE_INDEX) return false; let corners = 0; const {x,y} = currentPiece; if(!board[y] || y+2 >= ROWS) return false; if(x<0 || x+2 >= COLS) return false; if(board[y][x]) corners++; if(board[y][x+2]) corners++; if(board[y+2][x]) corners++; if(board[y+2][x+2]) corners++; return corners >= 3; }
+function isTSpin() {
+    if (!currentPiece || currentPieceIndex !== T_SHAPE_INDEX || !lastMoveWasRotation) return false;
+    let corners = 0;
+    const { x, y } = currentPiece;
+    const cornersPos = [{ r: y, c: x }, { r: y, c: x + 2 }, { r: y + 2, c: x }, { r: y + 2, c: x + 2 }];
+    for (const pos of cornersPos) {
+        if (pos.c < 0 || pos.c >= COLS || pos.r < 0 || pos.r >= ROWS || (board[pos.r] && board[pos.r][pos.c])) {
+            corners++;
+        }
+    }
+    return corners >= 3;
+}
 function updateScore(lines, isTSpin) { let points = 0, type = ''; const b2b = lastClearWasSpecial && (isTSpin || lines === 4) ? 1.5 : 1; if (isTSpin) { points = [400, 800, 1200, 1600][lines]; type = `T-Spin ${['', 'Single', 'Double', 'Triple'][lines]}`; } else { points = [0, 100, 300, 500, 800][lines]; type = ['', 'Single', 'Double', 'Triple', 'Tetris'][lines]; } score += Math.floor(points * b2b * level); if (lines > 0) { combo++; if (b2b > 1) type = `B2B ${type}`; showComboMessage(type, combo); lastClearWasSpecial = isTSpin || lines === 4; } else { combo = 0; lastClearWasSpecial = false; } if (score >= nextAssistReward) { let assistType = ['bomb', 'hammer', 'undo'][Math.floor(Math.random() * 3)]; assists[assistType]++; nextAssistReward += 5000; localStorage.setItem('assists', JSON.stringify(assists)); updateAssistsDisplay(); } updateScoreDisplay(); }
 function showComboMessage(type, count) { let msg = type; if (count > 1) msg += `\n${count}x Combo!`; if (msg) { comboDisplay.textContent = msg; comboDisplay.style.display = 'block'; setTimeout(() => comboDisplay.style.display = 'none', 1500); } }
 function gameLoop(timestamp) {
-    if (gameOver || isPaused) return;
-    if (isAnimating) { animateLineClear(timestamp); return; }
+    if (gameOver || isPaused || hammerMode) return;
+    if (isAnimating) { requestAnimationFrame(gameLoop); return; }
     if (currentMode === 'sprint') sprintTimerDisplay.textContent = `TIME: ${((performance.now() - startTime) / 1000).toFixed(2)}s`;
     else if (currentMode === 'ultra') { const remaining = ultraTimeLimit - (performance.now() - startTime) / 1000; if (remaining <= 0) { endGame(); return; } ultraTimerDisplay.textContent = `TIME: ${remaining.toFixed(2)}s`; }
     if (timestamp - lastDropTime > dropInterval) { if (currentPiece) { if (isValidMove(0, 1, currentPiece.shape)) currentPiece.y++; else mergePiece(); } lastDropTime = timestamp; }
@@ -493,20 +539,24 @@ function animateLineClear(timestamp) {
         handleLinesCleared(linesClearedCount); 
         if (board.every(row => row.every(cell => !cell))) { score += 3000 * level; showComboMessage('Perfect Clear!', 0); }
         linesToClear = []; generateNewPiece();
-        animationFrameId = requestAnimationFrame(gameLoop); return;
+        return;
     }
     const progress = elapsed / animationDuration; drawBoard();
     linesToClear.forEach(r => { const p = Math.sin(progress * Math.PI); ctx.globalAlpha = 1 - p; board[r].forEach((cell, c) => { if (cell) drawBlock(c, r, cell); }); ctx.globalAlpha = 1; });
     drawCurrentPiece(); requestAnimationFrame(animateLineClear);
 }
-function draw() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawBoard(); drawGhostPiece(); drawCurrentPiece(); }
+function draw() { if(ctx) { ctx.clearRect(0, 0, canvas.width, canvas.height); drawBoard(); drawGhostPiece(); drawCurrentPiece(); } }
 function endGame(isSprintWin = false, exitToMainMenu = false) {
     gameOver = true; if (animationFrameId) cancelAnimationFrame(animationFrameId); pauseBackgroundMusic();
     if (exitToMainMenu) { startScreen.style.display = 'flex'; gameOverScreen.style.display = 'none'; return; }
+    if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem(`bestScore_${currentMode}`, bestScore);
+        bestScoreDisplay.textContent = `${bestScore}`;
+    }
     if (isSprintWin) { finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; finalTimeDisplay.style.display = 'block'; document.getElementById('game-over-title').textContent = 'PERFECT!'; }
     else { gameOverSound.play().catch(console.error); finalTimeDisplay.style.display = 'none'; document.getElementById('game-over-title').textContent = 'GAME OVER!'; }
     finalScoreDisplay.textContent = `Your Score: ${score}`;
-    if (score > bestScore) { bestScore = score; localStorage.setItem('bestScore', bestScore); bestScoreDisplay.textContent = `${bestScore}`; }
     gameOverScreen.style.display = 'flex';
 }
 function startGame() {
@@ -514,12 +564,12 @@ function startGame() {
     updateScoreDisplay(); updateLevelDisplay(); updateAssistsDisplay(); startTime = performance.now();
     sprintTimerDisplay.style.display = currentMode === 'sprint' ? 'block' : 'none';
     ultraTimerDisplay.style.display = currentMode === 'ultra' ? 'block' : 'none';
-    startScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; pauseScreen.style.display = 'none';
     gameOver = false; isPaused = false;
     currentPieceIndex = Math.floor(Math.random() * TETROMINOES.length); nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
     generateNewPiece();
     if (currentMode !== 'zen') playBackgroundMusic();
-    lastDropTime = performance.now(); animationFrameId = requestAnimationFrame(gameLoop);
+    lastDropTime = performance.now();
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 function updateScoreDisplay() { scoreDisplay.textContent = `Score: ${score}`; }
 function updateLevelDisplay() { levelDisplay.textContent = `Level: ${level}`; }
@@ -529,7 +579,7 @@ function showExitModal() { if (isPaused || gameOver) return; isPaused = true; ca
 
 
 function handleKeydown(e) {
-    if (isPaused || gameOver || !currentPiece) return;
+    if (isPaused || gameOver || !currentPiece || hammerMode) return;
     const key = e.key === ' ' ? 'Space' : e.key;
 
     if (key === keyBindings.left) {
@@ -566,10 +616,8 @@ function handleKeyup(e) {
 
 function startARR(direction) {
     stopARR(); 
-    
     movePiece(direction);
     draw();
-
     dasTimer = setTimeout(() => {
         arrTimer = setInterval(() => {
             movePiece(direction);
@@ -586,16 +634,128 @@ function stopARR() {
 }
 
 
-function useBombAssist() { if (assists.bomb > 0) { assists.bomb--; let r = Math.floor(Math.random() * 5) + 10; for (let i = 0; i < 3; i++) if (r + i < ROWS) for (let c = 0; c < COLS; c++) board[r + i][c] = 0; bombSound.play().catch(console.error); score += bombBonus; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); draw(); } }
-function toggleHammerMode() { if (assists.hammer > 0) { hammerMode = !hammerMode; canvas.style.cursor = hammerMode ? 'crosshair' : 'default'; if (!hammerMode) { hammerLine = -1; draw(); } } }
-function handleCanvasClick(e) { if (hammerMode) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); toggleHammerMode(); draw(); } } }
-function handleCanvasHover(e) { if (hammerMode) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
+function useBombAssist() {
+    if (assists.bomb > 0) {
+        assists.bomb--;
+        updateAssistsDisplay();
+        localStorage.setItem('assists', JSON.stringify(assists));
+        
+        animationOverlay.classList.add('flash');
+        setTimeout(() => animationOverlay.classList.remove('flash'), 500);
+
+        bombSound.play().catch(console.error);
+        initBoard(); // Briše celu tablu
+        draw();
+    }
+}
+
+function toggleHammerMode() {
+    if (assists.hammer > 0) {
+        hammerMode = !hammerMode;
+        if (hammerMode) {
+            canvas.style.cursor = 'crosshair';
+        } else {
+            canvas.style.cursor = 'default';
+            hammerLine = -1;
+            draw();
+        }
+    }
+}
+
+function handleCanvasClick(e) {
+    if (hammerMode) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleY = canvas.height / rect.height;
+        const row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE);
+        
+        if (row >= 0 && row < ROWS) {
+            assists.hammer--;
+            updateAssistsDisplay();
+            localStorage.setItem('assists', JSON.stringify(assists));
+            animateHammerClear(row);
+            toggleHammerMode();
+        }
+    }
+}
+
+function animateHammerClear(row) {
+    const particles = [];
+    for (let c = 0; c < COLS; c++) {
+        if (board[row][c]) {
+            particles.push({
+                x: c * BLOCK_SIZE,
+                y: row * BLOCK_SIZE,
+                color: board[row][c],
+                vy: Math.random() * -2 - 1, // Početna brzina na gore
+                vx: (Math.random() - 0.5) * 2
+            });
+        }
+    }
+    board[row].fill(0); // Odmah obriši logički
+
+    let startTime = performance.now();
+    function animate(currentTime) {
+        const elapsedTime = currentTime - startTime;
+        draw(); // Iscrtaj tablu bez obrisanog reda
+        
+        let allParticlesGone = true;
+        particles.forEach(p => {
+            p.vy += 0.1; // Gravitacija
+            p.y += p.vy;
+            p.x += p.vx;
+            
+            ctx.save();
+            drawBlock(p.x / BLOCK_SIZE, p.y / BLOCK_SIZE, p.color);
+            ctx.restore();
+
+            if (p.y < canvas.height) {
+                allParticlesGone = false;
+            }
+        });
+
+        if (!allParticlesGone) {
+            requestAnimationFrame(animate);
+        } else {
+            // Animacija je gotova, pomeri redove
+            board.splice(row, 1);
+            board.unshift(Array(COLS).fill(0));
+            draw();
+        }
+    }
+    requestAnimationFrame(animate);
+}
+
+function handleCanvasHover(e) {
+    if (hammerMode) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleY = canvas.height / rect.height;
+        const row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE);
+        if (row !== hammerLine) {
+            hammerLine = row;
+            draw();
+        }
+    }
+}
 function useUndoAssist() { if (assists.undo > 0 && boardHistory.length > 0) { assists.undo--; board = boardHistory.pop(); score = Math.max(0, score - 500); updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); generateNewPiece(); draw(); } }
 function handleLinesCleared(lines) {
     if (lines === 0) return;
-    linesClearedTotal += lines; linesClearedThisLevel += lines;
-    if (currentMode === 'sprint' && linesClearedTotal >= 40) endGame(true);
-    if (currentMode !== 'zen' && currentMode !== 'ultra' && linesClearedThisLevel >= 10) { linesClearedThisLevel -= 10; level++; updateLevelDisplay(); if (currentMode !== 'sprint') dropInterval = Math.max(100, 1000 - (level - 1) * 50); }
+    linesClearedTotal += lines;
+    
+    if (currentMode !== 'zen') {
+        linesClearedThisLevel += lines;
+    }
+    
+    if (currentMode === 'sprint' && linesClearedTotal >= 40) {
+        endGame(true);
+    }
+    
+    if ((currentMode === 'classic' || currentMode === 'marathon' || currentMode === 'ultra') && linesClearedThisLevel >= 10) { 
+        linesClearedThisLevel -= 10;
+        level++;
+        updateLevelDisplay();
+        if (currentMode !== 'sprint') dropInterval = Math.max(100, 1000 - (level - 1) * 50);
+    }
+    
     updateScoreDisplay();
 }
 
