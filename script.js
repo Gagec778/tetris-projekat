@@ -74,10 +74,9 @@ let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
 
-// IZMENA: Novi pragovi za bolju detekciju
-let TAP_DISTANCE_THRESHOLD; // Maksimalna distanca za TAP
-let TAP_DURATION_THRESHOLD = 150; // Maksimalno trajanje TAP-a u ms
-let DROP_DISTANCE_THRESHOLD;  // Minimalna distanca za HARD DROP
+let TAP_DISTANCE_THRESHOLD;
+let TAP_DURATION_THRESHOLD = 150;
+let DROP_DISTANCE_THRESHOLD;
 
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
@@ -103,9 +102,9 @@ function setCanvasSize() {
         nextBlockCanvas.width = nextBlockCanvas.clientWidth;
         nextBlockCanvas.height = nextBlockCanvas.clientHeight;
 
-        // IZMENA: Definicija pragova osetljivosti
         TAP_DISTANCE_THRESHOLD = BLOCK_SIZE * 0.8; 
-        DROP_DISTANCE_THRESHOLD = BLOCK_SIZE * 2;  
+        // IZMENA: Smanjen prag za Hard Drop da bude osetljiviji
+        DROP_DISTANCE_THRESHOLD = BLOCK_SIZE * 1.5;  
 
         if (!gameOver) {
             draw();
@@ -202,9 +201,6 @@ function initDOMAndEventListeners() {
     themeSwitcher.value = savedTheme;
     loadKeyBindings();
     
-    // ------------------------------------------------------------------------------------
-    // IZMENA: Nova, pametnija logika za kontrole koja gleda i trajanje dodira
-    // ------------------------------------------------------------------------------------
     let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
     
     canvas.addEventListener('touchstart', e => {
@@ -212,7 +208,7 @@ function initDOMAndEventListeners() {
         e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        touchStartTime = performance.now(); // Pamtimo vreme početka dodira
+        touchStartTime = performance.now();
         visualOffsetX = 0;
     }, { passive: false });
 
@@ -240,15 +236,12 @@ function initDOMAndEventListeners() {
         const totalDeltaY = touchEndY - touchStartY;
         const touchDuration = performance.now() - touchStartTime;
 
-        // 1. Provera za TAP (ROTACIJA)
         if (touchDuration < TAP_DURATION_THRESHOLD && Math.abs(totalDeltaX) < TAP_DISTANCE_THRESHOLD && Math.abs(totalDeltaY) < TAP_DISTANCE_THRESHOLD) {
             rotatePiece();
         }
-        // 2. Provera za HARD DROP
         else if (totalDeltaY > DROP_DISTANCE_THRESHOLD && totalDeltaY > Math.abs(totalDeltaX)) {
             dropPiece();
         }
-        // 3. Ako nije ni jedno ni drugo, onda je Kretanje (SLIDE)
         else {
             const movedCols = Math.round(visualOffsetX / BLOCK_SIZE);
             if (movedCols !== 0 && isValidMove(movedCols, 0, currentPiece.shape)) {
@@ -336,7 +329,6 @@ function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
 }
 function lightenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.min(255, r + a); g = Math.min(255, g + a); b = Math.min(255, b + a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
 function darkenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.max(0, r - a); g = Math.max(0, g - a); b = Math.max(0, b - a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
-
 function drawGhostPiece() {
     if (!currentPiece) return;
     
