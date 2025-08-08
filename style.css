@@ -60,7 +60,7 @@ body {
     align-items: stretch;
     width: 100%;
     gap: 5px;
-    height: 60px;
+    height: auto; /* Visina se prilagođava sadržaju */
     flex-shrink: 0;
 }
 
@@ -71,6 +71,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative; /* Potrebno za overlay */
 }
 
 #assists-panel {
@@ -83,7 +84,6 @@ body {
     flex-shrink: 0;
 }
 
-/* IZMENA: Vraćen okvir na sam kanvas */
 canvas#gameCanvas {
     display: block;
     background-color: var(--board-bg-color);
@@ -102,22 +102,22 @@ canvas#gameCanvas {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 2px;
+    padding: 5px;
     gap: 2px;
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    height: 100%;
 }
 
 .panel-header {
-    font-size: 0.7em;
+    font-size: 0.8em;
     width: 100%;
     text-align: center;
+    margin-bottom: 2px;
 }
 
 #next-block-container {
-    min-height: initial;
+    min-height: 60px;
 }
 
 #next-block-container canvas {
@@ -138,7 +138,6 @@ canvas#gameCanvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 0;
 }
 #crown-icon {
     position: absolute;
@@ -160,11 +159,11 @@ canvas#gameCanvas {
     box-shadow: 0 0 8px gold;
 }
 
-#score-display, .stat-line {
+.stat-line {
     width: 100%;
     text-align: center;
-    font-size: 0.7em;
-    padding: 1px 0;
+    font-size: 0.8em;
+    padding: 2px 0;
 }
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
@@ -183,10 +182,9 @@ canvas#gameCanvas {
     padding: 2px;
 }
 
-/* IZMENA: Ispravljen raspored za pomoć */
 #assist-content-wrapper {
     display: flex;
-    justify-content: space-around; /* Vraćeno na space-around za ravnomeran razmak */
+    justify-content: space-around;
     width: 100%;
     align-items: center;
 }
@@ -255,3 +253,18 @@ canvas#gameCanvas {
 .continue-button { background-color: #2a9d8f; color: #fff; }
 .continue-button:hover { background-color: #268981; }
 #exit-modal .modal-buttons { display: flex; gap: 15px; margin-top: 20px; }
+
+/* Animacija za bombu */
+#animation-overlay.flash {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-color: white;
+    opacity: 0;
+    animation: flash-animation 0.5s ease-out;
+}
+
+@keyframes flash-animation {
+    0% { opacity: 0.8; }
+    100% { opacity: 0; }
+}
