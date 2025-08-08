@@ -75,6 +75,9 @@ let backgroundImageElement;
 let TOUCH_MOVE_THRESHOLD_Y;
 let TAP_THRESHOLD;
 
+// IZMENA: Nova varijabla za glatko klizanje
+let visualOffsetX = 0;
+
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
     if (!canvasContainer) return;
@@ -99,8 +102,8 @@ function setCanvasSize() {
         nextBlockCanvas.width = nextBlockCanvas.clientWidth;
         nextBlockCanvas.height = nextBlockCanvas.clientHeight;
 
-        TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE;
-        TAP_THRESHOLD = BLOCK_SIZE * 0.5;
+        TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 2; // Povećan prag za hard drop
+        TAP_THRESHOLD = BLOCK_SIZE;
 
         if (!gameOver) {
             draw();
@@ -116,6 +119,7 @@ function initDOMAndEventListeners() {
     nextBlockCanvas = document.getElementById('nextBlockCanvas');
     nextBlockCtx = nextBlockCanvas.getContext('2d');
     
+    // Ostatak DOM elemenata... (nepromenjeno)
     dropSound = document.getElementById('dropSound');
     clearSound = document.getElementById('clearSound');
     rotateSound = document.getElementById('rotateSound');
@@ -124,7 +128,6 @@ function initDOMAndEventListeners() {
     tetrisSound = document.getElementById('tetrisSound');
     backgroundMusic = document.getElementById('backgroundMusic');
     bombSound = document.getElementById('bombSound');
-
     startScreen = document.getElementById('start-screen');
     gameOverScreen = document.getElementById('game-over-screen');
     pauseScreen = document.getElementById('pause-screen');
@@ -159,37 +162,22 @@ function initDOMAndEventListeners() {
     controlInputs = document.querySelectorAll('#controls-modal input');
     backgroundImageElement = document.getElementById('background-image');
 
-    startButton.addEventListener('click', () => {
-        currentMode = modeSelector.value;
-        startGame();
-    });
-    restartButton.addEventListener('click', () => {
-        gameOverScreen.style.display = 'none';
-        startScreen.style.display = 'flex';
-    });
+    // Event listeneri... (nepromenjeno)
+    startButton.addEventListener('click', () => { currentMode = modeSelector.value; startGame(); });
+    restartButton.addEventListener('click', () => { gameOverScreen.style.display = 'none'; startScreen.style.display = 'flex'; });
     pauseButton.addEventListener('click', togglePause);
     resumeButton.addEventListener('click', togglePause);
     homeButton.addEventListener('click', showExitModal);
-    confirmExitButton.addEventListener('click', () => {
-        exitModal.style.display = 'none';
-        endGame(false, true);
-    });
-    cancelExitButton.addEventListener('click', () => {
-        exitModal.style.display = 'none';
-        if (!gameOver) togglePause();
-    });
+    confirmExitButton.addEventListener('click', () => { exitModal.style.display = 'none'; endGame(false, true); });
+    cancelExitButton.addEventListener('click', () => { exitModal.style.display = 'none'; if (!gameOver) togglePause(); });
     themeSwitcher.addEventListener('change', (e) => setTheme(e.target.value));
-    
     assistsBombButton.addEventListener('click', () => { if (!gameOver && !isPaused) useBombAssist(); });
     assistsHammerButton.addEventListener('click', () => { if (!gameOver && !isPaused) toggleHammerMode(); });
     assistsUndoButton.addEventListener('click', () => { if (!gameOver && !isPaused) useUndoAssist(); });
-
     controlsButton.addEventListener('click', () => { controlsModal.style.display = 'block'; });
     closeControlsModal.addEventListener('click', () => { controlsModal.style.display = 'none'; });
-    
     document.addEventListener('keydown', handleKeydown);
     document.addEventListener('keyup', handleKeyup);
-    
     controlInputs.forEach(input => {
         input.addEventListener('keydown', (e) => {
             e.preventDefault();
@@ -197,42 +185,34 @@ function initDOMAndEventListeners() {
             saveKeyBindings();
         });
     });
-
     canvas.addEventListener('click', handleCanvasClick);
     canvas.addEventListener('mousemove', handleCanvasHover);
     window.addEventListener('resize', setCanvasSize);
     
+    // Učitavanje podataka... (nepromenjeno)
     const storedBestScore = localStorage.getItem('bestScore');
-    if (storedBestScore) {
-        bestScore = parseInt(storedBestScore, 10);
-        bestScoreDisplay.textContent = `${bestScore}`;
-    }
-
+    if (storedBestScore) { bestScore = parseInt(storedBestScore, 10); bestScoreDisplay.textContent = `${bestScore}`; }
     const storedAssists = JSON.parse(localStorage.getItem('assists'));
-    if (storedAssists) {
-        assists = storedAssists;
-    } else {
-        assists = { bomb: 0, hammer: 0, undo: 0 };
-        localStorage.setItem('assists', JSON.stringify(assists));
-    }
+    if (storedAssists) { assists = storedAssists; } else { assists = { bomb: 0, hammer: 0, undo: 0 }; localStorage.setItem('assists', JSON.stringify(assists)); }
     updateAssistsDisplay();
-    
     const savedTheme = localStorage.getItem('theme') || 'classic';
     setTheme(savedTheme);
     themeSwitcher.value = savedTheme;
-
     loadKeyBindings();
     
-    // IZMENA: Logika za glatko klizanje na dodir
+    // ------------------------------------------------------------------------------------
+    // IZMENA: Potpuno nova, kombinovana logika za glatko klizanje i siguran hard drop
+    // ------------------------------------------------------------------------------------
     let touchStartX = 0, touchStartY = 0;
-    let pieceStartCol = 0;
+    let isDropLocked = false; 
     
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
         e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        pieceStartCol = currentPiece.x; // Pamtimo početnu kolonu figure
+        visualOffsetX = 0; // Resetujemo vizuelni pomeraj
+        isDropLocked = false; // Resetujemo zaključavanje
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
@@ -240,19 +220,22 @@ function initDOMAndEventListeners() {
         e.preventDefault();
         
         const currentTouchX = e.touches[0].clientX;
-        const deltaX = currentTouchX - touchStartX; // Ukupna promena od početka dodira
-        
-        // Izračunaj novu ciljanu kolonu na osnovu pomeraja prsta
-        const newCol = pieceStartCol + Math.round(deltaX / BLOCK_SIZE);
-        
-        // Pomeri figuru samo ako je nova kolona validna i različita od trenutne
-        if (newCol !== currentPiece.x) {
-            const direction = newCol - currentPiece.x;
-            if (isValidMove(direction, 0, currentPiece.shape)) {
-                currentPiece.x = newCol;
-                draw();
-            }
+        const currentTouchY = e.touches[0].clientY;
+        const totalDeltaX = currentTouchX - touchStartX;
+        const totalDeltaY = currentTouchY - touchStartY;
+
+        // Proveravamo da li treba da zaključamo spuštanje
+        if (!isDropLocked && totalDeltaY > TOUCH_MOVE_THRESHOLD_Y && totalDeltaY > Math.abs(totalDeltaX)) {
+            isDropLocked = true;
+            visualOffsetX = 0; // Poništavamo bilo kakav horizontalni pomeraj pre zaključavanja
         }
+
+        // Ako NIJE zaključano, radimo glatko horizontalno pomeranje
+        if (!isDropLocked) {
+            visualOffsetX = totalDeltaX;
+        }
+        
+        draw(); // Crtamo na svakom pomeraju za glatkoću
     }, { passive: false });
 
     canvas.addEventListener('touchend', e => {
@@ -260,16 +243,31 @@ function initDOMAndEventListeners() {
         
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
-        const dx = touchEndX - touchStartX;
-        const dy = touchEndY - touchStartY;
+        const totalDeltaX = touchEndX - touchStartX;
+        const totalDeltaY = touchEndY - touchStartY;
         
-        if (dy > TOUCH_MOVE_THRESHOLD_Y * 2 && dy > Math.abs(dx)) {
+        if (isDropLocked) {
+            // Ako je bilo zaključano, samo uradi hard drop
             dropPiece();
-        } 
-        else if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
-            rotatePiece();
+        } else {
+            // Ako nije bilo zaključano, rešavamo horizontalno pomeranje ili tap
+            const movedCols = Math.round(visualOffsetX / BLOCK_SIZE);
+            if (movedCols !== 0) {
+                const tempX = currentPiece.x + movedCols;
+                // Proveravamo da li je nova pozicija validna pre nego što je potvrdimo
+                if (isValidMove(movedCols, 0, currentPiece.shape)) {
+                    currentPiece.x = tempX;
+                }
+            }
+
+            // Provera za TAP (rotacija)
+            if (Math.abs(totalDeltaX) < TAP_THRESHOLD && Math.abs(totalDeltaY) < TAP_THRESHOLD) {
+                rotatePiece();
+            }
         }
         
+        // Resetujemo vizuelni pomeraj i iscrtavamo konačno stanje
+        visualOffsetX = 0;
         draw();
     });
 
@@ -348,12 +346,29 @@ function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
 }
 function lightenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.min(255, r + a); g = Math.min(255, g + a); b = Math.min(255, b + a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
 function darkenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.max(0, r - a); g = Math.max(0, g - a); b = Math.max(0, b - a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
+
+// IZMENA: Funkcija za crtanje senke sada uzima u obzir vizuelni pomeraj
 function drawGhostPiece() {
     if (!currentPiece) return;
+
+    // Izračunaj na kojoj će koloni figura završiti
+    const potentialX = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
+    
+    // Privremeno proveri da li je ta pozicija validna, ako nije, ne crtaj senku
+    const tempPieceForCheck = { ...currentPiece, x: potentialX };
+    if (!isValidMove(0, 0, tempPieceForCheck.shape, tempPieceForCheck.y, tempPieceForCheck.x)) {
+        return;
+    }
+    
     let ghostY = currentPiece.y;
-    while (isValidMove(0, 1, currentPiece.shape, ghostY)) ghostY++;
+    while (isValidMove(0, 1, currentPiece.shape, ghostY, potentialX)) {
+        ghostY++;
+    }
+
     ctx.globalAlpha = 0.3;
-    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { if (cell) drawBlock(currentPiece.x + c, ghostY + r, currentPiece.color); }));
+    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
+        if (cell) drawBlock(potentialX + c, ghostY + r, currentPiece.color); 
+    }));
     ctx.globalAlpha = 1.0;
 }
 
@@ -403,11 +418,20 @@ function drawBoard() {
     if (hammerLine !== -1) { ctx.fillStyle = 'rgba(255, 0, 0, 0.4)'; ctx.fillRect(0, hammerLine * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE); }
 }
 
-function drawCurrentPiece() { if (currentPiece) currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); })); }
-function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y) {
-    if (!currentPiece) return false;
+// IZMENA: Funkcija za crtanje sada primenjuje vizuelni pomeraj
+function drawCurrentPiece() { 
+    if (!currentPiece) return;
+    ctx.save();
+    ctx.translate(visualOffsetX, 0); // Pomeri ceo "svet" za crtanje
+    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
+        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
+    })); 
+    ctx.restore(); // Vrati "svet" na mesto
+}
+function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y, currentX = currentPiece.x) {
     for (let r = 0; r < newShape.length; r++) for (let c = 0; c < newShape[r].length; c++) if (newShape[r][c]) {
-        const newX = currentPiece.x + c + offsetX, newY = currentY + r + offsetY;
+        const newX = currentX + c + offsetX;
+        const newY = currentY + r + offsetY;
         if (newX < 0 || newX >= COLS || newY >= ROWS || (newY >= 0 && board[newY] && board[newY][newX])) return false;
     }
     return true;
