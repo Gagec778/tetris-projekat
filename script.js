@@ -97,7 +97,7 @@ function setCanvasSize() {
         nextBlockCanvas.height = sideCanvasSize;
 
         TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
-        TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE * 1.5;
+        TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE; // Smanjujemo prag za detekciju vertikalnog pokreta
         TAP_THRESHOLD = BLOCK_SIZE * 0.5;
 
         if (!gameOver) {
@@ -219,8 +219,9 @@ function initDOMAndEventListeners() {
 
     loadKeyBindings();
     
-    // IZMENA: Kompletno nova, bolja logika za kontrole na dodir
+    // IZMENA: Finalna, "zaključana" logika za kontrole na dodir
     let touchStartX = 0, touchStartY = 0, lastTouchX = 0;
+    let isSwipeLocked = false; // Nova varijabla za "zaključavanje"
     
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
@@ -228,6 +229,7 @@ function initDOMAndEventListeners() {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         lastTouchX = touchStartX;
+        isSwipeLocked = false; // Resetujemo zaključavanje na svakom novom dodiru
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
@@ -235,10 +237,17 @@ function initDOMAndEventListeners() {
         e.preventDefault();
         
         const currentTouchX = e.touches[0].clientX;
+        const currentTouchY = e.touches[0].clientY;
         const dx = currentTouchX - lastTouchX;
-        
-        // Tokom prevlačenja, radi samo horizontalno pomeranje
-        if (Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
+        const totalDy = currentTouchY - touchStartY; // Gledamo ukupan vertikalni pokret od početka
+
+        // Ako je pokret dominantno na dole, zaključaj horizontalno pomeranje
+        if (totalDy > TOUCH_MOVE_THRESHOLD_Y && !isSwipeLocked) {
+            isSwipeLocked = true;
+        }
+
+        // Pomeraj levo-desno je dozvoljen SAMO ako nismo u "zaključanom" (drop) modu
+        if (!isSwipeLocked && Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
             movePiece(dx > 0 ? 1 : -1);
             lastTouchX = currentTouchX;
             draw();
@@ -252,8 +261,6 @@ function initDOMAndEventListeners() {
         const touchEndY = e.changedTouches[0].clientY;
         const dx = touchEndX - touchStartX;
         const dy = touchEndY - touchStartY;
-        
-        // Odluka se donosi na kraju pokreta
         
         // Ako je bio brz i dug prevlačenje na dole -> Hard Drop
         if (dy > TOUCH_MOVE_THRESHOLD_Y * 2 && dy > Math.abs(dx)) {
