@@ -43,6 +43,7 @@ body {
     border: 5px solid var(--border-color);
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
+    /* IZMENA: Smanjen padding i gap za prilepljivanje */
     padding: 5px;
     width: 100%;
     height: 100%;
@@ -59,7 +60,7 @@ body {
     min-height: 0; 
     width: 100%;
     display: flex;
-    align-items: flex-start;
+    align-items: center; /* Centriramo vertikalno u novom prostoru */
     justify-content: center;
 }
 
@@ -67,7 +68,6 @@ canvas#gameCanvas {
     display: block;
     background-color: var(--board-bg-color);
     border-radius: 5px;
-    /* IZMENA: Dodat zlatni okvir oko mreže */
     border: 2px solid gold;
     box-shadow: 0 0 8px gold;
 }
@@ -91,21 +91,22 @@ canvas#gameCanvas {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 5px;
-    gap: 4px;
+    padding: 2px; /* Smanjen padding */
+    gap: 2px;   /* Smanjen gap */
     flex: 1;
     min-width: 0;
     overflow: hidden;
 }
 
 .panel-header {
-    font-size: 0.8em;
+    font-size: 0.7em; /* Smanjen font hedera */
     width: 100%;
     text-align: center;
 }
 
+/* IZMENA: Smanjena minimalna visina panela */
 #next-block-container {
-    min-height: 60px;
+    min-height: 45px;
 }
 
 #next-block-container canvas {
@@ -115,7 +116,7 @@ canvas#gameCanvas {
 
 #game-stats {
     flex-grow: 2;
-    padding: 8px 5px;
+    padding: 5px;
 }
 
 #best-score-wrapper {
@@ -124,34 +125,33 @@ canvas#gameCanvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
 }
 #crown-icon {
     position: absolute;
-    top: -15px;
+    top: -12px; /* Prilagođeno novoj visini */
     left: 50%;
     transform: translateX(-50%);
-    font-size: 1.2em;
+    font-size: 1.1em;
     text-shadow: 0 0 5px gold, 0 0 10px yellow;
 }
 
-/* IZMENA: Poboljšan izgled za Best Score */
 #best-score-display {
     font-weight: bold;
     color: #FFD700;
-    font-size: 1.2em; /* Povećan font */
-    padding: 4px 8px;
-    border: 2px solid gold; /* Dodat okvir */
+    font-size: 1em; /* Prilagođen font */
+    padding: 2px 6px;
+    border: 2px solid gold; 
     border-radius: 5px;
-    background-color: #111; /* Tamnija pozadina za kontrast */
-    box-shadow: 0 0 8px gold; /* Dodat sjaj */
+    background-color: #111;
+    box-shadow: 0 0 8px gold;
 }
 
 #score-display, .stat-line {
     width: 100%;
     text-align: center;
     font-size: 0.7em;
-    padding: 2px 0;
+    padding: 1px 0;
 }
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
@@ -166,8 +166,8 @@ canvas#gameCanvas {
 #home-button, #pause-button {
     width: 100%;
     flex-grow: 1;
-    font-size: 1.5em;
-    padding: 5px;
+    font-size: 1.2em; /* Malo smanjen font */
+    padding: 2px;
 }
 
 #assists-panel {
@@ -191,17 +191,17 @@ canvas#gameCanvas {
     gap: 5px;
 }
 .assist-btn {
-    width: 40px;
-    height: 40px;
+    width: 35px; /* Malo smanjeno */
+    height: 35px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2em;
+    font-size: 1em;
 }
 
 .count {
-    font-size: 1.2em;
+    font-size: 1.1em;
     color: var(--main-color);
     font-weight: bold;
 }
