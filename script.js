@@ -59,6 +59,12 @@ let currentTheme;
 let currentMode = 'classic';
 let keyBindings;
 
+const DAS_DELAY = 160; 
+const ARR_RATE = 30; 
+let dasTimer = null;
+let arrTimer = null;
+let moveDirection = 0;
+
 // DOM elementi
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
 let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, startCountdown, continueButton, exitModal, confirmExitButton, cancelExitButton;
@@ -66,10 +72,8 @@ let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
 
-let TOUCH_MOVE_THRESHOLD_X;
 let TOUCH_MOVE_THRESHOLD_Y;
 let TAP_THRESHOLD;
-
 
 function setCanvasSize() {
     const canvasContainer = document.getElementById('canvas-container');
@@ -95,8 +99,6 @@ function setCanvasSize() {
         nextBlockCanvas.width = nextBlockCanvas.clientWidth;
         nextBlockCanvas.height = nextBlockCanvas.clientHeight;
 
-
-        TOUCH_MOVE_THRESHOLD_X = BLOCK_SIZE * 0.8;
         TOUCH_MOVE_THRESHOLD_Y = BLOCK_SIZE;
         TAP_THRESHOLD = BLOCK_SIZE * 0.5;
 
@@ -186,6 +188,7 @@ function initDOMAndEventListeners() {
     closeControlsModal.addEventListener('click', () => { controlsModal.style.display = 'none'; });
     
     document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('keyup', handleKeyup);
     
     controlInputs.forEach(input => {
         input.addEventListener('keydown', (e) => {
@@ -220,16 +223,16 @@ function initDOMAndEventListeners() {
 
     loadKeyBindings();
     
-    let touchStartX = 0, touchStartY = 0, lastTouchX = 0;
-    let isSwipeLocked = false; 
+    // IZMENA: Logika za glatko klizanje na dodir
+    let touchStartX = 0, touchStartY = 0;
+    let pieceStartCol = 0;
     
     canvas.addEventListener('touchstart', e => {
         if (gameOver || isPaused || !currentPiece) return;
         e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        lastTouchX = touchStartX;
-        isSwipeLocked = false;
+        pieceStartCol = currentPiece.x; // Pamtimo početnu kolonu figure
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
@@ -237,18 +240,18 @@ function initDOMAndEventListeners() {
         e.preventDefault();
         
         const currentTouchX = e.touches[0].clientX;
-        const currentTouchY = e.touches[0].clientY;
-        const dx = currentTouchX - lastTouchX;
-        const totalDy = currentTouchY - touchStartY;
-
-        if (totalDy > TOUCH_MOVE_THRESHOLD_Y && !isSwipeLocked) {
-            isSwipeLocked = true;
-        }
-
-        if (!isSwipeLocked && Math.abs(dx) > TOUCH_MOVE_THRESHOLD_X) {
-            movePiece(dx > 0 ? 1 : -1);
-            lastTouchX = currentTouchX;
-            draw();
+        const deltaX = currentTouchX - touchStartX; // Ukupna promena od početka dodira
+        
+        // Izračunaj novu ciljanu kolonu na osnovu pomeraja prsta
+        const newCol = pieceStartCol + Math.round(deltaX / BLOCK_SIZE);
+        
+        // Pomeri figuru samo ako je nova kolona validna i različita od trenutne
+        if (newCol !== currentPiece.x) {
+            const direction = newCol - currentPiece.x;
+            if (isValidMove(direction, 0, currentPiece.shape)) {
+                currentPiece.x = newCol;
+                draw();
+            }
         }
     }, { passive: false });
 
@@ -333,7 +336,7 @@ function setTheme(themeName) {
     if (!gameOver) draw();
 }
 function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
-    if (!context) return;
+    if (!context || !blockSize) return;
     const lightColor = lightenColor(color, 20);
     const darkColor = darkenColor(color, 20);
     context.fillStyle = lightColor;
@@ -354,14 +357,12 @@ function drawGhostPiece() {
     ctx.globalAlpha = 1.0;
 }
 
-// IZMENA: Ispravljena i pojednostavljena formula za srazmerno prikazivanje "Next" bloka
 function drawPieceInCanvas(piece, context, canvasEl) {
     if (!piece || !context) return;
     context.clearRect(0, 0, canvasEl.width, canvasEl.height);
     const { shape, color } = piece;
     if (!shape) return;
     
-    // Dodajemo "+ 1" da stvorimo malo "vazduha" oko figure
     const maxDim = Math.max(...shape.map(r => r.length), shape.length) + 1;
     
     const blockSizeW = canvasEl.width / maxDim;
@@ -498,22 +499,66 @@ function updateLevelDisplay() { levelDisplay.textContent = `Level: ${level}`; }
 function updateAssistsDisplay() { assistsBombCountDisplay.textContent = assists.bomb; assistsHammerCountDisplay.textContent = assists.hammer; assistsUndoCountDisplay.textContent = assists.undo; }
 function togglePause() { if (gameOver) return; isPaused = !isPaused; if (isPaused) { cancelAnimationFrame(animationFrameId); pauseScreen.style.display = 'flex'; pauseBackgroundMusic(); } else { pauseScreen.style.display = 'none'; lastDropTime = performance.now(); animationFrameId = requestAnimationFrame(gameLoop); if (currentMode !== 'zen') playBackgroundMusic(); } }
 function showExitModal() { if (isPaused || gameOver) return; isPaused = true; cancelAnimationFrame(animationFrameId); pauseBackgroundMusic(); exitModal.style.display = 'flex'; }
+
+
 function handleKeydown(e) {
     if (isPaused || gameOver || !currentPiece) return;
     const key = e.key === ' ' ? 'Space' : e.key;
+
+    if (key === keyBindings.left) {
+        if (moveDirection === 1) stopARR();
+        if (moveDirection !== -1) startARR(-1);
+        moveDirection = -1;
+    } else if (key === keyBindings.right) {
+        if (moveDirection === -1) stopARR();
+        if (moveDirection !== 1) startARR(1);
+        moveDirection = 1;
+    }
+
     const action = Object.keys(keyBindings).find(k => keyBindings[k] === key);
     if (!action) return;
     e.preventDefault();
-    if (action === 'left') movePiece(-1);
-    else if (action === 'right') movePiece(1);
-    else if (action === 'down') movePieceDown();
+    
+    if (action === 'down') movePieceDown();
     else if (action === 'rotate') rotatePiece();
     else if (action === 'drop') dropPiece();
     else if (action === 'bomb') useBombAssist();
     else if (action === 'hammer') toggleHammerMode();
     else if (action === 'undo') useUndoAssist();
+    
     draw();
 }
+
+function handleKeyup(e) {
+    const key = e.key === ' ' ? 'Space' : e.key;
+    if ((key === keyBindings.left && moveDirection === -1) || (key === keyBindings.right && moveDirection === 1)) {
+        stopARR();
+        moveDirection = 0;
+    }
+}
+
+function startARR(direction) {
+    stopARR(); 
+    
+    movePiece(direction);
+    draw();
+
+    dasTimer = setTimeout(() => {
+        arrTimer = setInterval(() => {
+            movePiece(direction);
+            draw();
+        }, ARR_RATE);
+    }, DAS_DELAY);
+}
+
+function stopARR() {
+    clearTimeout(dasTimer);
+    clearInterval(arrTimer);
+    dasTimer = null;
+    arrTimer = null;
+}
+
+
 function useBombAssist() { if (assists.bomb > 0) { assists.bomb--; let r = Math.floor(Math.random() * 5) + 10; for (let i = 0; i < 3; i++) if (r + i < ROWS) for (let c = 0; c < COLS; c++) board[r + i][c] = 0; bombSound.play().catch(console.error); score += bombBonus; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); draw(); } }
 function toggleHammerMode() { if (assists.hammer > 0) { hammerMode = !hammerMode; canvas.style.cursor = hammerMode ? 'crosshair' : 'default'; if (!hammerMode) { hammerLine = -1; draw(); } } }
 function handleCanvasClick(e) { if (hammerMode) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); toggleHammerMode(); draw(); } } }
