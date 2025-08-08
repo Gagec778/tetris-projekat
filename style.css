@@ -60,7 +60,6 @@ body {
     align-items: stretch;
     width: 100%;
     gap: 5px;
-    /* IZMENA: Dodatno smanjena visina gornjeg panela */
     height: 60px;
     flex-shrink: 0;
 }
@@ -80,7 +79,6 @@ body {
     align-items: center;
     width: 100%;
     margin: 0;
-    /* IZMENA: Dodatno smanjena visina donjeg panela */
     height: 40px;
     flex-shrink: 0;
 }
@@ -121,10 +119,11 @@ canvas#gameCanvas {
     min-height: initial;
 }
 
+/* IZMENA: Canvas za "Next" je sada forsiran da bude kvadrat */
 #next-block-container canvas {
-    width: 100%;
-    height: 100%;
-    max-height: 40px;
+    height: 90%;
+    aspect-ratio: 1 / 1; /* Ovo ga čini kvadratom */
+    width: auto;
 }
 
 #game-stats {
@@ -184,30 +183,38 @@ canvas#gameCanvas {
     padding: 2px;
 }
 
+/* IZMENA: Poravnanje ikonica */
 #assist-content-wrapper {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between; /* Ovo ih poravnava sa ivicama */
     width: 100%;
-    gap: 10px;
     align-items: center;
 }
 .assist-item {
     display: flex;
+    flex-direction: column; /* Menjamo pravac za bolji izgled */
     align-items: center;
-    gap: 5px;
+    gap: 2px;
+    flex-basis: 33%; /* Dajemo svakom itemu trećinu prostora */
 }
+
+/* IZMENA: Novi, moderniji izgled za dugmiće pomoći */
 .assist-btn {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1em;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 2em; /* Povećavamo simbole */
+    line-height: 1;
+    transition: transform 0.2s ease;
+    text-shadow: 0 0 8px rgba(97, 218, 251, 0.7); /* Dodajemo sjaj */
+}
+.assist-btn:active {
+    transform: scale(0.9);
 }
 
 .count {
-    font-size: 1.1em;
+    font-size: 1em; /* Malo smanjujemo broj */
     color: var(--main-color);
     font-weight: bold;
 }
@@ -220,8 +227,6 @@ canvas#gameCanvas {
 .btn { padding: 8px; background-color: #e63946; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; font-family: 'Press Start 2P', cursive; }
 .btn:hover { background-color: #c72c38; }
 .btn:active { transform: translateY(1px); }
-.assist-btn:hover { background-color: #268981; }
-.assist-btn:active { transform: translateY(1px); }
 .disabled { opacity: 0.5; cursor: not-allowed; }
 .overlay h2 { font-size: 1.5em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
 .overlay p { font-size: 1em; margin-bottom: 15px; }
