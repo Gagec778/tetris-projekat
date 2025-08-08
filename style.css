@@ -79,7 +79,7 @@ body {
     align-items: center;
     width: 100%;
     margin: 0;
-    height: 40px;
+    height: 45px; /* Povećana visina za veće simbole */
     flex-shrink: 0;
 }
 
@@ -119,10 +119,9 @@ canvas#gameCanvas {
     min-height: initial;
 }
 
-/* IZMENA: Canvas za "Next" je sada forsiran da bude kvadrat */
 #next-block-container canvas {
     height: 90%;
-    aspect-ratio: 1 / 1; /* Ovo ga čini kvadratom */
+    aspect-ratio: 1 / 1;
     width: auto;
 }
 
@@ -183,38 +182,50 @@ canvas#gameCanvas {
     padding: 2px;
 }
 
-/* IZMENA: Poravnanje ikonica */
 #assist-content-wrapper {
     display: flex;
-    justify-content: space-between; /* Ovo ih poravnava sa ivicama */
+    justify-content: space-between;
     width: 100%;
     align-items: center;
 }
 .assist-item {
     display: flex;
-    flex-direction: column; /* Menjamo pravac za bolji izgled */
+    flex-direction: column;
     align-items: center;
     gap: 2px;
-    flex-basis: 33%; /* Dajemo svakom itemu trećinu prostora */
+    flex-basis: 33%;
 }
 
-/* IZMENA: Novi, moderniji izgled za dugmiće pomoći */
+/* IZMENA: Uklonjena crvena pozadina i ulepšani simboli */
 .assist-btn {
-    background: none;
+    background: transparent; /* Uklonjena pozadina */
     border: none;
     padding: 0;
     cursor: pointer;
-    font-size: 2em; /* Povećavamo simbole */
+    font-size: 2.2em; /* Dodatno povećani simboli */
     line-height: 1;
     transition: transform 0.2s ease;
-    text-shadow: 0 0 8px rgba(97, 218, 251, 0.7); /* Dodajemo sjaj */
+    /* Novi, lepši sjaj */
+    text-shadow: 0 0 5px rgba(97, 218, 251, 0.5), 0 0 10px rgba(97, 218, 251, 0.5); 
 }
 .assist-btn:active {
     transform: scale(0.9);
 }
 
+/* Opšte .btn pravilo za ostale dugmiće */
+.btn { 
+    padding: 8px; 
+    background-color: #e63946; 
+    color: #fff; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: background-color 0.2s, transform 0.1s; 
+    font-family: 'Press Start 2P', cursive; 
+}
+
 .count {
-    font-size: 1em; /* Malo smanjujemo broj */
+    font-size: 1.1em;
     color: var(--main-color);
     font-weight: bold;
 }
@@ -224,7 +235,6 @@ canvas#gameCanvas {
 #combo-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5em; color: #fff; text-shadow: 0 0 10px var(--main-color); text-align: center; z-index: 10; animation: fadeOut 1.5s forwards; display: none; white-space: pre-wrap; pointer-events: none; }
 @keyframes fadeOut { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
 #controls-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background-color: #1a1a2e; border: 3px solid var(--main-color); border-radius: 10px; padding: 20px; box-shadow: 0 0 20px rgba(97, 218, 251, 0.5); z-index: 2000; }
-.btn { padding: 8px; background-color: #e63946; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; font-family: 'Press Start 2P', cursive; }
 .btn:hover { background-color: #c72c38; }
 .btn:active { transform: translateY(1px); }
 .disabled { opacity: 0.5; cursor: not-allowed; }
