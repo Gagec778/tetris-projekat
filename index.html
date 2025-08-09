@@ -63,9 +63,9 @@
         <div id="mode-selector-container">
             <label for="mode-selector" style="font-size: 0.8em;">Mod igre:</label>
             <select id="mode-selector">
-                <option value="classic">Classic Mode</option>
+                <option value="classic">Classic</option>
                 <option value="sprint">Sprint 40</option>
-                <option value="zen">Zen Mode</option>
+                <option value="zen">Zen</option>
                 <option value="marathon">Marathon</option>
                 <option value="ultra">Ultra 2min</option>
             </select>
@@ -91,7 +91,7 @@
         <h1 id="game-over-title">GAME OVER!</h1>
         <div id="final-score" class="final-score">Your Score: 0</div>
         <div id="final-time" class="final-score"></div>
-        <button id="restart-button">Restart Game</button>
+        <button id="restart-button">Igraj Ponovo</button>
     </div>
 
     <div id="pause-screen" class="overlay" style="display: none;">
@@ -109,30 +109,14 @@
     
     <div id="controls-modal" style="display: none;">
         <h2>Podesi kontrole</h2>
-        <div class="control-item">
-            <span>Levo:</span><input type="text" data-action="left" readonly>
-        </div>
-        <div class="control-item">
-            <span>Desno:</span><input type="text" data-action="right" readonly>
-        </div>
-        <div class="control-item">
-            <span>Spusti:</span><input type="text" data-action="down" readonly>
-        </div>
-        <div class="control-item">
-            <span>Rotiraj:</span><input type="text" data-action="rotate" readonly>
-        </div>
-        <div class="control-item">
-            <span>Hard Drop:</span><input type="text" data-action="drop" readonly>
-        </div>
-        <div class="control-item">
-            <span>Bomba:</span><input type="text" data-action="bomb" readonly>
-        </div>
-        <div class="control-item">
-            <span>Čekić:</span><input type="text" data-action="hammer" readonly>
-        </div>
-        <div class="control-item">
-            <span>Poništi:</span><input type="text" data-action="undo" readonly>
-        </div>
+        <div class="control-item"><span>Levo:</span><input type="text" data-action="left" readonly></div>
+        <div class="control-item"><span>Desno:</span><input type="text" data-action="right" readonly></div>
+        <div class="control-item"><span>Spusti:</span><input type="text" data-action="down" readonly></div>
+        <div class="control-item"><span>Rotiraj:</span><input type="text" data-action="rotate" readonly></div>
+        <div class="control-item"><span>Hard Drop:</span><input type="text" data-action="drop" readonly></div>
+        <div class="control-item"><span>Bomba:</span><input type="text" data-action="bomb" readonly></div>
+        <div class="control-item"><span>Čekić:</span><input type="text" data-action="hammer" readonly></div>
+        <div class="control-item"><span>Poništi:</span><input type="text" data-action="undo" readonly></div>
         <button id="close-controls-modal">Zatvori</button>
     </div>
     
