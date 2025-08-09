@@ -644,7 +644,7 @@ function useBombAssist() {
         setTimeout(() => animationOverlay.classList.remove('flash'), 500);
 
         bombSound.play().catch(console.error);
-        initBoard(); // Briše celu tablu
+        initBoard(); 
         draw();
     }
 }
@@ -686,17 +686,16 @@ function animateHammerClear(row) {
                 x: c * BLOCK_SIZE,
                 y: row * BLOCK_SIZE,
                 color: board[row][c],
-                vy: Math.random() * -2 - 1, // Početna brzina na gore
+                vy: Math.random() * -2 - 1,
                 vx: (Math.random() - 0.5) * 2
             });
         }
     }
-    board[row].fill(0); // Odmah obriši logički
+    board[row].fill(0); 
 
-    let startTime = performance.now();
+    let start = performance.now();
     function animate(currentTime) {
-        const elapsedTime = currentTime - startTime;
-        draw(); // Iscrtaj tablu bez obrisanog reda
+        drawBoard(); // Iscrtaj tablu bez obrisanog reda
         
         let allParticlesGone = true;
         particles.forEach(p => {
@@ -716,12 +715,14 @@ function animateHammerClear(row) {
         if (!allParticlesGone) {
             requestAnimationFrame(animate);
         } else {
-            // Animacija je gotova, pomeri redove
             board.splice(row, 1);
             board.unshift(Array(COLS).fill(0));
             draw();
+            isPaused = false; // Nastavi igru
+            requestAnimationFrame(gameLoop);
         }
     }
+    isPaused = true;
     requestAnimationFrame(animate);
 }
 
