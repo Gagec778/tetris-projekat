@@ -215,7 +215,6 @@ function initDOMAndEventListeners() {
     loadKeyBindings();
     loadBestScore(modeSelector.value);
     
-    // Finalna logika za kontrole na dodir
     let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
     
     canvas.addEventListener('touchstart', e => {
@@ -693,19 +692,16 @@ function animateHammerClear(row) {
     }
     board[row].fill(0); 
 
-    let start = performance.now();
-    function animate(currentTime) {
-        drawBoard(); // Iscrtaj tablu bez obrisanog reda
+    function animate() {
+        drawBoard(); 
         
         let allParticlesGone = true;
         particles.forEach(p => {
-            p.vy += 0.1; // Gravitacija
+            p.vy += 0.1; 
             p.y += p.vy;
             p.x += p.vx;
             
-            ctx.save();
             drawBlock(p.x / BLOCK_SIZE, p.y / BLOCK_SIZE, p.color);
-            ctx.restore();
 
             if (p.y < canvas.height) {
                 allParticlesGone = false;
@@ -718,11 +714,8 @@ function animateHammerClear(row) {
             board.splice(row, 1);
             board.unshift(Array(COLS).fill(0));
             draw();
-            isPaused = false; // Nastavi igru
-            requestAnimationFrame(gameLoop);
         }
     }
-    isPaused = true;
     requestAnimationFrame(animate);
 }
 
