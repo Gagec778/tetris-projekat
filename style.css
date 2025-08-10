@@ -49,7 +49,7 @@ body {
     border: 5px solid var(--border-color);
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
-    padding: 10px;
+    padding: 5px;
     width: 100%;
     height: 100%;
     max-width: 500px;
@@ -57,19 +57,21 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
 }
 
-#info-section { /* header */
+header#info-section {
     display: flex;
     justify-content: space-between;
     align-items: stretch;
     width: 100%;
-    gap: 10px;
+    gap: 5px;
+    /* ISPRAVKA: Vraćena fiksna, manja visina da se panel ne rasteže */
+    height: 60px;
     flex-shrink: 0;
 }
 
-#canvas-container { /* main */
+main#canvas-container {
     flex-grow: 1; 
     min-height: 0; 
     width: 100%;
@@ -78,7 +80,7 @@ body {
     justify-content: center;
 }
 
-#assists-panel { /* footer */
+footer#assists-panel {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -112,22 +114,22 @@ canvas#gameCanvas {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 5px;
+    padding: 2px;
     gap: 2px;
     flex: 1;
     min-width: 0;
     overflow: hidden;
+    height: 100%;
 }
 
 .panel-header {
-    font-size: 0.8em;
+    font-size: 0.7em;
     width: 100%;
     text-align: center;
-    margin-bottom: 2px;
 }
 
 #next-block-container {
-    min-height: 60px;
+    min-height: initial;
 }
 
 #next-block-container canvas {
@@ -148,6 +150,7 @@ canvas#gameCanvas {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-bottom: 0;
 }
 #crown-icon {
     position: absolute;
@@ -172,11 +175,12 @@ canvas#gameCanvas {
 .stat-line {
     width: 100%;
     text-align: center;
-    font-size: 0.8em;
-    padding: 2px 0;
+    font-size: 0.7em;
+    padding: 1px 0;
 }
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
+
 
 #assist-content-wrapper {
     display: flex;
@@ -247,41 +251,12 @@ canvas#gameCanvas {
 /* =================================
    PREKRIVAČI (OVERLAYS)
    ================================= */
-.overlay { 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background-color: rgba(0, 0, 0, 0.9); 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center; 
-    text-align: center; 
-    gap: 20px; 
-    z-index: 1000; 
-    font-family: 'Press Start 2P', cursive; 
-    padding: 15px; 
-    box-sizing: border-box; 
-}
+.overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 20px; z-index: 1000; font-family: 'Press Start 2P', cursive; padding: 15px; box-sizing: border-box; }
 .overlay h1 { font-size: 1.8em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
 .overlay h2 { font-size: 1.5em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
 .overlay p { font-size: 1em; margin-bottom: 15px; }
 .overlay .final-score { font-size: 1.5em; color: #e0e0e0; margin-bottom: 15px; }
-
-.overlay button, .overlay select { 
-    padding: 15px 30px; 
-    font-size: 1.1em; 
-    background-color: #e63946; 
-    color: #fff; 
-    border: none; 
-    border-radius: 10px; 
-    cursor: pointer; 
-    transition: background-color 0.2s, transform 0.1s; 
-    box-shadow: 0 5px 8px rgba(0, 0, 0, 0.4); 
-    font-family: 'Press Start 2P', cursive; 
-}
+.overlay button, .overlay select { padding: 15px 30px; font-size: 1.1em; background-color: #e63946; color: #fff; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; box-shadow: 0 5px 8px rgba(0, 0, 0, 0.4); font-family: 'Press Start 2P', cursive; }
 .overlay button:hover { background-color: #c72c38; transform: translateY(-3px); }
 .overlay button:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
 .overlay select { padding: 8px 16px; font-size: 0.8em; color: var(--main-color); background-color: #1a1a2e; border: 2px solid var(--main-color); appearance: none; }
