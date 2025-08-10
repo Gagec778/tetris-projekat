@@ -66,7 +66,6 @@ header#info-section {
     align-items: stretch;
     width: 100%;
     gap: 5px;
-    /* ISPRAVKA: Vraćena fiksna, manja visina da se panel ne rasteže */
     height: 60px;
     flex-shrink: 0;
 }
@@ -237,15 +236,17 @@ canvas#gameCanvas {
     cursor: pointer;
     font-size: 2.2em;
     line-height: 1;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, opacity 0.2s ease;
     text-shadow: 0 0 8px rgba(97, 218, 251, 0.7);
 }
 .assist-btn:active {
     transform: scale(0.9);
 }
-.disabled { 
-    opacity: 0.5; 
-    cursor: not-allowed; 
+.assist-btn:disabled { 
+    opacity: 0.4; 
+    cursor: not-allowed;
+    text-shadow: none;
+    transform: none;
 }
 
 /* =================================
@@ -261,15 +262,20 @@ canvas#gameCanvas {
 .overlay button:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
 .overlay select { padding: 8px 16px; font-size: 0.8em; color: var(--main-color); background-color: #1a1a2e; border: 2px solid var(--main-color); appearance: none; }
 .overlay select option { background-color: #1a1a2e; color: var(--main-color); }
+
 #controls-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background-color: #1a1a2e; border: 3px solid var(--main-color); border-radius: 10px; padding: 20px; box-shadow: 0 0 20px rgba(97, 218, 251, 0.5); z-index: 2000; }
 #controls-modal h2 { font-size: 1.2em; margin-bottom: 15px; }
 .control-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9em; }
 .control-item span { color: #fff; }
-.control-item input { background-color: #000; color: var(--main-color); border: 1px solid var(--main-color); padding: 5px; width: 100px; text-align: center; font-family: 'Press Start 2P', cursive; }
+.control-item input { background-color: #000; color: var(--main-color); border: 1px solid var(--main-color); padding: 5px; width: 100px; text-align: center; font-family: 'Press Start 2P', cursive; transition: all 0.2s ease; }
+.control-item input.listening {
+    border-color: #e63946;
+    box-shadow: 0 0 8px #e63946;
+    color: #e63946;
+}
 #close-controls-modal { margin-top: 20px; width: 100%; }
 #controls-button { font-size: 0.9em; padding: 10px 20px; margin-top: 10px; }
-.continue-button { background-color: #2a9d8f; color: #fff; }
-.continue-button:hover { background-color: #268981; }
+
 #exit-modal .modal-buttons { display: flex; gap: 15px; margin-top: 20px; }
 
 /* =================================
