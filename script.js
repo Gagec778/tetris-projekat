@@ -13,8 +13,13 @@ const COLS = 10;
 const ROWS = 20;
 const DAS_DELAY = 160; 
 const ARR_RATE = 30; 
-const TAP_DURATION_THRESHOLD = 200; // Vreme za tap
-const TAP_DISTANCE_THRESHOLD = 20;  // Maksimalno pomeranje za tap
+
+// PODEŠAVANJA ZA TOUCH "OSEĆAJ" - OVE VREDNOSTI MOŽEMO MENJATI
+const TAP_MAX_DURATION = 180;       // ms - Max trajanje dodira da bi bio TAP
+const TAP_MAX_DISTANCE = 15;        // px - Max pomeraj prsta da bi bio TAP
+const HARD_DROP_MIN_Y_DISTANCE = 80;// px - Min vertikalna distanca za HARD DROP
+const FLICK_MAX_DURATION = 250;     // ms - Max trajanje za HARD DROP (flick)
+const HORIZONTAL_MOVE_THRESHOLD = 0.5; // Koliko bloka treba preći da se registruje pomeraj
 
 const TETROMINOES = [
     [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
@@ -60,13 +65,13 @@ let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, f
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
+
 // Varijable za Touch kontrole
-let touchStartX, touchStartY, touchStartTime, touchCurrentX;
-let isSwiping = false;
+let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+let lockedColumn = 0;
+let softDropTimer = null;
+let isTouching = false;
 
-
-// ... (ceo kod od drawBlock do handleCanvasHover ostaje isti) ...
-// Preskačemo do initDOMAndEventListeners da ne bi bilo predugačko
 
 // =================================================================================
 // ===== FUNKCIJE ZA CRTANJE (RENDER) =====
@@ -84,6 +89,7 @@ function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
 }
 
 function drawBoard() {
+    if (!ctx || !canvas) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = THEMES[currentTheme].boardBackground;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -111,17 +117,20 @@ function drawCurrentPiece() {
 
 function drawGhostPiece() {
     if (!currentPiece || !BLOCK_SIZE) return;
-    const potentialX = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
-    if (!isValidMove(potentialX - currentPiece.x, 0, currentPiece.shape)) {
+    let logicalX = currentPiece.x;
+    if (visualOffsetX !== 0) {
+        logicalX += Math.round(visualOffsetX / BLOCK_SIZE);
+    }
+    if (!isValidMove(logicalX - currentPiece.x, 0, currentPiece.shape)) {
         return;
     }
     let ghostY = currentPiece.y;
-    while (isValidMove(0, 1, currentPiece.shape, ghostY, potentialX)) {
+    while (isValidMove(0, 1, currentPiece.shape, ghostY, logicalX)) {
         ghostY++;
     }
     ctx.globalAlpha = 0.3; 
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(potentialX + c, ghostY + r, currentPiece.color); 
+        if (cell) drawBlock(logicalX + c, ghostY + r, currentPiece.color); 
     }));
     ctx.globalAlpha = 1.0;
 }
@@ -211,18 +220,19 @@ function rotatePiece() {
     for (const [kx, ky] of kicks) if (isValidMove(kx, ky, newShape)) {
         currentPiece.x += kx; currentPiece.y += ky; currentPiece.shape = newShape;
         rotateSound.currentTime = 0; rotateSound.play().catch(console.error); 
-        draw(); // Odmah iscrtaj promenu
+        draw();
         return;
     }
 }
 
 function movePiece(direction) { 
     if (currentPiece && isValidMove(direction, 0, currentPiece.shape)) {
-        currentPiece.x += direction; 
-        draw(); // Odmah iscrtaj promenu
+        currentPiece.x += direction;
     }
 }
+
 function movePieceDown() { if (currentPiece && isValidMove(0, 1, currentPiece.shape)) { currentPiece.y++; lastDropTime = performance.now(); } else { mergePiece(); } draw(); }
+
 function dropPiece() {
     if (!currentPiece) return;
     const startY = currentPiece.y;
@@ -251,6 +261,9 @@ function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y, curr
 
 function mergePiece() {
     if (!currentPiece) return;
+    currentPiece.x += Math.round(visualOffsetX / BLOCK_SIZE);
+    visualOffsetX = 0;
+
     boardHistory.push(JSON.parse(JSON.stringify(board)));
     if (boardHistory.length > 5) boardHistory.shift();
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { if (cell) { if (currentPiece.y + r < 0) { endGame(); return; } if (board[currentPiece.y + r]) board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color; } }));
@@ -305,9 +318,11 @@ function handleKeyup(e) {
 function startARR(direction) {
     stopARR(); 
     movePiece(direction);
+    draw();
     dasTimer = setTimeout(() => {
         arrTimer = setInterval(() => {
             movePiece(direction);
+            draw();
         }, ARR_RATE);
     }, DAS_DELAY);
 }
@@ -322,58 +337,83 @@ function stopARR() {
 function handleCanvasClick(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); toggleHammerMode(); draw(); } } }
 function handleCanvasHover(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
-// ===== TOUCH KONTROLE =====
+// ===== NOVI KOD ZA TOUCH KONTROLE =====
 function handleTouchStart(e) {
     if (isPaused || gameOver) return;
     e.preventDefault();
+    
     touchStartX = e.touches[0].clientX;
-    touchCurrentX = touchStartX;
     touchStartY = e.touches[0].clientY;
     touchStartTime = performance.now();
-    isSwiping = false;
+    lockedColumn = currentPiece.x;
+    visualOffsetX = 0; // Resetuj vizuelni pomak
+    isTouching = true;
+    
+    // Zaustavi soft drop ako je bio aktivan
+    clearInterval(softDropTimer);
+    softDropTimer = null;
 }
 
 function handleTouchMove(e) {
-    if (isPaused || gameOver) return;
+    if (!isTouching || isPaused || gameOver) return;
     e.preventDefault();
-    isSwiping = true;
-    const newX = e.touches[0].clientX;
-    const deltaX = newX - touchCurrentX;
-    
-    // Pomeranje levo/desno
-    if (Math.abs(deltaX) > BLOCK_SIZE) {
-        movePiece(deltaX > 0 ? 1 : -1);
-        touchCurrentX = newX;
+
+    let currentX = e.touches[0].clientX;
+    let currentY = e.touches[0].clientY;
+    let deltaX = currentX - touchStartX;
+    let deltaY = currentY - touchStartY;
+
+    // Soft Drop: ako igrač vuče na dole, aktiviraj soft drop
+    if (deltaY > BLOCK_SIZE && !softDropTimer) {
+        softDropTimer = setInterval(movePieceDown, 100); // Ponavljaj soft drop
     }
-    
-    // Soft drop
-    const deltaY = e.touches[0].clientY - touchStartY;
-    if (deltaY > BLOCK_SIZE * 0.5) { // Ako povuče na dole
-        movePieceDown();
-        touchStartY = e.touches[0].clientY; // Resetuj Y da bi se moglo nastaviti
+
+    // Horizontalno pomeranje (glatko)
+    const newTargetX = lockedColumn + deltaX / BLOCK_SIZE;
+    const targetCol = Math.round(newTargetX);
+
+    if (isValidMove(targetCol - currentPiece.x, 0, currentPiece.shape)) {
+       visualOffsetX = (newTargetX - currentPiece.x) * BLOCK_SIZE;
     }
+    draw();
 }
 
 function handleTouchEnd(e) {
-    if (isPaused || gameOver) return;
+    if (!isTouching || isPaused || gameOver) return;
     e.preventDefault();
-    const touchEndTime = performance.now();
-    const touchDuration = touchEndTime - touchStartTime;
-    
-    const deltaX = e.changedTouches[0].clientX - touchStartX;
-    const deltaY = e.changedTouches[0].clientY - touchStartY;
 
-    if (!isSwiping) { // Ako nije bilo prevlačenja, to je TAP
-        if (touchDuration < TAP_DURATION_THRESHOLD && Math.abs(deltaX) < TAP_DISTANCE_THRESHOLD && Math.abs(deltaY) < TAP_DISTANCE_THRESHOLD) {
-            rotatePiece();
-        }
-    } else { // Ako je bilo prevlačenja
-        // Hard drop (flick)
-        if (deltaY > 50 && touchDuration < 250) { // Brzi pokret na dole
-            dropPiece();
-        }
+    clearInterval(softDropTimer);
+    softDropTimer = null;
+    isTouching = false;
+
+    let touchEndX = e.changedTouches[0].clientX;
+    let touchEndY = e.changedTouches[0].clientY;
+    let deltaX = touchEndX - touchStartX;
+    let deltaY = touchEndY - touchStartY;
+    let touchDuration = performance.now() - touchStartTime;
+
+    // 1. Provera za HARD DROP (Flick)
+    if (deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
+        currentPiece.x = lockedColumn; // Zaključaj kolonu
+        visualOffsetX = 0;
+        dropPiece();
+        return; // Završi obradu
     }
-    isSwiping = false;
+
+    // 2. Provera za TAP (Rotacija)
+    if (touchDuration < TAP_MAX_DURATION && Math.abs(deltaX) < TAP_MAX_DISTANCE && Math.abs(deltaY) < TAP_MAX_DISTANCE) {
+        visualOffsetX = 0; // Poništi slučajni mali pomeraj
+        rotatePiece();
+        return; // Završi obradu
+    }
+
+    // 3. Commit za horizontalno pomeranje
+    let newCol = Math.round(currentPiece.x + visualOffsetX / BLOCK_SIZE);
+    if (isValidMove(newCol - currentPiece.x, 0, currentPiece.shape)) {
+        currentPiece.x = newCol;
+    }
+    visualOffsetX = 0;
+    draw();
 }
 
 
@@ -387,6 +427,7 @@ function startGame() {
     ultraTimerDisplay.style.display = currentMode === 'ultra' ? 'block' : 'none';
     startScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; pauseScreen.style.display = 'none';
     gameOver = false; isPaused = false;
+    visualOffsetX = 0;
     currentPieceIndex = Math.floor(Math.random() * TETROMINOES.length); nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
     generateNewPiece();
     if (currentMode !== 'zen') playBackgroundMusic();
@@ -485,10 +526,20 @@ function useUndoAssist() { if (assists.undo > 0 && boardHistory.length > 0) { as
 
 function gameLoop(timestamp) {
     if (gameOver || isPaused) return;
-    if (isAnimating) { requestAnimationFrame(gameLoop); return; }
-    if (currentMode === 'sprint') sprintTimerDisplay.textContent = `TIME: ${((performance.now() - startTime) / 1000).toFixed(2)}s`;
-    else if (currentMode === 'ultra') { const remaining = ultraTimeLimit - (performance.now() - startTime) / 1000; if (remaining <= 0) { endGame(); return; } ultraTimerDisplay.textContent = `TIME: ${remaining.toFixed(2)}s`; }
-    if (timestamp - lastDropTime > dropInterval) { if (currentPiece) { if (isValidMove(0, 1, currentPiece.shape)) currentPiece.y++; else mergePiece(); } lastDropTime = timestamp; }
+    if (isAnimating || isTouching) { // Pauziraj automatsko spuštanje dok igrač interaguje
+        animationFrameId = requestAnimationFrame(gameLoop);
+        return;
+    }
+    if (timestamp - lastDropTime > dropInterval) { 
+        if (currentPiece) { 
+            if (isValidMove(0, 1, currentPiece.shape)) {
+                currentPiece.y++; 
+            } else { 
+                mergePiece(); 
+            } 
+        } 
+        lastDropTime = timestamp; 
+    }
     draw(); 
     animationFrameId = requestAnimationFrame(gameLoop);
 }
@@ -496,12 +547,12 @@ function gameLoop(timestamp) {
 // =================================================================================
 // ===== POMOĆNE FUNKCIJE (HELPERS) =====
 // =================================================================================
-function updateScoreDisplay() { scoreDisplay.textContent = `Score: ${score}`; }
-function updateLevelDisplay() { levelDisplay.textContent = `Level: ${level}`; }
+function updateScoreDisplay() { if(scoreDisplay) scoreDisplay.textContent = `Score: ${score}`; }
+function updateLevelDisplay() { if(levelDisplay) levelDisplay.textContent = `Level: ${level}`; }
 function updateAssistsDisplay() { 
-    assistsBombCountDisplay.textContent = assists.bomb; 
-    assistsHammerCountDisplay.textContent = assists.hammer; 
-    assistsUndoCountDisplay.textContent = assists.undo; 
+    if(assistsBombCountDisplay) assistsBombCountDisplay.textContent = assists.bomb; 
+    if(assistsHammerCountDisplay) assistsHammerCountDisplay.textContent = assists.hammer; 
+    if(assistsUndoCountDisplay) assistsUndoCountDisplay.textContent = assists.undo; 
 }
 function showComboMessage(type, count) { 
     let msg = type; 
@@ -527,7 +578,7 @@ function initDOMAndEventListeners() {
     nextBlockCtx = nextBlockCanvas.getContext('2d');
     backgroundImageElement = document.getElementById('background-image');
 
-    // Dohvatanje ekrana i prikaza
+    // ... (ostali getElementById ostaju isti)
     startScreen = document.getElementById('start-screen');
     gameOverScreen = document.getElementById('game-over-screen');
     pauseScreen = document.getElementById('pause-screen');
@@ -540,33 +591,23 @@ function initDOMAndEventListeners() {
     sprintTimerDisplay = document.getElementById('sprint-timer');
     ultraTimerDisplay = document.getElementById('ultra-timer');
     bestScoreDisplay = document.getElementById('best-score-display');
-    
-    // Dohvatanje dugmića
     startButton = document.getElementById('start-button');
     restartButton = document.getElementById('restart-button');
     resumeButton = document.getElementById('resume-button');
     homeButton = document.getElementById('home-button');
     pauseButton = document.getElementById('pause-button');
-    
-    // Dohvatanje birača
     themeSwitcher = document.getElementById('theme-switcher');
     modeSelector = document.getElementById('mode-selector');
-
-    // Dohvatanje assist elemenata
     assistsBombButton = document.getElementById('assist-bomb-button');
     assistsBombCountDisplay = document.getElementById('assists-bomb-count');
     assistsHammerButton = document.getElementById('assist-hammer-button');
     assistsHammerCountDisplay = document.getElementById('assists-hammer-count');
     assistsUndoButton = document.getElementById('assist-undo-button');
     assistsUndoCountDisplay = document.getElementById('assists-undo-count');
-    
-    // Dohvatanje modalnih prozora za kontrole
     controlsModal = document.getElementById('controls-modal');
     controlsButton = document.getElementById('controls-button');
     closeControlsModal = document.getElementById('close-controls-modal');
     controlInputs = document.querySelectorAll('.control-item input');
-    
-    // Zvukovi
     dropSound = document.getElementById('dropSound');
     clearSound = document.getElementById('clearSound');
     rotateSound = document.getElementById('rotateSound');
@@ -581,21 +622,14 @@ function initDOMAndEventListeners() {
         const container = document.getElementById('canvas-container');
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
-
         BLOCK_SIZE = Math.floor(Math.min(containerWidth / COLS, containerHeight / ROWS));
-        
-        const canvasWidth = COLS * BLOCK_SIZE;
-        const canvasHeight = ROWS * BLOCK_SIZE;
-
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-        
+        canvas.width = COLS * BLOCK_SIZE;
+        canvas.height = ROWS * BLOCK_SIZE;
         const nextContainer = document.getElementById('next-block-container');
         if (nextContainer.clientWidth > 0) {
             nextBlockCanvas.width = nextContainer.clientWidth * 0.9;
             nextBlockCanvas.height = nextContainer.clientHeight * 0.9;
         }
-        
         draw(); 
         drawNextPiece();
     }
@@ -611,8 +645,8 @@ function initDOMAndEventListeners() {
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-
-    startButton.addEventListener('click', () => {
+    // ... (ostali listeneri ostaju isti)
+     startButton.addEventListener('click', () => {
         countdownOverlay.style.display = 'flex';
         let count = 3;
         countdownOverlay.textContent = count;
@@ -627,63 +661,53 @@ function initDOMAndEventListeners() {
             }
         }, 1000);
     });
-    
     restartButton.addEventListener('click', () => {
         gameOverScreen.style.display = 'none';
         startScreen.style.display = 'flex';
     });
-
     pauseButton.addEventListener('click', togglePause);
     resumeButton.addEventListener('click', togglePause);
     homeButton.addEventListener('click', () => window.location.reload());
-
     themeSwitcher.addEventListener('change', (e) => {
         applyTheme(e.target.value);
         localStorage.setItem('theme', e.target.value);
     });
-
     modeSelector.addEventListener('change', (e) => {
         currentMode = e.target.value;
         localStorage.setItem('mode', currentMode);
     });
-
     assistsBombButton.addEventListener('click', useBombAssist);
     assistsHammerButton.addEventListener('click', toggleHammerMode);
     assistsUndoButton.addEventListener('click', useUndoAssist);
 
     // --- Logika za podešavanje kontrola ---
     function updateControlsDisplay() {
-        if (!keyBindings) return; // Provera da li su kontrole učitane
+        if (!keyBindings) return;
         controlInputs.forEach(input => {
             const action = input.dataset.action;
             input.value = keyBindings[action] === ' ' ? 'Space' : keyBindings[action];
         });
     }
-
     controlsButton.addEventListener('click', () => {
         updateControlsDisplay();
         controlsModal.style.display = 'block';
     });
-
     closeControlsModal.addEventListener('click', () => {
         controlsModal.style.display = 'none';
     });
-
     controlInputs.forEach(input => {
         input.addEventListener('click', (e) => {
             const clickedInput = e.target;
             clickedInput.value = '...';
-            
             function keydownHandler(event) {
                 event.preventDefault();
                 const newKey = event.key === ' ' ? 'Space' : event.key;
                 const action = clickedInput.dataset.action;
                 keyBindings[action] = newKey;
                 localStorage.setItem('keyBindings', JSON.stringify(keyBindings));
-                updateControlsDisplay(); // Ažuriraj sva polja
+                updateControlsDisplay();
                 window.removeEventListener('keydown', keydownHandler, true);
             }
-            
             window.addEventListener('keydown', keydownHandler, { capture: true, once: true });
         });
     });
@@ -701,14 +725,12 @@ function applyTheme(themeName) {
     root.style.setProperty('--board-bg-color', theme.boardBackground);
     root.style.setProperty('--grid-color', theme.gridColor);
     root.style.setProperty('--flash-color', theme.flashColor);
-    
     if (theme.backgroundImage) {
         backgroundImageElement.style.backgroundImage = theme.backgroundImage;
         backgroundImageElement.style.opacity = '1';
     } else {
         backgroundImageElement.style.opacity = '0';
     }
-
     COLORS = theme.blockColors;
     if (!gameOver || (ctx && canvas.width > 0)) {
         draw();
@@ -725,16 +747,14 @@ function loadSettings() {
         right: 'ArrowRight',
         down: 'ArrowDown',
         rotate: 'ArrowUp',
-        drop: ' ', // Koristimo ' ' za Space
+        drop: ' ',
         bomb: 'b',
         hammer: 'h',
         undo: 'u'
     };
-
     themeSwitcher.value = savedTheme;
     modeSelector.value = savedMode;
     currentMode = savedMode;
-    
     bestScoreDisplay.textContent = bestScore;
     updateAssistsDisplay();
     applyTheme(savedTheme);
@@ -744,7 +764,7 @@ function playBackgroundMusic() {
     if (backgroundMusic && !backgroundMusicPlaying) {
         backgroundMusic.loop = true;
         backgroundMusic.volume = 0.3;
-        backgroundMusic.play().catch(e => console.log("Muzika je blokirana od strane pregledača. Potrebna je interakcija korisnika.", e));
+        backgroundMusic.play().catch(e => console.log("Muzika je blokirana od strane pregledača.", e));
         backgroundMusicPlaying = true;
     }
 }
