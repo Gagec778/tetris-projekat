@@ -43,7 +43,7 @@ body {
     border: 5px solid var(--border-color);
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
-    padding: 10px;
+    padding: 5px;
     width: 100%;
     height: 100%;
     max-width: 500px;
@@ -51,7 +51,7 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
 }
 
 #info-section {
@@ -59,7 +59,8 @@ body {
     justify-content: space-between;
     align-items: stretch;
     width: 100%;
-    gap: 10px;
+    gap: 5px;
+    height: 60px;
     flex-shrink: 0;
 }
 
@@ -70,7 +71,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
 }
 
 #assists-panel {
@@ -101,22 +101,22 @@ canvas#gameCanvas {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 5px;
+    padding: 2px;
     gap: 2px;
     flex: 1;
     min-width: 0;
     overflow: hidden;
+    height: 100%;
 }
 
 .panel-header {
-    font-size: 0.8em;
+    font-size: 0.7em;
     width: 100%;
     text-align: center;
-    margin-bottom: 2px;
 }
 
 #next-block-container {
-    min-height: 60px;
+    min-height: initial;
 }
 
 #next-block-container canvas {
@@ -137,6 +137,7 @@ canvas#gameCanvas {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-bottom: 0;
 }
 #crown-icon {
     position: absolute;
@@ -161,8 +162,8 @@ canvas#gameCanvas {
 .stat-line {
     width: 100%;
     text-align: center;
-    font-size: 0.8em;
-    padding: 2px 0;
+    font-size: 0.7em;
+    padding: 1px 0;
 }
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
@@ -252,18 +253,3 @@ canvas#gameCanvas {
 .continue-button { background-color: #2a9d8f; color: #fff; }
 .continue-button:hover { background-color: #268981; }
 #exit-modal .modal-buttons { display: flex; gap: 15px; margin-top: 20px; }
-
-#animation-overlay.flash {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    background-color: white;
-    opacity: 0;
-    animation: flash-animation 0.5s ease-out;
-    pointer-events: none;
-}
-
-@keyframes flash-animation {
-    0% { opacity: 0.8; }
-    100% { opacity: 0; }
-}
