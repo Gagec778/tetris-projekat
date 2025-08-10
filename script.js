@@ -19,7 +19,6 @@ const TAP_MAX_DURATION = 200;
 const TAP_MAX_DISTANCE = 20;
 const HARD_DROP_MIN_Y_DISTANCE = 70;
 const FLICK_MAX_DURATION = 250;
-const SMOOTHING_FACTOR = 0.3; // Koliko brzo vizuelni blok "juri" logički. Manji broj = sporije i glađe.
 
 // PODEŠAVANJA PRAVILA IGRE
 const POINTS = { SINGLE: 100, DOUBLE: 300, TRIPLE: 500, TETRIS: 800 };
@@ -60,7 +59,6 @@ let hammerLine = -1;
 let currentPieceIndex, nextPieceIndex;
 let keyBindings;
 let dasTimer = null, arrTimer = null, moveDirection = 0;
-let visualX = 0; // VIZUELNA X pozicija u pikselima
 let BLOCK_SIZE;
 let linesToClear = [];
 let COLORS, currentTheme;
@@ -110,14 +108,9 @@ function drawBoard() {
 
 function drawCurrentPiece() { 
     if (!currentPiece) return;
-    ctx.save();
-    // Koristimo VIZUELNU poziciju za iscrtavanje
-    ctx.translate(visualX, 0);
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        // Iscrtavamo relativno na (0, y) jer je x već rešen sa translate
-        if (cell) drawBlock(0 + c, currentPiece.y + r, currentPiece.color); 
+        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
     })); 
-    ctx.restore();
 }
 
 function drawGhostPiece() {
@@ -127,14 +120,10 @@ function drawGhostPiece() {
         ghostY++;
     }
 
-    ctx.globalAlpha = 0.3;
-    ctx.save();
-    // Senka takođe koristi istu VIZUELNU poziciju za glatkoću
-    ctx.translate(visualX, 0);
+    ctx.globalAlpha = 0.3; 
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(0 + c, ghostY + r, currentPiece.color); 
+        if (cell) drawBlock(currentPiece.x + c, ghostY + r, currentPiece.color); 
     }));
-    ctx.restore();
     ctx.globalAlpha = 1.0;
 }
 
@@ -195,10 +184,7 @@ function animateLineClear(timestamp) {
         board[r].forEach((cell, c) => { if (cell) drawBlock(c, r, cell); }); 
         ctx.globalAlpha = 1; 
     });
-    // Tokom animacije, koristimo logičku poziciju, ne vizuelnu
-    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
-    }));
+    drawCurrentPiece(); 
     requestAnimationFrame(animateLineClear);
 }
 
@@ -213,8 +199,6 @@ function createCurrentPiece() {
         return;
     }
     currentPiece = { shape, color: COLORS[currentPieceIndex], x: Math.floor((COLS - shape[0].length) / 2), y: 0 };
-    // Postavi vizuelnu poziciju da odgovara logičkoj
-    visualX = currentPiece.x * BLOCK_SIZE;
 }
 
 function generateNewPiece() {
@@ -257,6 +241,7 @@ function movePieceDown() {
     } else {
         mergePiece();
     }
+    draw();
 }
 
 function dropPiece() {
@@ -348,6 +333,7 @@ function handleKeydown(e) {
     else if (action === 'bomb') useBombAssist();
     else if (action === 'hammer') toggleHammerMode();
     else if (action === 'undo') useUndoAssist();
+    draw();
 }
 
 function handleKeyup(e) {
@@ -362,9 +348,11 @@ function handleKeyup(e) {
 function startARR(direction) {
     stopARR(); 
     movePiece(direction);
+    draw();
     dasTimer = setTimeout(() => {
         arrTimer = setInterval(() => {
             movePiece(direction);
+            draw();
         }, ARR_RATE);
     }, DAS_DELAY);
 }
@@ -379,7 +367,7 @@ function stopARR() {
 function handleCanvasClick(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); toggleHammerMode(); draw(); } } }
 function handleCanvasHover(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
-// ===== KOD ZA TOUCH KONTROLE (KONAČNA VERZIJA) =====
+// ===== KOD ZA TOUCH KONTROLE (STABILNA VERZIJA) =====
 function handleTouchStart(e) {
     if (isPaused || gameOver || !currentPiece) return;
     e.preventDefault();
@@ -408,7 +396,7 @@ function handleTouchMove(e) {
         lastTouchY = currentY; 
     }
     
-    // Horizontalno pomeranje (logičko)
+    // Horizontalno pomeranje
     const blocksMoved = Math.round(deltaX / BLOCK_SIZE);
     const newX = initialPieceX + blocksMoved;
     
@@ -417,6 +405,8 @@ function handleTouchMove(e) {
             currentPiece.x = newX;
         }
     }
+    
+    draw();
 }
 
 function handleTouchEnd(e) {
@@ -433,8 +423,9 @@ function handleTouchEnd(e) {
     let deltaY = touchEndY - touchStartY;
     let touchDuration = performance.now() - touchStartTime;
 
-    // Hard Drop (Flick)
+    // Hard Drop (Flick) sa zaključavanjem
     if (deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
+        currentPiece.x = initialPieceX; // KLJUČNA ISPRAVKA: Vrati na početnu X poziciju
         dropPiece();
         return;
     }
@@ -444,7 +435,10 @@ function handleTouchEnd(e) {
         rotatePiece();
         return;
     }
+
+    draw();
 }
+
 
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
@@ -563,15 +557,6 @@ function gameLoop(timestamp) {
         return;
     }
     
-    // Animiraj vizuelnu poziciju ka logičkoj poziciji
-    const targetX = currentPiece.x * BLOCK_SIZE;
-    visualX += (targetX - visualX) * SMOOTHING_FACTOR;
-    
-    // Zaustavi animaciju ako je dovoljno blizu
-    if (Math.abs(targetX - visualX) < 0.5) {
-        visualX = targetX;
-    }
-
     if (timestamp - lastDropTime > dropInterval) { 
         movePieceDown();
     }
