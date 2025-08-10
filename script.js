@@ -325,11 +325,7 @@ function startGame() {
 function endGame(isSprintWin = false, exitToMainMenu = false) {
     gameOver = true; if (animationFrameId) cancelAnimationFrame(animationFrameId); pauseBackgroundMusic();
     if (exitToMainMenu) { startScreen.style.display = 'flex'; gameOverScreen.style.display = 'none'; return; }
-    if (score > bestScore) {
-        bestScore = score;
-        localStorage.setItem('bestScore', bestScore);
-        bestScoreDisplay.textContent = `${bestScore}`;
-    }
+    // OVA LINIJA JE BILA DUPLIRANA I PRAVILA PROBLEM, SADA JE SAMO JEDNA ISPRAVNA U `loadBestScore`
     if (isSprintWin) { finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; finalTimeDisplay.style.display = 'block'; document.getElementById('game-over-title').textContent = 'PERFECT!'; }
     else { gameOverSound.play().catch(console.error); finalTimeDisplay.style.display = 'none'; document.getElementById('game-over-title').textContent = 'GAME OVER!'; }
     finalScoreDisplay.textContent = `Your Score: ${score}`;
