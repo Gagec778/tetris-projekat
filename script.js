@@ -13,7 +13,9 @@ const COLS = 10;
 const ROWS = 20;
 const DAS_DELAY = 160; 
 const ARR_RATE = 30; 
-const TAP_DURATION_THRESHOLD = 150;
+const TAP_DURATION_THRESHOLD = 200; // Vreme za tap
+const TAP_DISTANCE_THRESHOLD = 20;  // Maksimalno pomeranje za tap
+
 const TETROMINOES = [
     [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
     [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
@@ -51,7 +53,6 @@ let dasTimer = null, arrTimer = null, moveDirection = 0;
 let visualOffsetX = 0;
 let BLOCK_SIZE;
 let linesToClear = [];
-let TAP_DISTANCE_THRESHOLD, DROP_DISTANCE_THRESHOLD;
 let COLORS, currentTheme;
 let currentMode = 'classic';
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
@@ -59,6 +60,13 @@ let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, f
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
+// Varijable za Touch kontrole
+let touchStartX, touchStartY, touchStartTime, touchCurrentX;
+let isSwiping = false;
+
+
+// ... (ceo kod od drawBlock do handleCanvasHover ostaje isti) ...
+// Preskačemo do initDOMAndEventListeners da ne bi bilo predugačko
 
 // =================================================================================
 // ===== FUNKCIJE ZA CRTANJE (RENDER) =====
@@ -196,17 +204,24 @@ function generateNewPiece() {
 }
 
 function rotatePiece() {
-    if (!currentPiece) return;
+    if (!currentPiece || isPaused || gameOver) return;
     const N = currentPiece.shape.length, newShape = Array(N).fill(0).map(() => Array(N).fill(0));
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) newShape[c][N - 1 - r] = currentPiece.shape[r][c];
     const kicks = [[0, 0], [-1, 0], [1, 0], [0, 1], [-1, 1], [1, 1], [0, -1], [0, -2], [-2, 0], [2, 0]];
     for (const [kx, ky] of kicks) if (isValidMove(kx, ky, newShape)) {
         currentPiece.x += kx; currentPiece.y += ky; currentPiece.shape = newShape;
-        rotateSound.currentTime = 0; rotateSound.play().catch(console.error); return;
+        rotateSound.currentTime = 0; rotateSound.play().catch(console.error); 
+        draw(); // Odmah iscrtaj promenu
+        return;
     }
 }
 
-function movePiece(direction) { if (currentPiece && isValidMove(direction, 0, currentPiece.shape)) currentPiece.x += direction; }
+function movePiece(direction) { 
+    if (currentPiece && isValidMove(direction, 0, currentPiece.shape)) {
+        currentPiece.x += direction; 
+        draw(); // Odmah iscrtaj promenu
+    }
+}
 function movePieceDown() { if (currentPiece && isValidMove(0, 1, currentPiece.shape)) { currentPiece.y++; lastDropTime = performance.now(); } else { mergePiece(); } draw(); }
 function dropPiece() {
     if (!currentPiece) return;
@@ -290,11 +305,9 @@ function handleKeyup(e) {
 function startARR(direction) {
     stopARR(); 
     movePiece(direction);
-    draw();
     dasTimer = setTimeout(() => {
         arrTimer = setInterval(() => {
             movePiece(direction);
-            draw();
         }, ARR_RATE);
     }, DAS_DELAY);
 }
@@ -308,6 +321,61 @@ function stopARR() {
 
 function handleCanvasClick(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); toggleHammerMode(); draw(); } } }
 function handleCanvasHover(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
+
+// ===== TOUCH KONTROLE =====
+function handleTouchStart(e) {
+    if (isPaused || gameOver) return;
+    e.preventDefault();
+    touchStartX = e.touches[0].clientX;
+    touchCurrentX = touchStartX;
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = performance.now();
+    isSwiping = false;
+}
+
+function handleTouchMove(e) {
+    if (isPaused || gameOver) return;
+    e.preventDefault();
+    isSwiping = true;
+    const newX = e.touches[0].clientX;
+    const deltaX = newX - touchCurrentX;
+    
+    // Pomeranje levo/desno
+    if (Math.abs(deltaX) > BLOCK_SIZE) {
+        movePiece(deltaX > 0 ? 1 : -1);
+        touchCurrentX = newX;
+    }
+    
+    // Soft drop
+    const deltaY = e.touches[0].clientY - touchStartY;
+    if (deltaY > BLOCK_SIZE * 0.5) { // Ako povuče na dole
+        movePieceDown();
+        touchStartY = e.touches[0].clientY; // Resetuj Y da bi se moglo nastaviti
+    }
+}
+
+function handleTouchEnd(e) {
+    if (isPaused || gameOver) return;
+    e.preventDefault();
+    const touchEndTime = performance.now();
+    const touchDuration = touchEndTime - touchStartTime;
+    
+    const deltaX = e.changedTouches[0].clientX - touchStartX;
+    const deltaY = e.changedTouches[0].clientY - touchStartY;
+
+    if (!isSwiping) { // Ako nije bilo prevlačenja, to je TAP
+        if (touchDuration < TAP_DURATION_THRESHOLD && Math.abs(deltaX) < TAP_DISTANCE_THRESHOLD && Math.abs(deltaY) < TAP_DISTANCE_THRESHOLD) {
+            rotatePiece();
+        }
+    } else { // Ako je bilo prevlačenja
+        // Hard drop (flick)
+        if (deltaY > 50 && touchDuration < 250) { // Brzi pokret na dole
+            dropPiece();
+        }
+    }
+    isSwiping = false;
+}
+
 
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
@@ -538,6 +606,11 @@ function initDOMAndEventListeners() {
     document.addEventListener('keyup', handleKeyup);
     canvas.addEventListener('click', handleCanvasClick);
     canvas.addEventListener('mousemove', handleCanvasHover);
+    // DODATI LISTENERI ZA TOUCH
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
 
     startButton.addEventListener('click', () => {
         countdownOverlay.style.display = 'flex';
