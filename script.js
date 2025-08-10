@@ -65,81 +65,275 @@ let BLOCK_SIZE;
 let linesToClear = [];
 let COLORS, currentTheme;
 let currentMode = 'classic';
+let isMuted = false;
+let allAudioElements;
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay;
+let mainMenu, tetrisMenu, gameWrapper, startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs, exitModal, confirmExitButton, cancelExitButton;
-let backgroundImageElement;
+let backgroundImageElement, settingsButton, settingsModal, closeSettingsModalButton, soundToggleButton, selectTetrisButton, backToMainMenuButton;
 
 // Varijable za Touch kontrole
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
 let initialPieceX = 0;
 let lastTouchY = 0;
 
-// =================================================================================
-// ===== FUNKCIJE ZA CRTANJE (RENDER) =====
-// =================================================================================
-function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
-    if (!context || !blockSize) return;
-    const lightColor = lightenColor(color, 20);
-    const darkColor = darkenColor(color, 20);
-    context.fillStyle = lightColor;
-    context.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
-    context.fillStyle = darkColor;
-    context.fillRect(x * blockSize + blockSize * 0.1, y * blockSize + blockSize * 0.1, blockSize * 0.8, blockSize * 0.8);
-    context.fillStyle = color;
-    context.fillRect(x * blockSize + blockSize * 0.2, y * blockSize + blockSize * 0.2, blockSize * 0.6, blockSize * 0.6);
-}
 
-function drawBoard() {
-    if (!ctx || !canvas) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = THEMES[currentTheme].boardBackground;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = THEMES[currentTheme].gridColor;
-    ctx.lineWidth = 1;
+// ... (Sve funkcije do gameLoop ostaju iste, jer je logika stabilna) ...
+
+// =================================================================================
+// ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
+// =================================================================================
+function startGame() {
+    gameWrapper.style.display = 'flex';
+    tetrisMenu.style.display = 'none';
+
+    initBoard(); score = 0; level = 1; linesClearedTotal = 0; linesClearedThisLevel = 0;
+    dropInterval = LEVEL_SPEED_CONFIG.BASE_INTERVAL;
+    updateBestScoreDisplay();
+    updateScoreDisplay(); updateLevelDisplay(); updateAssistsDisplay(); startTime = performance.now();
+    sprintTimerDisplay.style.display = currentMode === 'sprint' ? 'block' : 'none';
+    ultraTimerDisplay.style.display = currentMode === 'ultra' ? 'block' : 'none';
+    gameOverScreen.style.display = 'none'; pauseScreen.style.display = 'none';
+    gameOver = false; isPaused = false;
+    currentPieceIndex = Math.floor(Math.random() * TETROMINOES.length); nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
+    generateNewPiece();
+    if (currentMode !== 'zen') playBackgroundMusic();
+    lastDropTime = performance.now();
     
-    // ISPRAVKA: Crtanje linija sa pomakom od pola piksela za oštrinu
-    ctx.beginPath();
-    for (let i = 1; i < COLS; i++) {
-        ctx.moveTo(i * BLOCK_SIZE + 0.5, 0);
-        ctx.lineTo(i * BLOCK_SIZE + 0.5, canvas.height);
-    }
-    for (let i = 1; i < ROWS; i++) {
-        ctx.moveTo(0, i * BLOCK_SIZE + 0.5);
-        ctx.lineTo(canvas.width, i * BLOCK_SIZE + 0.5);
-    }
-    ctx.stroke();
-
-    board.forEach((row, r) => row.forEach((cell, c) => { if (cell) drawBlock(c, r, cell); }));
-    if (hammerLine !== -1) { ctx.fillStyle = 'rgba(255, 120, 120, 0.4)'; ctx.fillRect(0, hammerLine * BLOCK_SIZE, COLS * BLOCK_SIZE, BLOCK_SIZE); }
+    if(animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function drawCurrentPiece() { 
-    if (!currentPiece) return;
-    ctx.save();
-    ctx.translate(visualX, 0);
-    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(0 + c, currentPiece.y + r, currentPiece.color); 
-    })); 
-    ctx.restore();
-}
+// ... (Ostatak koda ostaje skoro isti, sa izmenama u initDOMAndEventListeners i loadSettings) ...
 
-function drawGhostPiece() {
-    if (!currentPiece || !BLOCK_SIZE) return;
-    let ghostY = currentPiece.y;
-    while (isValidMove(0, 1, currentPiece.shape, ghostY, currentPiece.x)) {
-        ghostY++;
+// =================================================================================
+// ===== INICIJALIZACIJA IGRE, Događaji i Podešavanja =====
+// =================================================================================
+
+function initDOMAndEventListeners() {
+    // Dohvatanje kontejnera i menija
+    gameWrapper = document.getElementById('main-game-wrapper');
+    mainMenu = document.getElementById('main-menu');
+    tetrisMenu = document.getElementById('tetris-menu');
+    settingsModal = document.getElementById('settings-modal');
+
+    // Dohvatanje canvasa
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    nextBlockCanvas = document.getElementById('nextBlockCanvas');
+    nextBlockCtx = nextBlockCanvas.getContext('2d');
+    backgroundImageElement = document.getElementById('background-image');
+    
+    // Dohvatanje ostalih overlay-a
+    gameOverScreen = document.getElementById('game-over-screen');
+    pauseScreen = document.getElementById('pause-screen');
+    exitModal = document.getElementById('exit-modal');
+    countdownOverlay = document.getElementById('countdown-overlay');
+    controlsModal = document.getElementById('controls-modal');
+
+    // Dohvatanje prikaza
+    scoreDisplay = document.getElementById('score-display');
+    finalScoreDisplay = document.getElementById('final-score');
+    finalTimeDisplay = document.getElementById('final-time');
+    comboDisplay = document.getElementById('combo-display');
+    levelDisplay = document.getElementById('level-display');
+    sprintTimerDisplay = document.getElementById('sprint-timer');
+    ultraTimerDisplay = document.getElementById('ultra-timer');
+    bestScoreDisplay = document.getElementById('best-score-display');
+
+    // Dohvatanje svih dugmića
+    selectTetrisButton = document.getElementById('select-tetris-button');
+    backToMainMenuButton = document.getElementById('back-to-main-menu-button');
+    settingsButton = document.getElementById('settings-button');
+    closeSettingsModalButton = document.getElementById('close-settings-modal-button');
+    soundToggleButton = document.getElementById('sound-toggle-button');
+    startButton = document.getElementById('start-button');
+    restartButton = document.getElementById('restart-button');
+    resumeButton = document.getElementById('resume-button');
+    homeButton = document.getElementById('home-button');
+    pauseButton = document.getElementById('pause-button');
+    confirmExitButton = document.getElementById('confirm-exit-button');
+    cancelExitButton = document.getElementById('cancel-exit-button');
+    controlsButton = document.getElementById('controls-button');
+    closeControlsModal = document.getElementById('close-controls-modal');
+    
+    // Dohvatanje birača
+    themeSwitcher = document.getElementById('theme-switcher');
+    modeSelector = document.getElementById('mode-selector');
+
+    // Dohvatanje assist elemenata
+    assistsBombButton = document.getElementById('assist-bomb-button');
+    assistsBombCountDisplay = document.getElementById('assists-bomb-count');
+    assistsHammerButton = document.getElementById('assist-hammer-button');
+    assistsHammerCountDisplay = document.getElementById('assists-hammer-count');
+    assistsUndoButton = document.getElementById('assist-undo-button');
+    assistsUndoCountDisplay = document.getElementById('assists-undo-count');
+    
+    // Dohvatanje kontrola
+    controlInputs = document.querySelectorAll('.control-item input');
+    
+    // Dohvatanje svih audio elemenata
+    allAudioElements = document.querySelectorAll('audio');
+    dropSound = document.getElementById('dropSound');
+    clearSound = document.getElementById('clearSound');
+    rotateSound = document.getElementById('rotateSound');
+    gameOverSound = document.getElementById('gameOverSound');
+    tSpinSound = document.getElementById('tSpinSound');
+    tetrisSound = document.getElementById('tetrisSound');
+    backgroundMusic = document.getElementById('backgroundMusic');
+    bombSound = document.getElementById('bombSound');
+    
+    function resizeGame() {
+        const container = document.getElementById('canvas-container');
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        BLOCK_SIZE = Math.floor(Math.min(containerWidth / COLS, containerHeight / ROWS));
+        canvas.width = COLS * BLOCK_SIZE;
+        canvas.height = ROWS * BLOCK_SIZE;
+        const nextContainer = document.getElementById('next-block-container');
+        if (nextContainer.clientWidth > 0) {
+            nextBlockCanvas.width = nextContainer.clientWidth * 0.9;
+            nextBlockCanvas.height = nextContainer.clientHeight * 0.9;
+        }
+        draw(); 
+        drawNextPiece();
     }
 
-    ctx.globalAlpha = 0.3;
-    ctx.save();
-    ctx.translate(visualX, 0);
-    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(0 + c, ghostY + r, currentPiece.color); 
-    }));
-    ctx.restore();
-    ctx.globalAlpha = 1.0;
+    // --- Povezivanje događaja (Event Listeners) ---
+    window.addEventListener('resize', resizeGame);
+    document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('keyup', handleKeyup);
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('mousemove', handleCanvasHover);
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    
+    // Navigacija kroz menije
+    selectTetrisButton.addEventListener('click', () => {
+        mainMenu.style.display = 'none';
+        tetrisMenu.style.display = 'flex';
+    });
+
+    backToMainMenuButton.addEventListener('click', () => {
+        tetrisMenu.style.display = 'none';
+        mainMenu.style.display = 'flex';
+    });
+
+    // Podešavanja
+    settingsButton.addEventListener('click', () => {
+        settingsModal.style.display = 'flex';
+    });
+
+    closeSettingsModalButton.addEventListener('click', () => {
+        settingsModal.style.display = 'none';
+    });
+
+    soundToggleButton.addEventListener('click', toggleSound);
+
+    // Akcije u igri
+    startButton.addEventListener('click', () => {
+        countdownOverlay.style.display = 'flex';
+        let count = 3;
+        countdownOverlay.textContent = count;
+        const countdownInterval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownOverlay.textContent = count;
+            } else {
+                clearInterval(countdownInterval);
+                countdownOverlay.style.display = 'none';
+                startGame();
+            }
+        }, 1000);
+    });
+
+    restartButton.addEventListener('click', () => {
+        gameOverScreen.style.display = 'none';
+        gameWrapper.style.display = 'none';
+        tetrisMenu.style.display = 'flex';
+    });
+
+    pauseButton.addEventListener('click', togglePause);
+    resumeButton.addEventListener('click', togglePause);
+    
+    homeButton.addEventListener('click', () => {
+        if (gameOver) return;
+        isPaused = true;
+        if(animationFrameId) cancelAnimationFrame(animationFrameId);
+        pauseStartTime = performance.now();
+        pauseBackgroundMusic();
+        exitModal.style.display = 'flex';
+    });
+
+    cancelExitButton.addEventListener('click', () => {
+        exitModal.style.display = 'none';
+        isPaused = false; // Ručno postavi isPaused na false pre poziva togglePause
+        togglePause();
+    });
+
+    confirmExitButton.addEventListener('click', () => {
+        window.location.reload();
+    });
+
+    themeSwitcher.addEventListener('change', (e) => {
+        applyTheme(e.target.value);
+        localStorage.setItem('theme', e.target.value);
+    });
+    modeSelector.addEventListener('change', (e) => {
+        currentMode = e.target.value;
+        localStorage.setItem('mode', currentMode);
+        updateBestScoreDisplay();
+    });
+    assistsBombButton.addEventListener('click', useBombAssist);
+    assistsHammerButton.addEventListener('click', toggleHammerMode);
+    assistsUndoButton.addEventListener('click', useUndoAssist);
+
+    function updateControlsDisplay() {
+        if (!keyBindings) return;
+        controlInputs.forEach(input => {
+            const action = input.dataset.action;
+            input.value = keyBindings[action] === ' ' ? 'Space' : keyBindings[action];
+        });
+    }
+    controlsButton.addEventListener('click', () => {
+        updateControlsDisplay();
+        controlsModal.style.display = 'block';
+    });
+    closeControlsModal.addEventListener('click', () => {
+        controlsModal.style.display = 'none';
+    });
+    controlInputs.forEach(input => {
+        input.addEventListener('click', (e) => {
+            const clickedInput = e.target;
+            controlInputs.forEach(i => i.classList.remove('listening'));
+            clickedInput.classList.add('listening');
+            clickedInput.value = '...';
+
+            function keydownHandler(event) {
+                event.preventDefault();
+                const newKey = event.key === ' ' ? 'Space' : event.key;
+                const action = clickedInput.dataset.action;
+                keyBindings[action] = newKey;
+                localStorage.setItem('keyBindings', JSON.stringify(keyBindings));
+                updateControlsDisplay();
+                clickedInput.classList.remove('listening');
+                window.removeEventListener('keydown', keydownHandler, true);
+            }
+            window.addEventListener('keydown', keydownHandler, { capture: true, once: true });
+        });
+    });
+
+    loadSettings();
+    resizeGame();
 }
 
-// ... ostatak koda ostaje nepromenjen ...
+function toggleSound() {
+    isMuted = !isMuted;
+    allAudioElements.forEach(audio => {
+        audio.muted = isMuted;
+    });
+    soundToggleButton.textContent = isMuted ? '🔇' : '🔊';
+    localStorage.setItem('isMuted', isMuted);
+}
+
+// ... (Ostatak koda ostaje isti)
