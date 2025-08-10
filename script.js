@@ -19,6 +19,7 @@ const TAP_MAX_DURATION = 200;
 const TAP_MAX_DISTANCE = 20;
 const HARD_DROP_MIN_Y_DISTANCE = 70;
 const FLICK_MAX_DURATION = 250;
+const GESTURE_ACTIVATION_DISTANCE = 15; // Distanca za aktivaciju swipe-a
 
 // PODEŠAVANJA PRAVILA IGRE
 const POINTS = { SINGLE: 100, DOUBLE: 300, TRIPLE: 500, TETRIS: 800 };
@@ -72,8 +73,10 @@ let backgroundImageElement;
 
 // Varijable za Touch kontrole
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+let lastTouchY = 0;
 let lockedColumn = 0;
 let isTouching = false;
+let touchAxis = 'none'; // 'none', 'horizontal', 'vertical'
 
 
 // =================================================================================
@@ -395,18 +398,18 @@ function stopARR() {
 function handleCanvasClick(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); toggleHammerMode(); draw(); } } }
 function handleCanvasHover(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
-// ===== KOD ZA TOUCH KONTROLE (REFAKTORISAN) =====
+// ===== KOD ZA TOUCH KONTROLE (SA "FEELOM") =====
 function handleTouchStart(e) {
     if (isPaused || gameOver || !currentPiece) return;
     e.preventDefault();
     
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-    lastTouchX = touchStartX;
     lastTouchY = touchStartY;
     touchStartTime = performance.now();
     lockedColumn = currentPiece.x;
     isTouching = true;
+    touchAxis = 'none'; // Resetuj osu na svakom novom dodiru
 }
 
 function handleTouchMove(e) {
@@ -415,38 +418,52 @@ function handleTouchMove(e) {
 
     let currentX = e.touches[0].clientX;
     let currentY = e.touches[0].clientY;
-    let moveX = currentX - lastTouchX;
+    let deltaX = currentX - touchStartX;
+    let deltaY = currentY - touchStartY;
     
-    // Soft Drop
-    if (currentY - lastTouchY > BLOCK_SIZE) {
-        commitVisualPosition();
-        movePieceDown();
-        lastTouchY = currentY;
-        lockedColumn = currentPiece.x;
+    // Određivanje ose pokreta ako već nije određena
+    if (touchAxis === 'none' && (Math.abs(deltaX) > GESTURE_ACTIVATION_DISTANCE || Math.abs(deltaY) > GESTURE_ACTIVATION_DISTANCE)) {
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            touchAxis = 'horizontal';
+        } else {
+            touchAxis = 'vertical';
+        }
     }
     
-    // Horizontalno pomeranje (sa ograničenjem)
-    let newVisualOffsetX = visualOffsetX + moveX;
-    
-    // Izračunaj prave granice figure
-    let pieceLeftMost = currentPiece.shape[0].length;
-    let pieceRightMost = 0;
-    currentPiece.shape.forEach(row => {
-        row.forEach((cell, col) => {
-            if(cell) {
-                pieceLeftMost = Math.min(pieceLeftMost, col);
-                pieceRightMost = Math.max(pieceRightMost, col);
-            }
+    // Izvršavanje akcija na osnovu zaključane ose
+    if (touchAxis === 'horizontal') {
+        let newVisualOffsetX = deltaX;
+        
+        let pieceLeftMost = currentPiece.shape[0].length;
+        let pieceRightMost = 0;
+        currentPiece.shape.forEach(row => {
+            row.forEach((cell, col) => {
+                if(cell) {
+                    pieceLeftMost = Math.min(pieceLeftMost, col);
+                    pieceRightMost = Math.max(pieceRightMost, col);
+                }
+            });
         });
-    });
+        
+        const minXOffset = -(lockedColumn + pieceLeftMost) * BLOCK_SIZE;
+        const maxXOffset = (COLS - 1 - (lockedColumn + pieceRightMost)) * BLOCK_SIZE;
+        
+        visualOffsetX = Math.max(minXOffset, Math.min(newVisualOffsetX, maxXOffset));
 
-    const minXOffset = -(currentPiece.x + pieceLeftMost) * BLOCK_SIZE;
-    const maxXOffset = (COLS - 1 - (currentPiece.x + pieceRightMost)) * BLOCK_SIZE;
-    
-    visualOffsetX = Math.max(minXOffset, Math.min(newVisualOffsetX, maxXOffset));
-    
-    lastTouchX = currentX;
-    lastTouchY = currentY;
+    } else if (touchAxis === 'vertical') {
+        // Soft Drop
+        if (currentY - lastTouchY > BLOCK_SIZE) {
+            commitVisualPosition(); // Commit-uj horizontalu pre spuštanja
+            movePieceDown();
+            lastTouchY = currentY; 
+            lockedColumn = currentPiece.x; // Ponovo zaključaJ kolonu nakon pomeranja
+            touchStartX = currentX; // Resetuj X da bi se dozvolilo horizontalno pomeranje
+        }
+
+        // Dozvoli i horizontalno pomeranje tokom soft dropa
+        let horizontalDelta = currentX - touchStartX;
+        visualOffsetX = horizontalDelta;
+    }
     
     draw();
 }
@@ -465,26 +482,24 @@ function handleTouchEnd(e) {
     let touchDuration = performance.now() - touchStartTime;
 
     // 1. Provera za HARD DROP (Flick)
-    if (deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
-        draw(); 
-        dropPiece(lockedColumn); // Prosledi zaključanu kolonu
+    if (touchAxis === 'vertical' && deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
+        dropPiece(lockedColumn);
         return;
     }
 
     // 2. Provera za TAP (Rotacija)
-    if (touchDuration < TAP_MAX_DURATION && Math.abs(deltaX) < TAP_MAX_DISTANCE && Math.abs(deltaY) < TAP_MAX_DISTANCE) {
+    if (touchAxis === 'none' && touchDuration < TAP_MAX_DURATION && Math.abs(deltaX) < TAP_MAX_DISTANCE && Math.abs(deltaY) < TAP_MAX_DISTANCE) {
         commitVisualPosition();
         rotatePiece();
         return;
     }
 
-    // 3. Commit za horizontalno pomeranje
+    // 3. Commit za horizontalno pomeranje ili spori soft drop
     commitVisualPosition();
     draw();
 }
 
-
-// ... ostatak koda ostaje isti ...
+// ... ostatak koda ostaje isti
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
 // =================================================================================
@@ -758,8 +773,8 @@ function initDOMAndEventListeners() {
 
     cancelExitButton.addEventListener('click', () => {
         exitModal.style.display = 'none';
-        isPaused = false; // Ručno postavi isPaused na false pre poziva togglePause
-        togglePause(); // Efikasno "od-pauzira" igru
+        isPaused = false;
+        togglePause();
     });
 
     confirmExitButton.addEventListener('click', () => {
