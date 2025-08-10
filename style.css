@@ -1,3 +1,6 @@
+/* =================================
+   OSNOVNI STILOVI I FONT
+   ================================= */
 :root {
     --main-color: #61dafb;
     --background-color: #1a1a2e;
@@ -38,6 +41,9 @@ body {
     overflow: hidden;
 }
 
+/* =================================
+   GLAVNI LAYOUT IGRE
+   ================================= */
 #main-game-wrapper {
     background-color: #000; 
     border: 5px solid var(--border-color);
@@ -51,11 +57,10 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    /* IZMENA: Uklonjen gap da bi se paneli prilepili */
-    gap: 0;
+    gap: 10px;
 }
 
-#info-section {
+#info-section { /* header */
     display: flex;
     justify-content: space-between;
     align-items: stretch;
@@ -64,7 +69,7 @@ body {
     flex-shrink: 0;
 }
 
-#canvas-container {
+#canvas-container { /* main */
     flex-grow: 1; 
     min-height: 0; 
     width: 100%;
@@ -73,7 +78,7 @@ body {
     justify-content: center;
 }
 
-#assists-panel {
+#assists-panel { /* footer */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -81,10 +86,11 @@ body {
     margin: 0;
     height: 45px;
     flex-shrink: 0;
-    /* IZMENA: Dodata margina da ga odvoji od mreže */
-    margin-top: 10px;
 }
 
+/* =================================
+   MREŽA ZA IGRU (CANVAS)
+   ================================= */
 canvas#gameCanvas {
     display: block;
     background-color: var(--board-bg-color);
@@ -92,7 +98,10 @@ canvas#gameCanvas {
     border: 2px solid gold;
     box-shadow: 0 0 8px gold;
 }
- 
+
+/* =================================
+   GORNJI I DONJI PANELI
+   ================================= */
 .info-panel {
     background-color: #1a1a2e;
     border: 2px solid var(--border-color);
@@ -169,6 +178,40 @@ canvas#gameCanvas {
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
 
+#assist-content-wrapper {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    align-items: center;
+}
+.assist-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.count {
+    font-size: 1.1em;
+    color: var(--main-color);
+    font-weight: bold;
+}
+
+/* =================================
+   DUGMIĆI
+   ================================= */
+.btn { 
+    padding: 8px; 
+    background-color: #e63946; 
+    color: #fff; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: background-color 0.2s, transform 0.1s; 
+    font-family: 'Press Start 2P', cursive; 
+}
+.btn:hover { background-color: #c72c38; }
+.btn:active { transform: translateY(1px); }
+
 #right-controls {
     display: flex;
     flex-direction: column;
@@ -181,19 +224,6 @@ canvas#gameCanvas {
     height: 45%;
     font-size: 1.2em;
     padding: 2px;
-}
-
-#assist-content-wrapper {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-    align-items: center;
-}
-.assist-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
 }
 
 .assist-btn {
@@ -209,42 +239,54 @@ canvas#gameCanvas {
 .assist-btn:active {
     transform: scale(0.9);
 }
+.disabled { 
+    opacity: 0.5; 
+    cursor: not-allowed; 
+}
 
-.btn { 
-    padding: 8px; 
-    background-color: #e63946; 
-    color: #fff; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    transition: background-color 0.2s, transform 0.1s; 
+/* =================================
+   PREKRIVAČI (OVERLAYS)
+   ================================= */
+.overlay { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background-color: rgba(0, 0, 0, 0.9); 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    text-align: center; 
+    gap: 20px; 
+    z-index: 1000; 
     font-family: 'Press Start 2P', cursive; 
+    padding: 15px; 
+    box-sizing: border-box; 
 }
-
-.count {
-    font-size: 1.1em;
-    color: var(--main-color);
-    font-weight: bold;
-}
-
-.overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 20px; z-index: 1000; font-family: 'Press Start 2P', cursive; padding: 15px; box-sizing: border-box; }
 .overlay h1 { font-size: 1.8em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
-#combo-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5em; color: #fff; text-shadow: 0 0 10px var(--main-color); text-align: center; z-index: 10; animation: fadeOut 1.5s forwards; display: none; white-space: pre-wrap; pointer-events: none; }
-@keyframes fadeOut { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
-#controls-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background-color: #1a1a2e; border: 3px solid var(--main-color); border-radius: 10px; padding: 20px; box-shadow: 0 0 20px rgba(97, 218, 251, 0.5); z-index: 2000; }
-.btn:hover { background-color: #c72c38; }
-.btn:active { transform: translateY(1px); }
-.disabled { opacity: 0.5; cursor: not-allowed; }
 .overlay h2 { font-size: 1.5em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
 .overlay p { font-size: 1em; margin-bottom: 15px; }
 .overlay .final-score { font-size: 1.5em; color: #e0e0e0; margin-bottom: 15px; }
-.overlay button, .overlay select { padding: 15px 30px; font-size: 1.1em; background-color: #e63946; color: #fff; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; box-shadow: 0 5px 8px rgba(0, 0, 0, 0.4); font-family: 'Press Start 2P', cursive; }
+
+.overlay button, .overlay select { 
+    padding: 15px 30px; 
+    font-size: 1.1em; 
+    background-color: #e63946; 
+    color: #fff; 
+    border: none; 
+    border-radius: 10px; 
+    cursor: pointer; 
+    transition: background-color 0.2s, transform 0.1s; 
+    box-shadow: 0 5px 8px rgba(0, 0, 0, 0.4); 
+    font-family: 'Press Start 2P', cursive; 
+}
 .overlay button:hover { background-color: #c72c38; transform: translateY(-3px); }
 .overlay button:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
 .overlay select { padding: 8px 16px; font-size: 0.8em; color: var(--main-color); background-color: #1a1a2e; border: 2px solid var(--main-color); appearance: none; }
 .overlay select option { background-color: #1a1a2e; color: var(--main-color); }
-#game-over-screen h1 { animation: gameOverPulse 1.5s infinite; }
-@keyframes gameOverPulse { 0% { transform: scale(1); opacity: 1; color: #e63946; } 50% { transform: scale(1.1); opacity: 0.8; color: #ff5e6c; } 100% { transform: scale(1); opacity: 1; color: #e63946; } }
+#controls-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background-color: #1a1a2e; border: 3px solid var(--main-color); border-radius: 10px; padding: 20px; box-shadow: 0 0 20px rgba(97, 218, 251, 0.5); z-index: 2000; }
 #controls-modal h2 { font-size: 1.2em; margin-bottom: 15px; }
 .control-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9em; }
 .control-item span { color: #fff; }
@@ -254,3 +296,12 @@ canvas#gameCanvas {
 .continue-button { background-color: #2a9d8f; color: #fff; }
 .continue-button:hover { background-color: #268981; }
 #exit-modal .modal-buttons { display: flex; gap: 15px; margin-top: 20px; }
+
+/* =================================
+   ANIMACIJE
+   ================================= */
+#combo-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5em; color: #fff; text-shadow: 0 0 10px var(--main-color); text-align: center; z-index: 10; animation: fadeOut 1.5s forwards; display: none; white-space: pre-wrap; pointer-events: none; }
+@keyframes fadeOut { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
+
+#game-over-screen h1 { animation: gameOverPulse 1.5s infinite; }
+@keyframes gameOverPulse { 0% { transform: scale(1); opacity: 1; color: #e63946; } 50% { transform: scale(1.1); opacity: 0.8; color: #ff5e6c; } 100% { transform: scale(1); opacity: 1; color: #e63946; } }
