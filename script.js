@@ -20,7 +20,7 @@ const TAP_MAX_DISTANCE = 20;
 const HARD_DROP_MIN_Y_DISTANCE = 70;
 const FLICK_MAX_DURATION = 250;
 
-// PODEŠAVANJA PRAVILA IGRE ("Magic Numbers")
+// PODEŠAVANJA PRAVILA IGRE
 const POINTS = { SINGLE: 100, DOUBLE: 300, TRIPLE: 500, TETRIS: 800 };
 const T_SPIN_POINTS = { MINI: 100, SINGLE: 800, DOUBLE: 1200, TRIPLE: 1600 };
 const LEVEL_SPEED_CONFIG = { BASE_INTERVAL: 1000, MIN_INTERVAL: 100, SPEED_INCREASE_PER_LEVEL: 50 };
@@ -72,12 +72,9 @@ let backgroundImageElement;
 
 // Varijable za Touch kontrole
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
-let lastTouchX = 0, lastTouchY = 0;
 let lockedColumn = 0;
 let isTouching = false;
 
-
-// ... (Sve funkcije od drawBlock do isTSpin ostaju skoro iste, uneću samo ključne izmene) ...
 
 // =================================================================================
 // ===== FUNKCIJE ZA CRTANJE (RENDER) =====
@@ -226,7 +223,7 @@ function generateNewPiece() {
     currentPieceIndex = nextPieceIndex !== undefined ? nextPieceIndex : Math.floor(Math.random() * TETROMINOES.length);
     createCurrentPiece();
     nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
-    if(COLORS) {
+    if(COLORS && nextPieceIndex < COLORS.length) {
         nextPiece = { shape: TETROMINOES[nextPieceIndex], color: COLORS[nextPieceIndex] };
         drawNextPiece();
     }
@@ -267,8 +264,11 @@ function movePieceDown() {
     draw();
 }
 
-function dropPiece() {
+function dropPiece(forceX = null) {
     if (!currentPiece) return;
+    if (forceX !== null) {
+        currentPiece.x = forceX;
+    }
     commitVisualPosition();
     const startY = currentPiece.y;
     while (isValidMove(0, 1, currentPiece.shape)) currentPiece.y++;
@@ -395,7 +395,7 @@ function stopARR() {
 function handleCanvasClick(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); toggleHammerMode(); draw(); } } }
 function handleCanvasHover(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
-// ===== KOD ZA TOUCH KONTROLE =====
+// ===== KOD ZA TOUCH KONTROLE (REFAKTORISAN) =====
 function handleTouchStart(e) {
     if (isPaused || gameOver || !currentPiece) return;
     e.preventDefault();
@@ -417,6 +417,7 @@ function handleTouchMove(e) {
     let currentY = e.touches[0].clientY;
     let moveX = currentX - lastTouchX;
     
+    // Soft Drop
     if (currentY - lastTouchY > BLOCK_SIZE) {
         commitVisualPosition();
         movePieceDown();
@@ -424,11 +425,23 @@ function handleTouchMove(e) {
         lockedColumn = currentPiece.x;
     }
     
+    // Horizontalno pomeranje (sa ograničenjem)
     let newVisualOffsetX = visualOffsetX + moveX;
     
-    const pieceWidth = currentPiece.shape.reduce((max, row) => Math.max(max, row.lastIndexOf(1) + 1), 0);
-    const minXOffset = -currentPiece.x * BLOCK_SIZE;
-    const maxXOffset = (COLS - pieceWidth - currentPiece.x) * BLOCK_SIZE;
+    // Izračunaj prave granice figure
+    let pieceLeftMost = currentPiece.shape[0].length;
+    let pieceRightMost = 0;
+    currentPiece.shape.forEach(row => {
+        row.forEach((cell, col) => {
+            if(cell) {
+                pieceLeftMost = Math.min(pieceLeftMost, col);
+                pieceRightMost = Math.max(pieceRightMost, col);
+            }
+        });
+    });
+
+    const minXOffset = -(currentPiece.x + pieceLeftMost) * BLOCK_SIZE;
+    const maxXOffset = (COLS - 1 - (currentPiece.x + pieceRightMost)) * BLOCK_SIZE;
     
     visualOffsetX = Math.max(minXOffset, Math.min(newVisualOffsetX, maxXOffset));
     
@@ -451,24 +464,27 @@ function handleTouchEnd(e) {
     let deltaY = touchEndY - touchStartY;
     let touchDuration = performance.now() - touchStartTime;
 
+    // 1. Provera za HARD DROP (Flick)
     if (deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
-        currentPiece.x = lockedColumn;
-        visualOffsetX = 0;
         draw(); 
-        dropPiece();
+        dropPiece(lockedColumn); // Prosledi zaključanu kolonu
         return;
     }
 
+    // 2. Provera za TAP (Rotacija)
     if (touchDuration < TAP_MAX_DURATION && Math.abs(deltaX) < TAP_MAX_DISTANCE && Math.abs(deltaY) < TAP_MAX_DISTANCE) {
         commitVisualPosition();
         rotatePiece();
         return;
     }
 
+    // 3. Commit za horizontalno pomeranje
     commitVisualPosition();
     draw();
 }
 
+
+// ... ostatak koda ostaje isti ...
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
 // =================================================================================
@@ -532,8 +548,7 @@ function updateScore(lines, isTSpin) {
     const b2b = lastClearWasSpecial && (isTSpin || lines === 4) ? 1.5 : 1; 
     
     if (isTSpin) {
-        // T-Spin poeni su kompleksniji (Mini vs Regular), za sada koristimo osnovne
-        points = T_SPIN_POINTS.SINGLE * (lines > 0 ? lines : 0.5); // Gruba aproksimacija
+        points = T_SPIN_POINTS.SINGLE * (lines > 0 ? lines : 0.5);
         type = `T-Spin ${['', 'Single', 'Double', 'Triple'][lines]}`; 
     } else { 
         points = [0, POINTS.SINGLE, POINTS.DOUBLE, POINTS.TRIPLE, POINTS.TETRIS][lines]; 
@@ -579,22 +594,22 @@ function handleLinesCleared(lines) {
     updateScoreDisplay();
 }
 
-function useBombAssist() { if (assists.bomb > 0) { bombSound.play().catch(console.error); assists.bomb--; updateAssistsDisplay(); initBoard(); draw(); } }
-function toggleHammerMode() { if (assists.hammer > 0) { hammerMode = !hammerMode; canvas.style.cursor = hammerMode ? 'crosshair' : 'default'; if (!hammerMode) { hammerLine = -1; draw(); } } }
-function useUndoAssist() { if (assists.undo > 0 && boardHistory.length > 0) { assists.undo--; board = boardHistory.pop(); score = Math.max(0, score - 500); updateAssistsDisplay(); generateNewPiece(); draw(); } }
+function useBombAssist() { if (!assistsBombButton.disabled) { bombSound.play().catch(console.error); assists.bomb--; updateAssistsDisplay(); initBoard(); draw(); } }
+function toggleHammerMode() { if (!assistsHammerButton.disabled) { hammerMode = !hammerMode; canvas.style.cursor = hammerMode ? 'crosshair' : 'default'; if (!hammerMode) { hammerLine = -1; draw(); } } }
+function useUndoAssist() { if (!assistsUndoButton.disabled && boardHistory.length > 0) { assists.undo--; board = boardHistory.pop(); score = Math.max(0, score - 500); updateAssistsDisplay(); generateNewPiece(); draw(); } }
 
 function gameLoop(timestamp) {
     if (gameOver || isPaused || isAnimating) {
-        if (isAnimating) { // Ako je animacija, ona će sama pozvati sledeći frejm
+        if (isAnimating) {
             return;
         }
-        if(gameOver || isPaused) { // Ako je pauza ili kraj, ne vrti petlju
+        if(gameOver || isPaused) {
              return;
         }
     }
     
     if (isTouching) {
-        draw(); 
+        draw();
         animationFrameId = requestAnimationFrame(gameLoop);
         return;
     }
@@ -613,14 +628,14 @@ function gameLoop(timestamp) {
 function updateScoreDisplay() { if(scoreDisplay) scoreDisplay.textContent = `Score: ${score}`; }
 function updateLevelDisplay() { if(levelDisplay) levelDisplay.textContent = `Level: ${level}`; }
 function updateAssistsDisplay() { 
-    if(!assistsBombButton) return; // Provera da li su elementi učitani
+    if(!assistsBombButton) return;
     assistsBombCountDisplay.textContent = assists.bomb;
     assistsHammerCountDisplay.textContent = assists.hammer;
     assistsUndoCountDisplay.textContent = assists.undo;
     
-    assistsBombButton.disabled = assists.bomb === 0;
-    assistsHammerButton.disabled = assists.hammer === 0;
-    assistsUndoButton.disabled = assists.undo === 0;
+    assistsBombButton.disabled = assists.bomb <= 0;
+    assistsHammerButton.disabled = assists.hammer <= 0;
+    assistsUndoButton.disabled = assists.undo <= 0;
 }
 function showComboMessage(type, count) { 
     let msg = type; 
@@ -639,7 +654,6 @@ function darkenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c
 // =================================================================================
 
 function initDOMAndEventListeners() {
-    // ... (SVE DOHVATANJE ELEMENATA OSTAJE ISTO)
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
     nextBlockCanvas = document.getElementById('nextBlockCanvas');
@@ -734,7 +748,7 @@ function initDOMAndEventListeners() {
     resumeButton.addEventListener('click', togglePause);
     
     homeButton.addEventListener('click', () => {
-        if (gameOver) return;
+        if (gameOver || isPaused) return;
         isPaused = true;
         if(animationFrameId) cancelAnimationFrame(animationFrameId);
         pauseStartTime = performance.now();
@@ -744,6 +758,7 @@ function initDOMAndEventListeners() {
 
     cancelExitButton.addEventListener('click', () => {
         exitModal.style.display = 'none';
+        isPaused = false; // Ručno postavi isPaused na false pre poziva togglePause
         togglePause(); // Efikasno "od-pauzira" igru
     });
 
