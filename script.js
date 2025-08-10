@@ -49,8 +49,8 @@ let currentPieceIndex, nextPieceIndex;
 let keyBindings;
 let dasTimer = null, arrTimer = null, moveDirection = 0;
 let visualOffsetX = 0;
-let BLOCK_SIZE; // <-- DODATA LINIJA
-let linesToClear = []; // <-- DODATA LINIJA
+let BLOCK_SIZE;
+let linesToClear = [];
 let TAP_DISTANCE_THRESHOLD, DROP_DISTANCE_THRESHOLD;
 let COLORS, currentTheme;
 let currentMode = 'classic';
@@ -578,6 +578,43 @@ function initDOMAndEventListeners() {
     assistsHammerButton.addEventListener('click', toggleHammerMode);
     assistsUndoButton.addEventListener('click', useUndoAssist);
 
+    // --- Logika za podešavanje kontrola ---
+    function updateControlsDisplay() {
+        if (!keyBindings) return; // Provera da li su kontrole učitane
+        controlInputs.forEach(input => {
+            const action = input.dataset.action;
+            input.value = keyBindings[action] === ' ' ? 'Space' : keyBindings[action];
+        });
+    }
+
+    controlsButton.addEventListener('click', () => {
+        updateControlsDisplay();
+        controlsModal.style.display = 'block';
+    });
+
+    closeControlsModal.addEventListener('click', () => {
+        controlsModal.style.display = 'none';
+    });
+
+    controlInputs.forEach(input => {
+        input.addEventListener('click', (e) => {
+            const clickedInput = e.target;
+            clickedInput.value = '...';
+            
+            function keydownHandler(event) {
+                event.preventDefault();
+                const newKey = event.key === ' ' ? 'Space' : event.key;
+                const action = clickedInput.dataset.action;
+                keyBindings[action] = newKey;
+                localStorage.setItem('keyBindings', JSON.stringify(keyBindings));
+                updateControlsDisplay(); // Ažuriraj sva polja
+                window.removeEventListener('keydown', keydownHandler, true);
+            }
+            
+            window.addEventListener('keydown', keydownHandler, { capture: true, once: true });
+        });
+    });
+
     loadSettings();
     resizeGame();
 }
@@ -615,7 +652,7 @@ function loadSettings() {
         right: 'ArrowRight',
         down: 'ArrowDown',
         rotate: 'ArrowUp',
-        drop: 'Space',
+        drop: ' ', // Koristimo ' ' za Space
         bomb: 'b',
         hammer: 'h',
         undo: 'u'
