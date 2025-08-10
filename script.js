@@ -19,6 +19,7 @@ const TAP_MAX_DURATION = 200;
 const TAP_MAX_DISTANCE = 20;
 const HARD_DROP_MIN_Y_DISTANCE = 70;
 const FLICK_MAX_DURATION = 250;
+const SMOOTHING_FACTOR = 0.3;
 
 // PODEŠAVANJA PRAVILA IGRE
 const POINTS = { SINGLE: 100, DOUBLE: 300, TRIPLE: 500, TETRIS: 800 };
@@ -47,7 +48,7 @@ const animationDuration = 400;
 let board = [];
 let boardHistory = [];
 let currentPiece, nextPiece;
-let score = 0, bestScore = 0;
+let score = 0, bestScores = {}; // ISPRAVKA: bestScore je sada objekat
 let level = 1, linesClearedThisLevel = 0, linesClearedTotal = 0;
 let combo = 0, lastClearWasSpecial = false;
 let gameOver = true, isPaused = false, hammerMode = false;
@@ -59,6 +60,7 @@ let hammerLine = -1;
 let currentPieceIndex, nextPieceIndex;
 let keyBindings;
 let dasTimer = null, arrTimer = null, moveDirection = 0;
+let visualX = 0;
 let BLOCK_SIZE;
 let linesToClear = [];
 let COLORS, currentTheme;
@@ -73,6 +75,7 @@ let backgroundImageElement;
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
 let initialPieceX = 0;
 let lastTouchY = 0;
+
 
 // =================================================================================
 // ===== FUNKCIJE ZA CRTANJE (RENDER) =====
@@ -108,9 +111,12 @@ function drawBoard() {
 
 function drawCurrentPiece() { 
     if (!currentPiece) return;
+    ctx.save();
+    ctx.translate(visualX, 0);
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
+        if (cell) drawBlock(0 + c, currentPiece.y + r, currentPiece.color); 
     })); 
+    ctx.restore();
 }
 
 function drawGhostPiece() {
@@ -120,10 +126,13 @@ function drawGhostPiece() {
         ghostY++;
     }
 
-    ctx.globalAlpha = 0.3; 
+    ctx.globalAlpha = 0.3;
+    ctx.save();
+    ctx.translate(visualX, 0);
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(currentPiece.x + c, ghostY + r, currentPiece.color); 
+        if (cell) drawBlock(0 + c, ghostY + r, currentPiece.color); 
     }));
+    ctx.restore();
     ctx.globalAlpha = 1.0;
 }
 
@@ -184,7 +193,9 @@ function animateLineClear(timestamp) {
         board[r].forEach((cell, c) => { if (cell) drawBlock(c, r, cell); }); 
         ctx.globalAlpha = 1; 
     });
-    drawCurrentPiece(); 
+    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
+        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
+    }));
     requestAnimationFrame(animateLineClear);
 }
 
@@ -199,6 +210,7 @@ function createCurrentPiece() {
         return;
     }
     currentPiece = { shape, color: COLORS[currentPieceIndex], x: Math.floor((COLS - shape[0].length) / 2), y: 0 };
+    visualX = currentPiece.x * BLOCK_SIZE;
 }
 
 function generateNewPiece() {
@@ -241,7 +253,6 @@ function movePieceDown() {
     } else {
         mergePiece();
     }
-    draw();
 }
 
 function dropPiece() {
@@ -333,7 +344,6 @@ function handleKeydown(e) {
     else if (action === 'bomb') useBombAssist();
     else if (action === 'hammer') toggleHammerMode();
     else if (action === 'undo') useUndoAssist();
-    draw();
 }
 
 function handleKeyup(e) {
@@ -348,11 +358,9 @@ function handleKeyup(e) {
 function startARR(direction) {
     stopARR(); 
     movePiece(direction);
-    draw();
     dasTimer = setTimeout(() => {
         arrTimer = setInterval(() => {
             movePiece(direction);
-            draw();
         }, ARR_RATE);
     }, DAS_DELAY);
 }
@@ -367,7 +375,7 @@ function stopARR() {
 function handleCanvasClick(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); toggleHammerMode(); draw(); } } }
 function handleCanvasHover(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
-// ===== KOD ZA TOUCH KONTROLE (STABILNA VERZIJA) =====
+// ===== KOD ZA TOUCH KONTROLE (KONAČNA VERZIJA) =====
 function handleTouchStart(e) {
     if (isPaused || gameOver || !currentPiece) return;
     e.preventDefault();
@@ -390,13 +398,11 @@ function handleTouchMove(e) {
     let currentY = e.touches[0].clientY;
     let deltaX = currentX - touchStartX;
     
-    // Soft Drop
     if (currentY - lastTouchY > BLOCK_SIZE) {
         movePieceDown();
         lastTouchY = currentY; 
     }
     
-    // Horizontalno pomeranje
     const blocksMoved = Math.round(deltaX / BLOCK_SIZE);
     const newX = initialPieceX + blocksMoved;
     
@@ -405,8 +411,6 @@ function handleTouchMove(e) {
             currentPiece.x = newX;
         }
     }
-    
-    draw();
 }
 
 function handleTouchEnd(e) {
@@ -423,22 +427,17 @@ function handleTouchEnd(e) {
     let deltaY = touchEndY - touchStartY;
     let touchDuration = performance.now() - touchStartTime;
 
-    // Hard Drop (Flick) sa zaključavanjem
     if (deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
-        currentPiece.x = initialPieceX; // KLJUČNA ISPRAVKA: Vrati na početnu X poziciju
+        currentPiece.x = initialPieceX;
         dropPiece();
         return;
     }
 
-    // Tap (Rotacija)
     if (touchDuration < TAP_MAX_DURATION && Math.abs(deltaX) < TAP_MAX_DISTANCE && Math.abs(deltaY) < TAP_MAX_DISTANCE) {
         rotatePiece();
         return;
     }
-
-    draw();
 }
-
 
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
@@ -446,6 +445,7 @@ function handleTouchEnd(e) {
 function startGame() {
     initBoard(); score = 0; level = 1; linesClearedTotal = 0; linesClearedThisLevel = 0;
     dropInterval = LEVEL_SPEED_CONFIG.BASE_INTERVAL;
+    updateBestScoreDisplay(); // ISPRAVKA: Prikaži najbolji rezultat za trenutni mod
     updateScoreDisplay(); updateLevelDisplay(); updateAssistsDisplay(); startTime = performance.now();
     sprintTimerDisplay.style.display = currentMode === 'sprint' ? 'block' : 'none';
     ultraTimerDisplay.style.display = currentMode === 'ultra' ? 'block' : 'none';
@@ -462,11 +462,15 @@ function startGame() {
 
 function endGame(isSprintWin = false, exitToMainMenu = false) {
     gameOver = true; if (animationFrameId) cancelAnimationFrame(animationFrameId); pauseBackgroundMusic();
-    if (score > bestScore) {
-        bestScore = score;
-        localStorage.setItem('bestScore', bestScore);
-        bestScoreDisplay.textContent = bestScore;
+    
+    // ISPRAVKA: Provera i čuvanje najboljeg rezultata po modu
+    const currentBest = bestScores[currentMode] || 0;
+    if (score > currentBest) {
+        bestScores[currentMode] = score;
+        localStorage.setItem('bestScores', JSON.stringify(bestScores));
+        updateBestScoreDisplay();
     }
+
     if (exitToMainMenu) { startScreen.style.display = 'flex'; gameOverScreen.style.display = 'none'; return; }
     if (isSprintWin) { finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; finalTimeDisplay.style.display = 'block'; document.getElementById('game-over-title').textContent = 'PERFECT!'; }
     else { gameOverSound.play().catch(console.error); finalTimeDisplay.style.display = 'none'; document.getElementById('game-over-title').textContent = 'GAME OVER!'; }
@@ -557,6 +561,14 @@ function gameLoop(timestamp) {
         return;
     }
     
+    // Animiraj vizuelnu poziciju ka logičkoj poziciji
+    const targetX = currentPiece.x * BLOCK_SIZE;
+    visualX += (targetX - visualX) * SMOOTHING_FACTOR;
+    
+    if (Math.abs(targetX - visualX) < 0.5) {
+        visualX = targetX;
+    }
+
     if (timestamp - lastDropTime > dropInterval) { 
         movePieceDown();
     }
@@ -569,6 +581,12 @@ function gameLoop(timestamp) {
 // =================================================================================
 function updateScoreDisplay() { if(scoreDisplay) scoreDisplay.textContent = `Score: ${score}`; }
 function updateLevelDisplay() { if(levelDisplay) levelDisplay.textContent = `Level: ${level}`; }
+function updateBestScoreDisplay() {
+    if(bestScoreDisplay) {
+        const best = bestScores[currentMode] || 0;
+        bestScoreDisplay.textContent = best;
+    }
+}
 function updateAssistsDisplay() { 
     if(!assistsBombButton) return;
     assistsBombCountDisplay.textContent = assists.bomb;
@@ -713,6 +731,7 @@ function initDOMAndEventListeners() {
     modeSelector.addEventListener('change', (e) => {
         currentMode = e.target.value;
         localStorage.setItem('mode', currentMode);
+        updateBestScoreDisplay(); // ISPRAVKA: Ažuriraj prikaz rezultata pri promeni moda
     });
     assistsBombButton.addEventListener('click', useBombAssist);
     assistsHammerButton.addEventListener('click', toggleHammerMode);
@@ -781,7 +800,7 @@ function applyTheme(themeName) {
 function loadSettings() {
     const savedTheme = localStorage.getItem('theme') || 'classic';
     const savedMode = localStorage.getItem('mode') || 'classic';
-    bestScore = parseInt(localStorage.getItem('bestScore') || '0', 10);
+    bestScores = JSON.parse(localStorage.getItem('bestScores') || '{}'); // ISPRAVKA: Učitaj objekat
     assists = JSON.parse(localStorage.getItem('assists') || '{"bomb":1,"hammer":1,"undo":1}');
     keyBindings = JSON.parse(localStorage.getItem('keyBindings')) || {
         left: 'ArrowLeft',
@@ -796,7 +815,8 @@ function loadSettings() {
     themeSwitcher.value = savedTheme;
     modeSelector.value = savedMode;
     currentMode = savedMode;
-    bestScoreDisplay.textContent = bestScore;
+    
+    updateBestScoreDisplay(); // ISPRAVKA: Pozovi novu funkciju
     updateAssistsDisplay();
     applyTheme(savedTheme);
 }
