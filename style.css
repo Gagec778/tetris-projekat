@@ -43,7 +43,7 @@ body {
     border: 5px solid var(--border-color);
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
-    padding: 5px;
+    padding: 10px;
     width: 100%;
     height: 100%;
     max-width: 500px;
@@ -51,7 +51,8 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    /* IZMENA: Uklonjen gap da bi se paneli prilepili */
+    gap: 0;
 }
 
 #info-section {
@@ -59,8 +60,7 @@ body {
     justify-content: space-between;
     align-items: stretch;
     width: 100%;
-    gap: 5px;
-    height: 60px;
+    gap: 10px;
     flex-shrink: 0;
 }
 
@@ -81,6 +81,8 @@ body {
     margin: 0;
     height: 45px;
     flex-shrink: 0;
+    /* IZMENA: Dodata margina da ga odvoji od mreže */
+    margin-top: 10px;
 }
 
 canvas#gameCanvas {
@@ -101,22 +103,22 @@ canvas#gameCanvas {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 2px;
+    padding: 5px;
     gap: 2px;
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    height: 100%;
 }
 
 .panel-header {
-    font-size: 0.7em;
+    font-size: 0.8em;
     width: 100%;
     text-align: center;
+    margin-bottom: 2px;
 }
 
 #next-block-container {
-    min-height: initial;
+    min-height: 60px;
 }
 
 #next-block-container canvas {
@@ -137,7 +139,6 @@ canvas#gameCanvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 0;
 }
 #crown-icon {
     position: absolute;
@@ -162,8 +163,8 @@ canvas#gameCanvas {
 .stat-line {
     width: 100%;
     text-align: center;
-    font-size: 0.7em;
-    padding: 1px 0;
+    font-size: 0.8em;
+    padding: 2px 0;
 }
 #level-display { color: #fff; }
 #sprint-timer, #ultra-timer { color: #ffcc00; }
