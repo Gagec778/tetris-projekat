@@ -1,7 +1,6 @@
 // =================================================================================
-// ===== KONSTANTE I GLOBALNA PODEŠAVANJA =====
+// ===== KONSTANTE I PODEŠAVANJA =====
 // =================================================================================
-
 const THEMES = {
     'classic': { background: '#1a1a2e', boardBackground: '#000', lineColor: '#61dafb', blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000'], flashColor: '#FFFFFF', gridColor: '#333', backgroundImage: null },
     'dark': { background: '#0d0d0d', boardBackground: '#1c1c1c', lineColor: '#999999', blockColors: ['#00FFFF', '#3366FF', '#FF9933', '#FFFF00', '#33CC66', '#9966CC', '#FF3333'], flashColor: '#CCCCCC', gridColor: '#444', backgroundImage: null },
@@ -9,14 +8,12 @@ const THEMES = {
     'modern': { background: '#121212', boardBackground: '#1e1e1e', lineColor: '#bb86fc', blockColors: ['#03dac6', '#cf6679', '#f3a469', '#f0e68c', '#aaff00', '#8c5eff', '#e74c3c'], flashColor: '#ffffff', gridColor: '#4d4d4d', backgroundImage: 'url("images/modern-bg.jpg")' },
     'lava': { background: '#220000', boardBackground: '#440000', lineColor: '#FF4500', blockColors: ['#FFD700', '#FF4500', '#FF1493', '#FF6347', '#FF8C00', '#DC143C', '#B22222'], flashColor: '#FF6347', gridColor: '#662222', backgroundImage: 'url("images/lava-bg.jpg")' }
 };
-
 const T_SHAPE_INDEX = 5;
 const COLS = 10;
 const ROWS = 20;
 const DAS_DELAY = 160; 
 const ARR_RATE = 30; 
 const TAP_DURATION_THRESHOLD = 150; // ms
-
 const TETROMINOES = [
     [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
     [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
@@ -30,15 +27,11 @@ const TETROMINOES = [
 // =================================================================================
 // ===== GLOBALNE VARIJABLE I STANJE IGRE =====
 // =================================================================================
-
-// Engine
 let canvas, ctx, nextBlockCanvas, nextBlockCtx;
 let animationFrameId;
 let isAnimating = false;
 let animationStart = 0;
 const animationDuration = 400;
-
-// Stanje igre
 let board = [];
 let boardHistory = [];
 let currentPiece, nextPiece;
@@ -48,36 +41,26 @@ let combo = 0, lastClearWasSpecial = false;
 let gameOver = true, isPaused = false, hammerMode = false;
 let startTime, lastDropTime = 0, dropInterval = 1000;
 const ultraTimeLimit = 120;
-
-// Pomoći
 let assists = { bomb: 0, hammer: 0, undo: 0 };
 let nextAssistReward = 5000;
 let bombBonus = 1500;
 let hammerLine = -1;
-
-// Kontrole
 let currentPieceIndex, nextPieceIndex;
 let keyBindings;
 let dasTimer = null, arrTimer = null, moveDirection = 0;
 let visualOffsetX = 0;
 let TAP_DISTANCE_THRESHOLD, DROP_DISTANCE_THRESHOLD;
-
-// Teme i boje
 let COLORS, currentTheme;
 let currentMode = 'classic';
-
-// DOM elementi
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
 let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay, continueButton, exitModal, confirmExitButton, cancelExitButton;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
 
-
 // =================================================================================
 // ===== FUNKCIJE ZA CRTANJE (RENDER) =====
 // =================================================================================
-
 function drawBlock(x, y, color, context = ctx, blockSize = BLOCK_SIZE) {
     if (!context || !blockSize) return;
     const lightColor = lightenColor(color, 20);
@@ -118,17 +101,14 @@ function drawCurrentPiece() {
 
 function drawGhostPiece() {
     if (!currentPiece) return;
-    
     const potentialX = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
-     if (!isValidMove(potentialX - currentPiece.x, 0, currentPiece.shape)) {
+    if (!isValidMove(potentialX - currentPiece.x, 0, currentPiece.shape)) {
         return;
     }
-    
     let ghostY = currentPiece.y;
     while (isValidMove(0, 1, currentPiece.shape, ghostY, potentialX)) {
         ghostY++;
     }
-
     ctx.globalAlpha = 0.3; 
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
         if (cell) drawBlock(potentialX + c, ghostY + r, currentPiece.color); 
@@ -141,19 +121,14 @@ function drawPieceInCanvas(piece, context, canvasEl) {
     context.clearRect(0, 0, canvasEl.width, canvasEl.height);
     const { shape, color } = piece;
     if (!shape) return;
-    
     const maxDim = Math.max(...shape.map(r => r.length), shape.length) + 1;
-    
     const blockSizeW = canvasEl.width / maxDim;
     const blockSizeH = canvasEl.height / maxDim;
     const pieceBlockSize = Math.floor(Math.min(blockSizeW, blockSizeH));
-    
     const shapeWidth = shape.reduce((max, row) => Math.max(max, row.lastIndexOf(1) + 1), 0);
     const shapeHeight = shape.filter(row => row.includes(1)).length;
-    
     const offsetX = (canvasEl.width - shapeWidth * pieceBlockSize) / 2;
     const offsetY = (canvasEl.height - shapeHeight * pieceBlockSize) / 2;
-
     shape.forEach((row, r) => row.forEach((cell, c) => { 
         if (cell) { 
             context.save(); 
@@ -231,22 +206,8 @@ function rotatePiece() {
     }
 }
 
-function movePiece(direction) { 
-    if (currentPiece && isValidMove(direction, 0, currentPiece.shape)) {
-        currentPiece.x += direction; 
-    }
-}
-
-function movePieceDown() { 
-    if (currentPiece && isValidMove(0, 1, currentPiece.shape)) { 
-        currentPiece.y++; 
-        lastDropTime = performance.now(); 
-    } else { 
-        mergePiece(); 
-    } 
-    draw(); 
-}
-
+function movePiece(direction) { if (currentPiece && isValidMove(direction, 0, currentPiece.shape)) currentPiece.x += direction; }
+function movePieceDown() { if (currentPiece && isValidMove(0, 1, currentPiece.shape)) { currentPiece.y++; lastDropTime = performance.now(); } else { mergePiece(); } draw(); }
 function dropPiece() {
     if (!currentPiece) return;
     const startY = currentPiece.y;
@@ -289,17 +250,7 @@ function checkLines() {
     else { combo = 0; lastClearWasSpecial = false; generateNewPiece(); }
 }
 
-function isTSpin() { 
-    if (!currentPiece || currentPieceIndex !== T_SHAPE_INDEX) return false; 
-    let corners = 0; 
-    const {x,y} = currentPiece; 
-    if(!board[y] || y+2 >= ROWS || x<0 || x+2 >= COLS) return false; 
-    if(board[y][x]) corners++; 
-    if(board[y][x+2]) corners++; 
-    if(board[y+2][x]) corners++; 
-    if(board[y+2][x+2]) corners++; 
-    return corners >= 3; 
-}
+function isTSpin() { if (!currentPiece || currentPieceIndex !== T_SHAPE_INDEX) return false; let corners = 0; const {x,y} = currentPiece; if(!board[y] || y+2 >= ROWS || x<0 || x+2 >= COLS) return false; if(board[y][x]) corners++; if(board[y][x+2]) corners++; if(board[y+2][x]) corners++; if(board[y+2][x+2]) corners++; return corners >= 3; }
 
 
 // =================================================================================
@@ -309,7 +260,6 @@ function isTSpin() {
 function handleKeydown(e) {
     if (isPaused || gameOver || !currentPiece) return;
     const key = e.key === ' ' ? 'Space' : e.key;
-
     if (key === keyBindings.left) {
         if (moveDirection === 1) stopARR();
         if (moveDirection !== -1) startARR(-1);
@@ -319,18 +269,15 @@ function handleKeydown(e) {
         if (moveDirection !== 1) startARR(1);
         moveDirection = 1;
     }
-
     const action = Object.keys(keyBindings).find(k => keyBindings[k] === key);
     if (!action) return;
     e.preventDefault();
-    
     if (action === 'down') movePieceDown();
     else if (action === 'rotate') rotatePiece();
     else if (action === 'drop') dropPiece();
     else if (action === 'bomb') useBombAssist();
     else if (action === 'hammer') toggleHammerMode();
     else if (action === 'undo') useUndoAssist();
-    
     draw();
 }
 
@@ -361,94 +308,38 @@ function stopARR() {
     arrTimer = null;
 }
 
-function handleCanvasClick(e) { 
-    if (hammerMode) { 
-        const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); 
-        if (board[row]?.[col]) { 
-            assists.hammer--; 
-            board[row][col] = 0; 
-            score += 100; 
-            updateAssistsDisplay(); 
-            localStorage.setItem('assists', JSON.stringify(assists)); 
-            toggleHammerMode(); 
-            draw(); 
-        } 
-    } 
-}
+function handleCanvasClick(e) { if (hammerMode) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); toggleHammerMode(); draw(); } } }
+function handleCanvasHover(e) { if (hammerMode) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
-function handleCanvasHover(e) { 
-    if (hammerMode) { 
-        const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); 
-        if (row !== hammerLine) { 
-            hammerLine = row; 
-            draw(); 
-        } 
-    } 
-}
 
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
 // =================================================================================
 
 function startGame() {
-    initBoard(); 
-    score = 0; 
-    level = 1; 
-    linesClearedTotal = 0; 
-    linesClearedThisLevel = 0; 
-    dropInterval = 1000;
-    
-    updateScoreDisplay(); 
-    updateLevelDisplay(); 
-    updateAssistsDisplay(); 
-    startTime = performance.now();
-    
+    initBoard(); score = 0; level = 1; linesClearedTotal = 0; linesClearedThisLevel = 0; dropInterval = 1000;
+    updateScoreDisplay(); updateLevelDisplay(); updateAssistsDisplay(); startTime = performance.now();
     sprintTimerDisplay.style.display = currentMode === 'sprint' ? 'block' : 'none';
     ultraTimerDisplay.style.display = currentMode === 'ultra' ? 'block' : 'none';
-    
-    startScreen.style.display = 'none'; 
-    gameOverScreen.style.display = 'none'; 
-    pauseScreen.style.display = 'none';
-    
-    gameOver = false; 
-    isPaused = false;
-    
-    currentPieceIndex = Math.floor(Math.random() * TETROMINOES.length); 
-    nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
+    startScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; pauseScreen.style.display = 'none';
+    gameOver = false; isPaused = false;
+    currentPieceIndex = Math.floor(Math.random() * TETROMINOES.length); nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
     generateNewPiece();
-    
     if (currentMode !== 'zen') playBackgroundMusic();
     lastDropTime = performance.now();
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 function endGame(isSprintWin = false, exitToMainMenu = false) {
-    gameOver = true; 
-    if (animationFrameId) cancelAnimationFrame(animationFrameId); 
-    pauseBackgroundMusic();
-    
-    if (exitToMainMenu) { 
-        startScreen.style.display = 'flex'; 
-        gameOverScreen.style.display = 'none'; 
-        return; 
-    }
-    
+    gameOver = true; if (animationFrameId) cancelAnimationFrame(animationFrameId); pauseBackgroundMusic();
+    if (exitToMainMenu) { startScreen.style.display = 'flex'; gameOverScreen.style.display = 'none'; return; }
     if (score > bestScore) {
         bestScore = score;
         localStorage.setItem('bestScore', bestScore);
         bestScoreDisplay.textContent = `${bestScore}`;
     }
-    
-    if (isSprintWin) { 
-        finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; 
-        finalTimeDisplay.style.display = 'block'; 
-        document.getElementById('game-over-title').textContent = 'PERFECT!'; 
-    } else { 
-        gameOverSound.play().catch(console.error); 
-        finalTimeDisplay.style.display = 'none'; 
-        document.getElementById('game-over-title').textContent = 'GAME OVER!'; 
-    }
-    
+    if (isSprintWin) { finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; finalTimeDisplay.style.display = 'block'; document.getElementById('game-over-title').textContent = 'PERFECT!'; }
+    else { gameOverSound.play().catch(console.error); finalTimeDisplay.style.display = 'none'; document.getElementById('game-over-title').textContent = 'GAME OVER!'; }
     finalScoreDisplay.textContent = `Your Score: ${score}`;
     gameOverScreen.style.display = 'flex';
 }
@@ -509,55 +400,24 @@ function updateScore(lines, isTSpin) {
 function handleLinesCleared(lines) {
     if (lines === 0) return;
     linesClearedTotal += lines;
-    
     if (currentMode !== 'zen') {
         linesClearedThisLevel += lines;
     }
-    
     if (currentMode === 'sprint' && linesClearedTotal >= 40) {
         endGame(true);
     }
-    
     if ((currentMode === 'classic' || currentMode === 'marathon') && linesClearedThisLevel >= 10) { 
         linesClearedThisLevel -= 10;
         level++;
         updateLevelDisplay();
         dropInterval = Math.max(100, 1000 - (level - 1) * 50);
     }
-    
     updateScoreDisplay();
 }
 
-function useBombAssist() { 
-    if (assists.bomb > 0) { 
-        assists.bomb--; 
-        updateAssistsDisplay(); 
-        localStorage.setItem('assists', JSON.stringify(assists)); 
-        initBoard(); // placeholder
-        draw(); 
-    } 
-}
-function toggleHammerMode() { 
-    if (assists.hammer > 0) { 
-        hammerMode = !hammerMode; 
-        canvas.style.cursor = hammerMode ? 'crosshair' : 'default'; 
-        if (!hammerMode) { 
-            hammerLine = -1; 
-            draw(); 
-        } 
-    } 
-}
-function useUndoAssist() { 
-    if (assists.undo > 0 && boardHistory.length > 0) { 
-        assists.undo--; 
-        board = boardHistory.pop(); 
-        score = Math.max(0, score - 500); 
-        updateAssistsDisplay(); 
-        localStorage.setItem('assists', JSON.stringify(assists)); 
-        generateNewPiece(); 
-        draw(); 
-    } 
-}
+function useBombAssist() { if (assists.bomb > 0) { assists.bomb--; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); initBoard(); draw(); } }
+function toggleHammerMode() { if (assists.hammer > 0) { hammerMode = !hammerMode; canvas.style.cursor = hammerMode ? 'crosshair' : 'default'; if (!hammerMode) { hammerLine = -1; draw(); } } }
+function useUndoAssist() { if (assists.undo > 0 && boardHistory.length > 0) { assists.undo--; board = boardHistory.pop(); score = Math.max(0, score - 500); updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); generateNewPiece(); draw(); } }
 
 function gameLoop(timestamp) {
     if (gameOver || isPaused) return;
@@ -572,7 +432,6 @@ function gameLoop(timestamp) {
 // =================================================================================
 // ===== POMOĆNE FUNKCIJE (HELPERS) =====
 // =================================================================================
-
 function updateScoreDisplay() { scoreDisplay.textContent = `Score: ${score}`; }
 function updateLevelDisplay() { levelDisplay.textContent = `Level: ${level}`; }
 function updateAssistsDisplay() { 
@@ -592,9 +451,7 @@ function showComboMessage(type, count) {
 function lightenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.min(255, r + a); g = Math.min(255, g + a); b = Math.min(255, b + a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
 function darkenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.max(0, r - a); g = Math.max(0, g - a); b = Math.max(0, b - a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
 
-
 // =================================================================================
 // ===== INICIJALIZACIJA IGRE =====
 // =================================================================================
-
 document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
