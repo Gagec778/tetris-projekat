@@ -19,7 +19,7 @@ const TAP_MAX_DURATION = 200;
 const TAP_MAX_DISTANCE = 20;
 const HARD_DROP_MIN_Y_DISTANCE = 70;
 const FLICK_MAX_DURATION = 250;
-const GESTURE_ACTIVATION_DISTANCE = 15;
+const SMOOTHING_FACTOR = 0.3; // Koliko brzo vizuelni blok "juri" logički. Manji broj = sporije i glađe.
 
 // PODEŠAVANJA PRAVILA IGRE
 const POINTS = { SINGLE: 100, DOUBLE: 300, TRIPLE: 500, TETRIS: 800 };
@@ -60,7 +60,7 @@ let hammerLine = -1;
 let currentPieceIndex, nextPieceIndex;
 let keyBindings;
 let dasTimer = null, arrTimer = null, moveDirection = 0;
-let visualOffsetX = 0;
+let visualX = 0; // VIZUELNA X pozicija u pikselima
 let BLOCK_SIZE;
 let linesToClear = [];
 let COLORS, currentTheme;
@@ -73,10 +73,8 @@ let backgroundImageElement;
 
 // Varijable za Touch kontrole
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+let initialPieceX = 0;
 let lastTouchY = 0;
-let lockedColumn = 0;
-let touchAxis = 'none';
-
 
 // =================================================================================
 // ===== FUNKCIJE ZA CRTANJE (RENDER) =====
@@ -113,30 +111,30 @@ function drawBoard() {
 function drawCurrentPiece() { 
     if (!currentPiece) return;
     ctx.save();
-    ctx.translate(visualOffsetX, 0);
+    // Koristimo VIZUELNU poziciju za iscrtavanje
+    ctx.translate(visualX, 0);
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
+        // Iscrtavamo relativno na (0, y) jer je x već rešen sa translate
+        if (cell) drawBlock(0 + c, currentPiece.y + r, currentPiece.color); 
     })); 
     ctx.restore();
 }
 
 function drawGhostPiece() {
     if (!currentPiece || !BLOCK_SIZE) return;
-    const ghostX = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
-    
-    if (!isValidMove(ghostX - currentPiece.x, 0, currentPiece.shape)) {
-        return;
-    }
-    
     let ghostY = currentPiece.y;
-    while (isValidMove(0, 1, currentPiece.shape, ghostY, ghostX)) {
+    while (isValidMove(0, 1, currentPiece.shape, ghostY, currentPiece.x)) {
         ghostY++;
     }
 
-    ctx.globalAlpha = 0.3; 
+    ctx.globalAlpha = 0.3;
+    ctx.save();
+    // Senka takođe koristi istu VIZUELNU poziciju za glatkoću
+    ctx.translate(visualX, 0);
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(ghostX + c, ghostY + r, currentPiece.color); 
+        if (cell) drawBlock(0 + c, ghostY + r, currentPiece.color); 
     }));
+    ctx.restore();
     ctx.globalAlpha = 1.0;
 }
 
@@ -197,22 +195,16 @@ function animateLineClear(timestamp) {
         board[r].forEach((cell, c) => { if (cell) drawBlock(c, r, cell); }); 
         ctx.globalAlpha = 1; 
     });
-    drawCurrentPiece(); 
+    // Tokom animacije, koristimo logičku poziciju, ne vizuelnu
+    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
+        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
+    }));
     requestAnimationFrame(animateLineClear);
 }
 
 // =================================================================================
 // ===== LOGIKA FIGURE (PIECE LOGIC) =====
 // =================================================================================
-function commitVisualPosition() {
-    if (!currentPiece || visualOffsetX === 0) return;
-    const newCol = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
-    if (isValidMove(newCol - currentPiece.x, 0, currentPiece.shape)) {
-        currentPiece.x = newCol;
-    }
-    visualOffsetX = 0;
-}
-
 function createCurrentPiece() {
     if (currentPieceIndex === undefined) return;
     const shape = TETROMINOES[currentPieceIndex];
@@ -221,6 +213,8 @@ function createCurrentPiece() {
         return;
     }
     currentPiece = { shape, color: COLORS[currentPieceIndex], x: Math.floor((COLS - shape[0].length) / 2), y: 0 };
+    // Postavi vizuelnu poziciju da odgovara logičkoj
+    visualX = currentPiece.x * BLOCK_SIZE;
 }
 
 function generateNewPiece() {
@@ -238,7 +232,6 @@ function generateNewPiece() {
 
 function rotatePiece() {
     if (!currentPiece || isPaused || gameOver) return;
-    commitVisualPosition();
     const N = currentPiece.shape.length, newShape = Array(N).fill(0).map(() => Array(N).fill(0));
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) newShape[c][N - 1 - r] = currentPiece.shape[r][c];
     const kicks = [[0, 0], [-1, 0], [1, 0], [0, 1], [-1, 1], [1, 1], [0, -1], [0, -2], [-2, 0], [2, 0]];
@@ -258,22 +251,16 @@ function movePiece(direction) {
 
 function movePieceDown() {
     if (!currentPiece) return;
-    commitVisualPosition();
     if (isValidMove(0, 1, currentPiece.shape)) {
         currentPiece.y++;
         lastDropTime = performance.now();
     } else {
         mergePiece();
     }
-    draw();
 }
 
-function dropPiece(forceX = null) {
+function dropPiece() {
     if (!currentPiece) return;
-    if (forceX !== null) {
-        currentPiece.x = forceX;
-    }
-    commitVisualPosition();
     const startY = currentPiece.y;
     while (isValidMove(0, 1, currentPiece.shape)) currentPiece.y++;
     if (currentMode !== 'zen') score += (currentPiece.y - startY);
@@ -300,8 +287,6 @@ function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y, curr
 
 function mergePiece() {
     if (!currentPiece) return;
-    commitVisualPosition();
-
     boardHistory.push(JSON.parse(JSON.stringify(board)));
     if (boardHistory.length > 5) boardHistory.shift();
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { if (cell) { if (currentPiece.y + r < 0) { endGame(); return; } if (board[currentPiece.y + r]) board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color; } }));
@@ -329,7 +314,6 @@ function checkLines() {
 
 function isTSpin() { 
     if (!currentPiece || currentPieceIndex !== T_SHAPE_INDEX) return false;
-    commitVisualPosition();
     let corners = 0; 
     const {x,y} = currentPiece; 
     if(!board[y] || y+2 >= ROWS || x<0 || x+2 >= COLS) return false; 
@@ -345,7 +329,6 @@ function isTSpin() {
 // =================================================================================
 function handleKeydown(e) {
     if (isPaused || gameOver || !currentPiece || !keyBindings) return;
-    commitVisualPosition();
     const key = e.key === ' ' ? 'Space' : e.key;
     if (key === keyBindings.left) {
         if (moveDirection === 1) stopARR();
@@ -365,7 +348,6 @@ function handleKeydown(e) {
     else if (action === 'bomb') useBombAssist();
     else if (action === 'hammer') toggleHammerMode();
     else if (action === 'undo') useUndoAssist();
-    draw();
 }
 
 function handleKeyup(e) {
@@ -380,11 +362,9 @@ function handleKeyup(e) {
 function startARR(direction) {
     stopARR(); 
     movePiece(direction);
-    draw();
     dasTimer = setTimeout(() => {
         arrTimer = setInterval(() => {
             movePiece(direction);
-            draw();
         }, ARR_RATE);
     }, DAS_DELAY);
 }
@@ -399,7 +379,7 @@ function stopARR() {
 function handleCanvasClick(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); toggleHammerMode(); draw(); } } }
 function handleCanvasHover(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
-// ===== KOD ZA TOUCH KONTROLE (SA "FEELOM") =====
+// ===== KOD ZA TOUCH KONTROLE (KONAČNA VERZIJA) =====
 function handleTouchStart(e) {
     if (isPaused || gameOver || !currentPiece) return;
     e.preventDefault();
@@ -408,8 +388,7 @@ function handleTouchStart(e) {
     touchStartY = e.touches[0].clientY;
     lastTouchY = touchStartY;
     touchStartTime = performance.now();
-    lockedColumn = currentPiece.x;
-    touchAxis = 'none';
+    initialPieceX = currentPiece.x;
 
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd, { passive: false });
@@ -422,55 +401,22 @@ function handleTouchMove(e) {
     let currentX = e.touches[0].clientX;
     let currentY = e.touches[0].clientY;
     let deltaX = currentX - touchStartX;
-    let deltaY = currentY - touchStartY;
     
-    if (touchAxis === 'none' && (Math.abs(deltaX) > GESTURE_ACTIVATION_DISTANCE || Math.abs(deltaY) > GESTURE_ACTIVATION_DISTANCE)) {
-        touchAxis = (Math.abs(deltaX) > Math.abs(deltaY)) ? 'horizontal' : 'vertical';
+    // Soft Drop
+    if (currentY - lastTouchY > BLOCK_SIZE) {
+        movePieceDown();
+        lastTouchY = currentY; 
     }
     
-    if (touchAxis === 'horizontal') {
-        let pieceLeftMost = currentPiece.shape[0].length;
-        let pieceRightMost = 0;
-        currentPiece.shape.forEach(row => {
-            row.forEach((cell, col) => {
-                if(cell) {
-                    pieceLeftMost = Math.min(pieceLeftMost, col);
-                    pieceRightMost = Math.max(pieceRightMost, col);
-                }
-            });
-        });
-        
-        const minXOffset = -(lockedColumn + pieceLeftMost) * BLOCK_SIZE;
-        const maxXOffset = (COLS - 1 - (lockedColumn + pieceRightMost)) * BLOCK_SIZE;
-        visualOffsetX = Math.max(minXOffset, Math.min(deltaX, maxXOffset));
-
-    } else if (touchAxis === 'vertical') {
-        if (currentY - lastTouchY > BLOCK_SIZE) {
-            commitVisualPosition();
-            movePieceDown();
-            lastTouchY = currentY; 
-            lockedColumn = currentPiece.x;
-            touchStartX = currentX;
+    // Horizontalno pomeranje (logičko)
+    const blocksMoved = Math.round(deltaX / BLOCK_SIZE);
+    const newX = initialPieceX + blocksMoved;
+    
+    if (newX !== currentPiece.x) {
+        if (isValidMove(newX - currentPiece.x, 0, currentPiece.shape)) {
+            currentPiece.x = newX;
         }
-
-        let horizontalDelta = currentX - touchStartX;
-        let pieceLeftMost = currentPiece.shape[0].length;
-        let pieceRightMost = 0;
-        currentPiece.shape.forEach(row => {
-            row.forEach((cell, col) => {
-                if(cell) {
-                    pieceLeftMost = Math.min(pieceLeftMost, col);
-                    pieceRightMost = Math.max(pieceRightMost, col);
-                }
-            });
-        });
-
-        const minXOffset = -(currentPiece.x + pieceLeftMost) * BLOCK_SIZE;
-        const maxXOffset = (COLS - 1 - (currentPiece.x + pieceRightMost)) * BLOCK_SIZE;
-        visualOffsetX = Math.max(minXOffset, Math.min(horizontalDelta, maxXOffset));
     }
-    
-    draw();
 }
 
 function handleTouchEnd(e) {
@@ -487,21 +433,18 @@ function handleTouchEnd(e) {
     let deltaY = touchEndY - touchStartY;
     let touchDuration = performance.now() - touchStartTime;
 
-    if ((touchAxis === 'vertical' || touchAxis === 'none') && deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
-        dropPiece(lockedColumn);
+    // Hard Drop (Flick)
+    if (deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
+        dropPiece();
         return;
     }
 
-    if (touchAxis === 'none' && touchDuration < TAP_MAX_DURATION && Math.abs(deltaX) < TAP_MAX_DISTANCE && Math.abs(deltaY) < TAP_MAX_DISTANCE) {
-        commitVisualPosition();
+    // Tap (Rotacija)
+    if (touchDuration < TAP_MAX_DURATION && Math.abs(deltaX) < TAP_MAX_DISTANCE && Math.abs(deltaY) < TAP_MAX_DISTANCE) {
         rotatePiece();
         return;
     }
-
-    commitVisualPosition();
-    draw();
 }
-
 
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
@@ -514,7 +457,6 @@ function startGame() {
     ultraTimerDisplay.style.display = currentMode === 'ultra' ? 'block' : 'none';
     startScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; pauseScreen.style.display = 'none';
     gameOver = false; isPaused = false;
-    visualOffsetX = 0;
     currentPieceIndex = Math.floor(Math.random() * TETROMINOES.length); nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
     generateNewPiece();
     if (currentMode !== 'zen') playBackgroundMusic();
@@ -621,6 +563,15 @@ function gameLoop(timestamp) {
         return;
     }
     
+    // Animiraj vizuelnu poziciju ka logičkoj poziciji
+    const targetX = currentPiece.x * BLOCK_SIZE;
+    visualX += (targetX - visualX) * SMOOTHING_FACTOR;
+    
+    // Zaustavi animaciju ako je dovoljno blizu
+    if (Math.abs(targetX - visualX) < 0.5) {
+        visualX = targetX;
+    }
+
     if (timestamp - lastDropTime > dropInterval) { 
         movePieceDown();
     }
