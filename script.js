@@ -49,6 +49,8 @@ let currentPieceIndex, nextPieceIndex;
 let keyBindings;
 let dasTimer = null, arrTimer = null, moveDirection = 0;
 let visualOffsetX = 0;
+let BLOCK_SIZE; // <-- DODATA LINIJA
+let linesToClear = []; // <-- DODATA LINIJA
 let TAP_DISTANCE_THRESHOLD, DROP_DISTANCE_THRESHOLD;
 let COLORS, currentTheme;
 let currentMode = 'classic';
@@ -100,7 +102,7 @@ function drawCurrentPiece() {
 }
 
 function drawGhostPiece() {
-    if (!currentPiece) return;
+    if (!currentPiece || !BLOCK_SIZE) return;
     const potentialX = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
     if (!isValidMove(potentialX - currentPiece.x, 0, currentPiece.shape)) {
         return;
@@ -142,7 +144,7 @@ function drawPieceInCanvas(piece, context, canvasEl) {
 function drawNextPiece() { drawPieceInCanvas(nextPiece, nextBlockCtx, nextBlockCanvas); }
 
 function draw() { 
-    if(ctx) { 
+    if(ctx && canvas.width > 0) { 
         ctx.clearRect(0, 0, canvas.width, canvas.height); 
         drawBoard(); 
         drawGhostPiece(); 
@@ -223,6 +225,7 @@ function initBoard() {
 }
 
 function isValidMove(offsetX, offsetY, newShape, currentY = currentPiece.y, currentX = currentPiece.x) {
+    if (!board || board.length === 0) return false;
     for (let r = 0; r < newShape.length; r++) for (let c = 0; c < newShape[r].length; c++) if (newShape[r][c]) {
         const newX = currentX + c + offsetX;
         const newY = currentY + r + offsetY;
@@ -241,7 +244,7 @@ function mergePiece() {
 
 function checkLines() {
     linesToClear = [];
-    for (let r = ROWS - 1; r >= 0; r--) if (board[r].every(cell => cell)) linesToClear.push(r);
+    for (let r = ROWS - 1; r >= 0; r--) if (board[r] && board[r].every(cell => cell)) linesToClear.push(r);
     if (linesToClear.length > 0) { isAnimating = true; animationStart = performance.now(); updateScore(linesToClear.length, isTSpin()); if (linesToClear.length === 4) tetrisSound.play().catch(console.error); else if (isTSpin()) tSpinSound.play().catch(console.error); else clearSound.play().catch(console.error); }
     else { combo = 0; lastClearWasSpecial = false; generateNewPiece(); }
 }
@@ -252,7 +255,7 @@ function isTSpin() { if (!currentPiece || currentPieceIndex !== T_SHAPE_INDEX) r
 // ===== KONTROLE (INPUT HANDLERS) =====
 // =================================================================================
 function handleKeydown(e) {
-    if (isPaused || gameOver || !currentPiece) return;
+    if (isPaused || gameOver || !currentPiece || !keyBindings) return;
     const key = e.key === ' ' ? 'Space' : e.key;
     if (key === keyBindings.left) {
         if (moveDirection === 1) stopARR();
@@ -276,6 +279,7 @@ function handleKeydown(e) {
 }
 
 function handleKeyup(e) {
+    if (!keyBindings) return;
     const key = e.key === ' ' ? 'Space' : e.key;
     if ((key === keyBindings.left && moveDirection === -1) || (key === keyBindings.right && moveDirection === 1)) {
         stopARR();
@@ -302,8 +306,8 @@ function stopARR() {
     arrTimer = null;
 }
 
-function handleCanvasClick(e) { if (hammerMode) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); toggleHammerMode(); draw(); } } }
-function handleCanvasHover(e) { if (hammerMode) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
+function handleCanvasClick(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); toggleHammerMode(); draw(); } } }
+function handleCanvasHover(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
@@ -324,8 +328,12 @@ function startGame() {
 
 function endGame(isSprintWin = false, exitToMainMenu = false) {
     gameOver = true; if (animationFrameId) cancelAnimationFrame(animationFrameId); pauseBackgroundMusic();
+    if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem('bestScore', bestScore);
+        bestScoreDisplay.textContent = bestScore;
+    }
     if (exitToMainMenu) { startScreen.style.display = 'flex'; gameOverScreen.style.display = 'none'; return; }
-    // OVA LINIJA JE BILA DUPLIRANA I PRAVILA PROBLEM, SADA JE SAMO JEDNA ISPRAVNA U `loadBestScore`
     if (isSprintWin) { finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; finalTimeDisplay.style.display = 'block'; document.getElementById('game-over-title').textContent = 'PERFECT!'; }
     else { gameOverSound.play().catch(console.error); finalTimeDisplay.style.display = 'none'; document.getElementById('game-over-title').textContent = 'GAME OVER!'; }
     finalScoreDisplay.textContent = `Your Score: ${score}`;
@@ -403,7 +411,7 @@ function handleLinesCleared(lines) {
     updateScoreDisplay();
 }
 
-function useBombAssist() { if (assists.bomb > 0) { assists.bomb--; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); initBoard(); draw(); } }
+function useBombAssist() { if (assists.bomb > 0) { bombSound.play().catch(console.error); assists.bomb--; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); initBoard(); draw(); } }
 function toggleHammerMode() { if (assists.hammer > 0) { hammerMode = !hammerMode; canvas.style.cursor = hammerMode ? 'crosshair' : 'default'; if (!hammerMode) { hammerLine = -1; draw(); } } }
 function useUndoAssist() { if (assists.undo > 0 && boardHistory.length > 0) { assists.undo--; board = boardHistory.pop(); score = Math.max(0, score - 500); updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); generateNewPiece(); draw(); } }
 
@@ -440,6 +448,203 @@ function lightenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(
 function darkenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16); r = Math.max(0, r - a); g = Math.max(0, g - a); b = Math.max(0, b - a); return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`; }
 
 // =================================================================================
-// ===== INICIJALIZACIJA IGRE =====
+// ===== INICIJALIZACIJA IGRE, Događaji i Podešavanja =====
 // =================================================================================
+
+function initDOMAndEventListeners() {
+    // Dohvatanje osnovnih elemenata
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    nextBlockCanvas = document.getElementById('nextBlockCanvas');
+    nextBlockCtx = nextBlockCanvas.getContext('2d');
+    backgroundImageElement = document.getElementById('background-image');
+
+    // Dohvatanje ekrana i prikaza
+    startScreen = document.getElementById('start-screen');
+    gameOverScreen = document.getElementById('game-over-screen');
+    pauseScreen = document.getElementById('pause-screen');
+    countdownOverlay = document.getElementById('countdown-overlay');
+    scoreDisplay = document.getElementById('score-display');
+    finalScoreDisplay = document.getElementById('final-score');
+    finalTimeDisplay = document.getElementById('final-time');
+    comboDisplay = document.getElementById('combo-display');
+    levelDisplay = document.getElementById('level-display');
+    sprintTimerDisplay = document.getElementById('sprint-timer');
+    ultraTimerDisplay = document.getElementById('ultra-timer');
+    bestScoreDisplay = document.getElementById('best-score-display');
+    
+    // Dohvatanje dugmića
+    startButton = document.getElementById('start-button');
+    restartButton = document.getElementById('restart-button');
+    resumeButton = document.getElementById('resume-button');
+    homeButton = document.getElementById('home-button');
+    pauseButton = document.getElementById('pause-button');
+    
+    // Dohvatanje birača
+    themeSwitcher = document.getElementById('theme-switcher');
+    modeSelector = document.getElementById('mode-selector');
+
+    // Dohvatanje assist elemenata
+    assistsBombButton = document.getElementById('assist-bomb-button');
+    assistsBombCountDisplay = document.getElementById('assists-bomb-count');
+    assistsHammerButton = document.getElementById('assist-hammer-button');
+    assistsHammerCountDisplay = document.getElementById('assists-hammer-count');
+    assistsUndoButton = document.getElementById('assist-undo-button');
+    assistsUndoCountDisplay = document.getElementById('assists-undo-count');
+    
+    // Dohvatanje modalnih prozora za kontrole
+    controlsModal = document.getElementById('controls-modal');
+    controlsButton = document.getElementById('controls-button');
+    closeControlsModal = document.getElementById('close-controls-modal');
+    controlInputs = document.querySelectorAll('.control-item input');
+    
+    // Zvukovi
+    dropSound = document.getElementById('dropSound');
+    clearSound = document.getElementById('clearSound');
+    rotateSound = document.getElementById('rotateSound');
+    gameOverSound = document.getElementById('gameOverSound');
+    tSpinSound = document.getElementById('tSpinSound');
+    tetrisSound = document.getElementById('tetrisSound');
+    backgroundMusic = document.getElementById('backgroundMusic');
+    bombSound = document.getElementById('bombSound');
+
+    // Funkcija za promenu veličine igre
+    function resizeGame() {
+        const container = document.getElementById('canvas-container');
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+
+        BLOCK_SIZE = Math.floor(Math.min(containerWidth / COLS, containerHeight / ROWS));
+        
+        const canvasWidth = COLS * BLOCK_SIZE;
+        const canvasHeight = ROWS * BLOCK_SIZE;
+
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        
+        const nextContainer = document.getElementById('next-block-container');
+        if (nextContainer.clientWidth > 0) {
+            nextBlockCanvas.width = nextContainer.clientWidth * 0.9;
+            nextBlockCanvas.height = nextContainer.clientHeight * 0.9;
+        }
+        
+        draw(); 
+        drawNextPiece();
+    }
+
+    // Povezivanje događaja (Event Listeners)
+    window.addEventListener('resize', resizeGame);
+    document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('keyup', handleKeyup);
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('mousemove', handleCanvasHover);
+
+    startButton.addEventListener('click', () => {
+        countdownOverlay.style.display = 'flex';
+        let count = 3;
+        countdownOverlay.textContent = count;
+        const countdownInterval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownOverlay.textContent = count;
+            } else {
+                clearInterval(countdownInterval);
+                countdownOverlay.style.display = 'none';
+                startGame();
+            }
+        }, 1000);
+    });
+    
+    restartButton.addEventListener('click', () => {
+        gameOverScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+    });
+
+    pauseButton.addEventListener('click', togglePause);
+    resumeButton.addEventListener('click', togglePause);
+    homeButton.addEventListener('click', () => window.location.reload());
+
+    themeSwitcher.addEventListener('change', (e) => {
+        applyTheme(e.target.value);
+        localStorage.setItem('theme', e.target.value);
+    });
+
+    modeSelector.addEventListener('change', (e) => {
+        currentMode = e.target.value;
+        localStorage.setItem('mode', currentMode);
+    });
+
+    assistsBombButton.addEventListener('click', useBombAssist);
+    assistsHammerButton.addEventListener('click', toggleHammerMode);
+    assistsUndoButton.addEventListener('click', useUndoAssist);
+
+    loadSettings();
+    resizeGame();
+}
+
+function applyTheme(themeName) {
+    currentTheme = themeName;
+    const theme = THEMES[themeName];
+    const root = document.documentElement;
+    root.style.setProperty('--main-color', theme.lineColor);
+    root.style.setProperty('--background-color', theme.background);
+    root.style.setProperty('--board-bg-color', theme.boardBackground);
+    root.style.setProperty('--grid-color', theme.gridColor);
+    root.style.setProperty('--flash-color', theme.flashColor);
+    
+    if (theme.backgroundImage) {
+        backgroundImageElement.style.backgroundImage = theme.backgroundImage;
+        backgroundImageElement.style.opacity = '1';
+    } else {
+        backgroundImageElement.style.opacity = '0';
+    }
+
+    COLORS = theme.blockColors;
+    if (!gameOver || (ctx && canvas.width > 0)) {
+        draw();
+    }
+}
+
+function loadSettings() {
+    const savedTheme = localStorage.getItem('theme') || 'classic';
+    const savedMode = localStorage.getItem('mode') || 'classic';
+    bestScore = parseInt(localStorage.getItem('bestScore') || '0', 10);
+    assists = JSON.parse(localStorage.getItem('assists') || '{"bomb":1,"hammer":1,"undo":1}');
+    keyBindings = JSON.parse(localStorage.getItem('keyBindings')) || {
+        left: 'ArrowLeft',
+        right: 'ArrowRight',
+        down: 'ArrowDown',
+        rotate: 'ArrowUp',
+        drop: 'Space',
+        bomb: 'b',
+        hammer: 'h',
+        undo: 'u'
+    };
+
+    themeSwitcher.value = savedTheme;
+    modeSelector.value = savedMode;
+    currentMode = savedMode;
+    
+    bestScoreDisplay.textContent = bestScore;
+    updateAssistsDisplay();
+    applyTheme(savedTheme);
+}
+
+function playBackgroundMusic() {
+    if (backgroundMusic && !backgroundMusicPlaying) {
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.3;
+        backgroundMusic.play().catch(e => console.log("Muzika je blokirana od strane pregledača. Potrebna je interakcija korisnika.", e));
+        backgroundMusicPlaying = true;
+    }
+}
+
+function pauseBackgroundMusic() {
+    if (backgroundMusic) {
+       backgroundMusic.pause();
+    }
+    backgroundMusicPlaying = false;
+}
+
+// Glavna ulazna tačka
 document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
