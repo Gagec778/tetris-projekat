@@ -397,7 +397,7 @@ function stopARR() {
 function handleCanvasClick(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); toggleHammerMode(); draw(); } } }
 function handleCanvasHover(e) { if (hammerMode && BLOCK_SIZE > 0) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
-// ===== KOD ZA TOUCH KONTROLE (SA "FEELOM") =====
+// ===== KOD ZA TOUCH KONTROLE =====
 function handleTouchStart(e) {
     if (isPaused || gameOver || !currentPiece) return;
     e.preventDefault();
@@ -408,6 +408,9 @@ function handleTouchStart(e) {
     touchStartTime = performance.now();
     lockedColumn = currentPiece.x;
     touchAxis = 'none';
+
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: false });
 }
 
 function handleTouchMove(e) {
@@ -449,9 +452,6 @@ function handleTouchMove(e) {
         }
 
         let horizontalDelta = currentX - touchStartX;
-        visualOffsetX = horizontalDelta;
-
-        // Dodajemo ograničenje i ovde
         let pieceLeftMost = currentPiece.shape[0].length;
         let pieceRightMost = 0;
         currentPiece.shape.forEach(row => {
@@ -465,7 +465,7 @@ function handleTouchMove(e) {
 
         const minXOffset = -(currentPiece.x + pieceLeftMost) * BLOCK_SIZE;
         const maxXOffset = (COLS - 1 - (currentPiece.x + pieceRightMost)) * BLOCK_SIZE;
-        visualOffsetX = Math.max(minXOffset, Math.min(visualOffsetX, maxXOffset));
+        visualOffsetX = Math.max(minXOffset, Math.min(horizontalDelta, maxXOffset));
     }
     
     draw();
@@ -475,6 +475,8 @@ function handleTouchEnd(e) {
     if (isPaused || gameOver || !currentPiece) return;
     if (e.changedTouches.length === 0) return;
 
+    window.removeEventListener('touchmove', handleTouchMove);
+    window.removeEventListener('touchend', handleTouchEnd);
     e.preventDefault();
 
     let touchEndX = e.changedTouches[0].clientX;
@@ -483,7 +485,7 @@ function handleTouchEnd(e) {
     let deltaY = touchEndY - touchStartY;
     let touchDuration = performance.now() - touchStartTime;
 
-    if (touchAxis === 'vertical' && deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
+    if ((touchAxis === 'vertical' || touchAxis === 'none') && deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
         dropPiece(lockedColumn);
         return;
     }
@@ -497,7 +499,6 @@ function handleTouchEnd(e) {
     commitVisualPosition();
     draw();
 }
-
 
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
@@ -724,8 +725,6 @@ function initDOMAndEventListeners() {
     canvas.addEventListener('click', handleCanvasClick);
     canvas.addEventListener('mousemove', handleCanvasHover);
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
     
     startButton.addEventListener('click', () => {
         countdownOverlay.style.display = 'flex';
