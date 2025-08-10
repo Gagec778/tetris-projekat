@@ -13,7 +13,7 @@ const COLS = 10;
 const ROWS = 20;
 const DAS_DELAY = 160; 
 const ARR_RATE = 30; 
-const TAP_DURATION_THRESHOLD = 150; // ms
+const TAP_DURATION_THRESHOLD = 150;
 const TETROMINOES = [
     [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
     [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
@@ -53,7 +53,7 @@ let TAP_DISTANCE_THRESHOLD, DROP_DISTANCE_THRESHOLD;
 let COLORS, currentTheme;
 let currentMode = 'classic';
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay, continueButton, exitModal, confirmExitButton, cancelExitButton;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
@@ -175,11 +175,9 @@ function animateLineClear(timestamp) {
     requestAnimationFrame(animateLineClear);
 }
 
-
 // =================================================================================
 // ===== LOGIKA FIGURE (PIECE LOGIC) =====
 // =================================================================================
-
 function createCurrentPiece() {
     if (currentPieceIndex === undefined) return;
     const shape = TETROMINOES[currentPieceIndex];
@@ -217,11 +215,9 @@ function dropPiece() {
     dropSound.currentTime = 0; dropSound.play().catch(console.error);
 }
 
-
 // =================================================================================
 // ===== LOGIKA TABLE (BOARD LOGIC) =====
 // =================================================================================
-
 function initBoard() {
     board = Array(ROWS).fill(0).map(() => Array(COLS).fill(0));
 }
@@ -252,11 +248,9 @@ function checkLines() {
 
 function isTSpin() { if (!currentPiece || currentPieceIndex !== T_SHAPE_INDEX) return false; let corners = 0; const {x,y} = currentPiece; if(!board[y] || y+2 >= ROWS || x<0 || x+2 >= COLS) return false; if(board[y][x]) corners++; if(board[y][x+2]) corners++; if(board[y+2][x]) corners++; if(board[y+2][x+2]) corners++; return corners >= 3; }
 
-
 // =================================================================================
 // ===== KONTROLE (INPUT HANDLERS) =====
 // =================================================================================
-
 function handleKeydown(e) {
     if (isPaused || gameOver || !currentPiece) return;
     const key = e.key === ' ' ? 'Space' : e.key;
@@ -311,11 +305,9 @@ function stopARR() {
 function handleCanvasClick(e) { if (hammerMode) { const rect = canvas.getBoundingClientRect(), scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height, col = Math.floor(((e.clientX - rect.left) * scaleX) / BLOCK_SIZE), row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (board[row]?.[col]) { assists.hammer--; board[row][col] = 0; score += 100; updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); toggleHammerMode(); draw(); } } }
 function handleCanvasHover(e) { if (hammerMode) { const rect = canvas.getBoundingClientRect(), scaleY = canvas.height / rect.height, row = Math.floor(((e.clientY - rect.top) * scaleY) / BLOCK_SIZE); if (row !== hammerLine) { hammerLine = row; draw(); } } }
 
-
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
 // =================================================================================
-
 function startGame() {
     initBoard(); score = 0; level = 1; linesClearedTotal = 0; linesClearedThisLevel = 0; dropInterval = 1000;
     updateScoreDisplay(); updateLevelDisplay(); updateAssistsDisplay(); startTime = performance.now();
@@ -335,7 +327,7 @@ function endGame(isSprintWin = false, exitToMainMenu = false) {
     if (exitToMainMenu) { startScreen.style.display = 'flex'; gameOverScreen.style.display = 'none'; return; }
     if (score > bestScore) {
         bestScore = score;
-        localStorage.setItem('bestScore', bestScore);
+        localStorage.setItem(`bestScore_${currentMode}`, bestScore);
         bestScoreDisplay.textContent = `${bestScore}`;
     }
     if (isSprintWin) { finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; finalTimeDisplay.style.display = 'block'; document.getElementById('game-over-title').textContent = 'PERFECT!'; }
