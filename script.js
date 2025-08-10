@@ -19,7 +19,7 @@ const TAP_MAX_DURATION = 200;
 const TAP_MAX_DISTANCE = 20;
 const HARD_DROP_MIN_Y_DISTANCE = 70;
 const FLICK_MAX_DURATION = 250;
-const GESTURE_ACTIVATION_DISTANCE = 15; // Distanca za aktivaciju swipe-a
+const GESTURE_ACTIVATION_DISTANCE = 15;
 
 // PODEŠAVANJA PRAVILA IGRE
 const POINTS = { SINGLE: 100, DOUBLE: 300, TRIPLE: 500, TETRIS: 800 };
@@ -75,8 +75,7 @@ let backgroundImageElement;
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
 let lastTouchY = 0;
 let lockedColumn = 0;
-let isTouching = false;
-let touchAxis = 'none'; // 'none', 'horizontal', 'vertical'
+let touchAxis = 'none';
 
 
 // =================================================================================
@@ -408,12 +407,11 @@ function handleTouchStart(e) {
     lastTouchY = touchStartY;
     touchStartTime = performance.now();
     lockedColumn = currentPiece.x;
-    isTouching = true;
-    touchAxis = 'none'; // Resetuj osu na svakom novom dodiru
+    touchAxis = 'none';
 }
 
 function handleTouchMove(e) {
-    if (!isTouching || isPaused || gameOver || !currentPiece) return;
+    if (isPaused || gameOver || !currentPiece) return;
     e.preventDefault();
 
     let currentX = e.touches[0].clientX;
@@ -421,19 +419,11 @@ function handleTouchMove(e) {
     let deltaX = currentX - touchStartX;
     let deltaY = currentY - touchStartY;
     
-    // Određivanje ose pokreta ako već nije određena
     if (touchAxis === 'none' && (Math.abs(deltaX) > GESTURE_ACTIVATION_DISTANCE || Math.abs(deltaY) > GESTURE_ACTIVATION_DISTANCE)) {
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            touchAxis = 'horizontal';
-        } else {
-            touchAxis = 'vertical';
-        }
+        touchAxis = (Math.abs(deltaX) > Math.abs(deltaY)) ? 'horizontal' : 'vertical';
     }
     
-    // Izvršavanje akcija na osnovu zaključane ose
     if (touchAxis === 'horizontal') {
-        let newVisualOffsetX = deltaX;
-        
         let pieceLeftMost = currentPiece.shape[0].length;
         let pieceRightMost = 0;
         currentPiece.shape.forEach(row => {
@@ -447,33 +437,45 @@ function handleTouchMove(e) {
         
         const minXOffset = -(lockedColumn + pieceLeftMost) * BLOCK_SIZE;
         const maxXOffset = (COLS - 1 - (lockedColumn + pieceRightMost)) * BLOCK_SIZE;
-        
-        visualOffsetX = Math.max(minXOffset, Math.min(newVisualOffsetX, maxXOffset));
+        visualOffsetX = Math.max(minXOffset, Math.min(deltaX, maxXOffset));
 
     } else if (touchAxis === 'vertical') {
-        // Soft Drop
         if (currentY - lastTouchY > BLOCK_SIZE) {
-            commitVisualPosition(); // Commit-uj horizontalu pre spuštanja
+            commitVisualPosition();
             movePieceDown();
             lastTouchY = currentY; 
-            lockedColumn = currentPiece.x; // Ponovo zaključaJ kolonu nakon pomeranja
-            touchStartX = currentX; // Resetuj X da bi se dozvolilo horizontalno pomeranje
+            lockedColumn = currentPiece.x;
+            touchStartX = currentX;
         }
 
-        // Dozvoli i horizontalno pomeranje tokom soft dropa
         let horizontalDelta = currentX - touchStartX;
         visualOffsetX = horizontalDelta;
+
+        // Dodajemo ograničenje i ovde
+        let pieceLeftMost = currentPiece.shape[0].length;
+        let pieceRightMost = 0;
+        currentPiece.shape.forEach(row => {
+            row.forEach((cell, col) => {
+                if(cell) {
+                    pieceLeftMost = Math.min(pieceLeftMost, col);
+                    pieceRightMost = Math.max(pieceRightMost, col);
+                }
+            });
+        });
+
+        const minXOffset = -(currentPiece.x + pieceLeftMost) * BLOCK_SIZE;
+        const maxXOffset = (COLS - 1 - (currentPiece.x + pieceRightMost)) * BLOCK_SIZE;
+        visualOffsetX = Math.max(minXOffset, Math.min(visualOffsetX, maxXOffset));
     }
     
     draw();
 }
 
 function handleTouchEnd(e) {
-    if (!isTouching || isPaused || gameOver || !currentPiece) return;
+    if (isPaused || gameOver || !currentPiece) return;
     if (e.changedTouches.length === 0) return;
 
     e.preventDefault();
-    isTouching = false;
 
     let touchEndX = e.changedTouches[0].clientX;
     let touchEndY = e.changedTouches[0].clientY;
@@ -481,25 +483,22 @@ function handleTouchEnd(e) {
     let deltaY = touchEndY - touchStartY;
     let touchDuration = performance.now() - touchStartTime;
 
-    // 1. Provera za HARD DROP (Flick)
     if (touchAxis === 'vertical' && deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
         dropPiece(lockedColumn);
         return;
     }
 
-    // 2. Provera za TAP (Rotacija)
     if (touchAxis === 'none' && touchDuration < TAP_MAX_DURATION && Math.abs(deltaX) < TAP_MAX_DISTANCE && Math.abs(deltaY) < TAP_MAX_DISTANCE) {
         commitVisualPosition();
         rotatePiece();
         return;
     }
 
-    // 3. Commit za horizontalno pomeranje ili spori soft drop
     commitVisualPosition();
     draw();
 }
 
-// ... ostatak koda ostaje isti
+
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
 // =================================================================================
@@ -615,23 +614,11 @@ function useUndoAssist() { if (!assistsUndoButton.disabled && boardHistory.lengt
 
 function gameLoop(timestamp) {
     if (gameOver || isPaused || isAnimating) {
-        if (isAnimating) {
-            return;
-        }
-        if(gameOver || isPaused) {
-             return;
-        }
-    }
-    
-    if (isTouching) {
-        draw();
-        animationFrameId = requestAnimationFrame(gameLoop);
         return;
     }
-
+    
     if (timestamp - lastDropTime > dropInterval) { 
         movePieceDown();
-        lastDropTime = timestamp; 
     }
     draw(); 
     animationFrameId = requestAnimationFrame(gameLoop);
