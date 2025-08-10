@@ -19,7 +19,6 @@ const TAP_MAX_DURATION = 180;       // ms - Max trajanje dodira da bi bio TAP
 const TAP_MAX_DISTANCE = 15;        // px - Max pomeraj prsta da bi bio TAP
 const HARD_DROP_MIN_Y_DISTANCE = 80;// px - Min vertikalna distanca za HARD DROP
 const FLICK_MAX_DURATION = 250;     // ms - Max trajanje za HARD DROP (flick)
-const HORIZONTAL_MOVE_THRESHOLD = 0.5; // Koliko bloka treba preći da se registruje pomeraj
 
 const TETROMINOES = [
     [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
@@ -117,20 +116,21 @@ function drawCurrentPiece() {
 
 function drawGhostPiece() {
     if (!currentPiece || !BLOCK_SIZE) return;
-    let logicalX = currentPiece.x;
-    if (visualOffsetX !== 0) {
-        logicalX += Math.round(visualOffsetX / BLOCK_SIZE);
-    }
-    if (!isValidMove(logicalX - currentPiece.x, 0, currentPiece.shape)) {
+    const ghostX = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
+    
+    // Proveri da li je ghost pozicija uopšte validna pre iscrtavanja
+    if (!isValidMove(ghostX - currentPiece.x, 0, currentPiece.shape)) {
         return;
     }
+    
     let ghostY = currentPiece.y;
-    while (isValidMove(0, 1, currentPiece.shape, ghostY, logicalX)) {
+    while (isValidMove(0, 1, currentPiece.shape, ghostY, ghostX)) {
         ghostY++;
     }
+
     ctx.globalAlpha = 0.3; 
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(logicalX + c, ghostY + r, currentPiece.color); 
+        if (cell) drawBlock(ghostX + c, ghostY + r, currentPiece.color); 
     }));
     ctx.globalAlpha = 1.0;
 }
@@ -394,17 +394,18 @@ function handleTouchEnd(e) {
 
     // 1. Provera za HARD DROP (Flick)
     if (deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
-        currentPiece.x = lockedColumn; // Zaključaj kolonu
+        currentPiece.x = lockedColumn;
         visualOffsetX = 0;
+        draw(); // Iscrtaj na ispravnoj poziciji pre pada
         dropPiece();
-        return; // Završi obradu
+        return;
     }
 
     // 2. Provera za TAP (Rotacija)
     if (touchDuration < TAP_MAX_DURATION && Math.abs(deltaX) < TAP_MAX_DISTANCE && Math.abs(deltaY) < TAP_MAX_DISTANCE) {
-        visualOffsetX = 0; // Poništi slučajni mali pomeraj
+        visualOffsetX = 0;
         rotatePiece();
-        return; // Završi obradu
+        return;
     }
 
     // 3. Commit za horizontalno pomeranje
