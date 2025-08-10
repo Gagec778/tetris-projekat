@@ -327,7 +327,7 @@ function endGame(isSprintWin = false, exitToMainMenu = false) {
     if (exitToMainMenu) { startScreen.style.display = 'flex'; gameOverScreen.style.display = 'none'; return; }
     if (score > bestScore) {
         bestScore = score;
-        localStorage.setItem(`bestScore_${currentMode}`, bestScore);
+        localStorage.setItem('bestScore', bestScore);
         bestScoreDisplay.textContent = `${bestScore}`;
     }
     if (isSprintWin) { finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; finalTimeDisplay.style.display = 'block'; document.getElementById('game-over-title').textContent = 'PERFECT!'; }
