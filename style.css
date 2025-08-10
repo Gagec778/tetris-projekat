@@ -49,8 +49,7 @@ body {
     border: 5px solid var(--border-color);
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
-    /* ISPRAVKA: Uklonjen padding da se sadržaj zalepi za ivice */
-    padding: 0; 
+    padding: 5px; /* Vraćamo padding na glavni okvir */
     width: 100%;
     height: 100%;
     max-width: 500px;
@@ -58,7 +57,7 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    /* Razmak između elemenata će se sada definisati na samim elementima */
+    gap: 5px;
 }
 
 header#info-section {
@@ -69,10 +68,13 @@ header#info-section {
     gap: 5px;
     height: 80px;
     flex-shrink: 0;
-    /* ISPRAVKA: Dodat padding da se odvoji od ivica i drugih elemenata */
-    padding: 5px 5px 0 5px;
+    /* ISPRAVKA: Koristimo negativan margin da "izvučemo" panel i pokrijemo padding */
+    margin-top: -5px;
+    margin-left: -5px;
+    margin-right: -5px;
+    width: calc(100% + 10px); /* Kompenzujemo za negativan margin */
+    padding: 5px;
     box-sizing: border-box;
-    /* ISPRAVKA: Zaobljavanje gornjih uglova da se uklope u okvir */
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
 }
@@ -84,8 +86,6 @@ main#canvas-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 5px; /* Dodat padding ovde radi razmaka */
-    box-sizing: border-box;
 }
 
 footer#assists-panel {
@@ -96,8 +96,6 @@ footer#assists-panel {
     margin: 0;
     height: 45px;
     flex-shrink: 0;
-    padding: 0 5px 5px 5px; /* Dodat padding ovde */
-    box-sizing: border-box;
 }
 
 /* =================================
