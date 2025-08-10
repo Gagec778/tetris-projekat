@@ -14,11 +14,11 @@ const ROWS = 20;
 const DAS_DELAY = 160; 
 const ARR_RATE = 30; 
 
-// PODEŠAVANJA ZA TOUCH "OSEĆAJ" - OVE VREDNOSTI MOŽEMO MENJATI
-const TAP_MAX_DURATION = 180;       // ms - Max trajanje dodira da bi bio TAP
-const TAP_MAX_DISTANCE = 20;        // px - Max pomeraj prsta da bi bio TAP
-const HARD_DROP_MIN_Y_DISTANCE = 70;// px - Min vertikalna distanca za HARD DROP
-const FLICK_MAX_DURATION = 250;     // ms - Max trajanje za HARD DROP (flick)
+// PODEŠAVANJA ZA TOUCH "OSEĆAJ"
+const TAP_MAX_DURATION = 180;
+const TAP_MAX_DISTANCE = 20;
+const HARD_DROP_MIN_Y_DISTANCE = 70;
+const FLICK_MAX_DURATION = 250;
 
 const TETROMINOES = [
     [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
@@ -165,6 +165,7 @@ function draw() {
 }
 
 function animateLineClear(timestamp) {
+    if (!isAnimating) return; // Sigurnosna provera
     const elapsed = timestamp - animationStart;
     if (elapsed >= animationDuration) {
         isAnimating = false;
@@ -175,6 +176,7 @@ function animateLineClear(timestamp) {
         if (board.every(row => row.every(cell => !cell))) { score += 3000 * level; showComboMessage('Perfect Clear!', 0); }
         linesToClear = []; 
         generateNewPiece();
+        requestAnimationFrame(gameLoop); // Nastavi glavnu petlju
         return;
     }
     const progress = elapsed / animationDuration; 
@@ -186,7 +188,7 @@ function animateLineClear(timestamp) {
         ctx.globalAlpha = 1; 
     });
     drawCurrentPiece(); 
-    requestAnimationFrame(animateLineClear);
+    requestAnimationFrame(animateLineClear); // Vrti animaciju
 }
 
 // =================================================================================
@@ -204,6 +206,10 @@ function commitVisualPosition() {
 function createCurrentPiece() {
     if (currentPieceIndex === undefined) return;
     const shape = TETROMINOES[currentPieceIndex];
+    if (!COLORS || !COLORS[currentPieceIndex]) {
+        console.error("Boje nisu definisane! Proveriti temu.");
+        return; // Spreči pucanje igre
+    }
     currentPiece = { shape, color: COLORS[currentPieceIndex], x: Math.floor((COLS - shape[0].length) / 2), y: 0 };
 }
 
@@ -213,7 +219,9 @@ function generateNewPiece() {
     nextPieceIndex = Math.floor(Math.random() * TETROMINOES.length);
     nextPiece = { shape: TETROMINOES[nextPieceIndex], color: COLORS[nextPieceIndex] };
     drawNextPiece();
-    if (!isValidMove(0, 0, currentPiece.shape)) endGame();
+    if (currentPiece && !isValidMove(0, 0, currentPiece.shape)) {
+        endGame();
+    }
 }
 
 function rotatePiece() {
@@ -237,8 +245,9 @@ function movePiece(direction) {
 }
 
 function movePieceDown() {
+    if (!currentPiece) return;
     commitVisualPosition();
-    if (currentPiece && isValidMove(0, 1, currentPiece.shape)) {
+    if (isValidMove(0, 1, currentPiece.shape)) {
         currentPiece.y++;
         lastDropTime = performance.now();
     } else {
@@ -252,7 +261,7 @@ function dropPiece() {
     commitVisualPosition();
     const startY = currentPiece.y;
     while (isValidMove(0, 1, currentPiece.shape)) currentPiece.y++;
-    if (currentMode !== 'zen') score += (currentPiece.y - startY);
+    if (currentMode !== 'zen') score += (currentMode === 'zen' ? 0 : (currentPiece.y - startY));
     mergePiece();
     dropSound.currentTime = 0; dropSound.play().catch(console.error);
 }
@@ -287,8 +296,20 @@ function mergePiece() {
 function checkLines() {
     linesToClear = [];
     for (let r = ROWS - 1; r >= 0; r--) if (board[r] && board[r].every(cell => cell)) linesToClear.push(r);
-    if (linesToClear.length > 0) { isAnimating = true; animationStart = performance.now(); updateScore(linesToClear.length, isTSpin()); if (linesToClear.length === 4) tetrisSound.play().catch(console.error); else if (isTSpin()) tSpinSound.play().catch(console.error); else clearSound.play().catch(console.error); }
-    else { combo = 0; lastClearWasSpecial = false; generateNewPiece(); }
+    
+    if (linesToClear.length > 0) {
+        isAnimating = true;
+        animationStart = performance.now();
+        updateScore(linesToClear.length, isTSpin());
+        if (linesToClear.length === 4) { tetrisSound.play().catch(console.error); }
+        else if (isTSpin()) { tSpinSound.play().catch(console.error); }
+        else { clearSound.play().catch(console.error); }
+        requestAnimationFrame(animateLineClear); // ISPRAVKA: Pozovi animaciju!
+    } else {
+        combo = 0;
+        lastClearWasSpecial = false;
+        generateNewPiece();
+    }
 }
 
 function isTSpin() { 
@@ -309,7 +330,7 @@ function isTSpin() {
 // =================================================================================
 function handleKeydown(e) {
     if (isPaused || gameOver || !currentPiece || !keyBindings) return;
-    visualOffsetX = 0;
+    commitVisualPosition();
     const key = e.key === ' ' ? 'Space' : e.key;
     if (key === keyBindings.left) {
         if (moveDirection === 1) stopARR();
@@ -388,8 +409,8 @@ function handleTouchMove(e) {
     if (currentY - touchStartY > BLOCK_SIZE) {
         commitVisualPosition();
         movePieceDown();
-        touchStartY = currentY; // Resetuj Y da bi soft drop bio korak po korak
-        lockedColumn = currentPiece.x; // Ponovo zaključaJ kolonu nakon pomeranja
+        touchStartY = currentY; 
+        lockedColumn = currentPiece.x;
     }
     
     // Horizontalno pomeranje (sa ograničenjem)
@@ -408,8 +429,9 @@ function handleTouchMove(e) {
 
 function handleTouchEnd(e) {
     if (!isTouching || isPaused || gameOver || !currentPiece) return;
+    if (e.changedTouches.length === 0) return; // Sigurnosna provera
+
     e.preventDefault();
-    
     isTouching = false;
 
     let touchEndX = e.changedTouches[0].clientX;
@@ -439,7 +461,6 @@ function handleTouchEnd(e) {
     draw();
 }
 
-
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
 // =================================================================================
@@ -455,6 +476,8 @@ function startGame() {
     generateNewPiece();
     if (currentMode !== 'zen') playBackgroundMusic();
     lastDropTime = performance.now();
+    
+    if(animationFrameId) cancelAnimationFrame(animationFrameId);
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
@@ -476,7 +499,7 @@ function togglePause() {
     if (gameOver) return; 
     isPaused = !isPaused; 
     if (isPaused) { 
-        cancelAnimationFrame(animationFrameId); 
+        if(animationFrameId) cancelAnimationFrame(animationFrameId); 
         pauseScreen.style.display = 'flex'; 
         pauseBackgroundMusic(); 
     } else { 
@@ -490,7 +513,7 @@ function togglePause() {
 function showExitModal() { 
     if (isPaused || gameOver) return; 
     isPaused = true; 
-    cancelAnimationFrame(animationFrameId); 
+    if(animationFrameId) cancelAnimationFrame(animationFrameId); 
     pauseBackgroundMusic(); 
     exitModal.style.display = 'flex'; 
 }
@@ -548,11 +571,16 @@ function toggleHammerMode() { if (assists.hammer > 0) { hammerMode = !hammerMode
 function useUndoAssist() { if (assists.undo > 0 && boardHistory.length > 0) { assists.undo--; board = boardHistory.pop(); score = Math.max(0, score - 500); updateAssistsDisplay(); localStorage.setItem('assists', JSON.stringify(assists)); generateNewPiece(); draw(); } }
 
 function gameLoop(timestamp) {
-    if (gameOver || isPaused) return;
-    if (isAnimating || isTouching) { 
+    if (gameOver || isPaused || isAnimating) {
+        return; // Ako je igra zaustavljena, ne radi ništa
+    }
+    
+    if (isTouching) { // Ako korisnik dodiruje ekran, samo crtaj, ne spuštaj automatski
+        draw();
         animationFrameId = requestAnimationFrame(gameLoop);
         return;
     }
+
     if (timestamp - lastDropTime > dropInterval) { 
         movePieceDown();
         lastDropTime = timestamp; 
@@ -588,6 +616,7 @@ function darkenColor(c, a) { let r = parseInt(c.slice(1, 3), 16), g = parseInt(c
 // =================================================================================
 
 function initDOMAndEventListeners() {
+    // ... (SVE DOHVATANJE ELEMENATA OSTAJE ISTO)
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
     nextBlockCanvas = document.getElementById('nextBlockCanvas');
@@ -630,7 +659,7 @@ function initDOMAndEventListeners() {
     tetrisSound = document.getElementById('tetrisSound');
     backgroundMusic = document.getElementById('backgroundMusic');
     bombSound = document.getElementById('bombSound');
-
+    // ...
     function resizeGame() {
         const container = document.getElementById('canvas-container');
         const containerWidth = container.clientWidth;
