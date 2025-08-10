@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="main-game-wrapper">
+    <div id="main-game-wrapper" style="display: none;">
         <div id="background-image"></div>
         <header id="info-section">
             <div id="next-block-container" class="info-panel">
@@ -57,8 +57,17 @@
         <div id="combo-display"></div>
     </div>
 
-    <div id="start-screen" class="overlay">
+    <div id="main-menu" class="overlay">
         <h1>PROJEKAT PUZZLE</h1>
+        <div class="menu-buttons">
+            <button id="select-tetris-button">Tetris</button>
+            <button id="select-blockpuzzle-button" disabled>Block Puzzle (Uskoro)</button>
+        </div>
+        <button id="settings-button" class="btn settings-btn" aria-label="Podešavanja">⚙️</button>
+    </div>
+
+    <div id="tetris-menu" class="overlay" style="display: none;">
+        <h1>TETRIS</h1>
         <div id="mode-selector-container">
             <label for="mode-selector" style="font-size: 0.8em;">Mod igre:</label>
             <select id="mode-selector">
@@ -69,8 +78,15 @@
                 <option value="ultra">Ultra 2min</option>
             </select>
         </div>
-        <div id="theme-switcher-container">
-            <label for="theme-switcher" style="font-size: 0.8em;">Theme:</label>
+        <p>Pritisni dugme da započneš igru!</p>
+        <button id="start-button">Pokreni Igru</button>
+        <button id="back-to-main-menu-button" class="btn back-btn">Nazad</button>
+    </div>
+    
+    <div id="settings-modal" class="overlay" style="display: none;">
+        <h2>Podešavanja</h2>
+        <div class="settings-item">
+            <span>Tema:</span>
             <select id="theme-switcher">
                 <option value="classic">Classic</option>
                 <option value="dark">Dark</option>
@@ -79,11 +95,15 @@
                 <option value="lava">Lava</option>
             </select>
         </div>
-        <button id="controls-button">Podesi kontrole (PC)</button>
-        <p>Pritisni dugme da započneš igru!</p>
-        <button id="start-button">Pokreni Igru</button>
+        <div class="settings-item">
+            <span>Zvuk:</span>
+            <button id="sound-toggle-button" class="btn sound-btn">🔊</button>
+        </div>
+        <button id="controls-button" class="btn">Podesi kontrole (PC)</button>
+        <button id="close-settings-modal-button" class="btn back-btn">Zatvori</button>
     </div>
-    
+
+
     <div id="countdown-overlay" class="overlay" style="display:none; font-size: 4em; color: var(--main-color);">3</div>
 
     <div id="game-over-screen" class="overlay" style="display: none;">
