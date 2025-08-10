@@ -49,7 +49,8 @@ body {
     border: 5px solid var(--border-color);
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(97, 218, 251, 0.5);
-    padding: 5px;
+    /* ISPRAVKA: Uklonjen gornji padding da se panel zalepi za vrh */
+    padding: 0 5px 5px; 
     width: 100%;
     height: 100%;
     max-width: 500px;
@@ -66,7 +67,9 @@ header#info-section {
     align-items: stretch;
     width: 100%;
     gap: 5px;
-    height: 60px;
+    /* ISPRAVKA: Povećana visina panela i dodat gornji padding radi razmaka */
+    height: 80px;
+    padding-top: 5px;
     flex-shrink: 0;
 }
 
