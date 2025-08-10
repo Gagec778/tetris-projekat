@@ -59,14 +59,13 @@ let linesToClear = [];
 let COLORS, currentTheme;
 let currentMode = 'classic';
 let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
-let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay;
+let startScreen, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs;
 let backgroundImageElement;
 
 // Varijable za Touch kontrole
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
-let lastSoftDropY = 0;
 let lockedColumn = 0;
 let isTouching = false;
 
@@ -118,8 +117,6 @@ function drawGhostPiece() {
     const ghostX = currentPiece.x + Math.round(visualOffsetX / BLOCK_SIZE);
     
     if (!isValidMove(ghostX - currentPiece.x, 0, currentPiece.shape)) {
-        // Ako je čak i osnovna pozicija nevalidna, ne crtaj senku
-        // Ovo se može desiti na kratko pri rotaciji uz zid
         return;
     }
     
@@ -221,7 +218,7 @@ function generateNewPiece() {
 
 function rotatePiece() {
     if (!currentPiece || isPaused || gameOver) return;
-    commitVisualPosition(); // Commit pre rotacije
+    commitVisualPosition();
     const N = currentPiece.shape.length, newShape = Array(N).fill(0).map(() => Array(N).fill(0));
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) newShape[c][N - 1 - r] = currentPiece.shape[r][c];
     const kicks = [[0, 0], [-1, 0], [1, 0], [0, 1], [-1, 1], [1, 1], [0, -1], [0, -2], [-2, 0], [2, 0]];
@@ -312,7 +309,7 @@ function isTSpin() {
 // =================================================================================
 function handleKeydown(e) {
     if (isPaused || gameOver || !currentPiece || !keyBindings) return;
-    visualOffsetX = 0; // Tastatura ima prioritet i resetuje touch pomak
+    visualOffsetX = 0;
     const key = e.key === ' ' ? 'Space' : e.key;
     if (key === keyBindings.left) {
         if (moveDirection === 1) stopARR();
@@ -373,7 +370,6 @@ function handleTouchStart(e) {
     
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-    lastSoftDropY = touchStartY;
     touchStartTime = performance.now();
     lockedColumn = currentPiece.x;
     visualOffsetX = 0;
@@ -387,26 +383,23 @@ function handleTouchMove(e) {
     let currentX = e.touches[0].clientX;
     let currentY = e.touches[0].clientY;
     let deltaX = currentX - touchStartX;
-    let deltaY = currentY - touchStartY;
     
     // Soft Drop
-    if (deltaY > BLOCK_SIZE) {
-        commitVisualPosition(); // Commit-uj horizontalu pre spuštanja
+    if (currentY - touchStartY > BLOCK_SIZE) {
+        commitVisualPosition();
         movePieceDown();
-        // Resetuj Y pozicije da bi soft drop bio korak po korak
-        touchStartY = currentY;
+        touchStartY = currentY; // Resetuj Y da bi soft drop bio korak po korak
         lockedColumn = currentPiece.x; // Ponovo zaključaJ kolonu nakon pomeranja
     }
     
     // Horizontalno pomeranje (sa ograničenjem)
     let newVisualOffsetX = deltaX;
     
-    // Logika za ograničavanje (clamping)
     const pieceWidth = currentPiece.shape.reduce((max, row) => Math.max(max, row.lastIndexOf(1) + 1), 0);
-    const minX = -lockedColumn * BLOCK_SIZE;
-    const maxX = (COLS - pieceWidth - lockedColumn) * BLOCK_SIZE;
+    const minXOffset = -lockedColumn * BLOCK_SIZE;
+    const maxXOffset = (COLS - pieceWidth - lockedColumn) * BLOCK_SIZE;
     
-    newVisualOffsetX = Math.max(minX, Math.min(newVisualOffsetX, maxX));
+    newVisualOffsetX = Math.max(minXOffset, Math.min(newVisualOffsetX, maxXOffset));
     
     visualOffsetX = newVisualOffsetX;
     
@@ -427,9 +420,9 @@ function handleTouchEnd(e) {
 
     // 1. Provera za HARD DROP (Flick)
     if (deltaY > HARD_DROP_MIN_Y_DISTANCE && touchDuration < FLICK_MAX_DURATION) {
-        currentPiece.x = lockedColumn; // Vrati na zaključanu kolonu
-        visualOffsetX = 0;             // Resetuj vizuelni pomak
-        draw();                        // Iscrtaj na ispravnoj poziciji pre pada
+        currentPiece.x = lockedColumn;
+        visualOffsetX = 0;
+        draw(); 
         dropPiece();
         return;
     }
@@ -446,7 +439,7 @@ function handleTouchEnd(e) {
     draw();
 }
 
-// ... ostatak koda ostaje isti ...
+
 // =================================================================================
 // ===== GLAVNA LOGIKA IGRE (GAME LOGIC) =====
 // =================================================================================
