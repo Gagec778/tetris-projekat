@@ -66,6 +66,7 @@ header#info-section {
     align-items: stretch;
     width: 100%;
     gap: 5px;
+    /* ISPRAVKA: Vraćena fiksna, manja visina da se panel ne rasteže */
     height: 60px;
     flex-shrink: 0;
 }
