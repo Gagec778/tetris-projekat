@@ -215,6 +215,7 @@ function initDOMAndEventListeners() {
     loadKeyBindings();
     loadBestScore(modeSelector.value);
     
+    // Finalna logika za kontrole na dodir
     let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
     
     canvas.addEventListener('touchstart', e => {
