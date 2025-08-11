@@ -8,56 +8,52 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="main-game-wrapper" class="game-wrapper" style="display: none;">
+    <div id="main-game-wrapper" style="display: none;">
         <div id="background-image"></div>
-        <div id="hold-container" class="side-panel">
-            <div class="panel-header">Hold</div>
-            <canvas id="holdCanvas"></canvas>
-        </div>
-        <div id="game-area">
-            <header id="info-section">
-                <div id="game-stats" class="info-panel">
-                    <div id="best-score-wrapper">
-                        <span id="crown-icon">👑</span>
-                        <div id="best-score-display">0</div>
-                    </div>
-                    <div class="stat-line" id="score-display">Score: 0</div>
-                    <div class="stat-line" id="level-display">Level: 1</div>
-                </div>
-
-                <div id="right-controls" class="info-panel">
-                    <button id="home-button" class="btn" aria-label="Početni Meni">🏠</button>
-                    <button id="pause-button" class="btn" aria-label="Pauza">II</button>
-                </div>
-            </header>
+        <header id="info-section">
+            <div id="next-block-container" class="info-panel">
+                <div class="panel-header">Next:</div>
+                <canvas id="nextBlockCanvas"></canvas>
+            </div>
             
-            <main id="canvas-container">
-                <canvas id="gameCanvas" style="touch-action: none;"></canvas>
-            </main>
-
-            <footer id="assists-panel">
-                <div id="assist-content-wrapper">
-                    <div class="assist-item">
-                        <button id="assist-bomb-button" class="assist-btn" aria-label="Bomba" disabled>💣</button>
-                        <span id="assists-bomb-count" class="count">0</span>
-                    </div>
-                    <div class="assist-item">
-                        <button id="assist-hammer-button" class="assist-btn" aria-label="Čekić" disabled>🔨</button>
-                        <span id="assists-hammer-count" class="count">0</span>
-                    </div>
-                    <div class="assist-item">
-                        <button id="assist-undo-button" class="assist-btn" aria-label="Poništi Potez" disabled>↩️</button>
-                        <span id="assists-undo-count" class="count">0</span>
-                    </div>
+            <div id="game-stats" class="info-panel">
+                <div id="best-score-wrapper">
+                    <span id="crown-icon">👑</span>
+                    <div id="best-score-display">0</div>
                 </div>
-            </footer>
-        </div>
-        <div id="next-container" class="side-panel">
-            <div class="panel-header">Next</div>
-            <canvas id="nextBlockCanvas1"></canvas>
-            <canvas id="nextBlockCanvas2"></canvas>
-            <canvas id="nextBlockCanvas3"></canvas>
-        </div>
+                <div class="stat-line" id="score-display">Score: 0</div>
+                <div class="stat-line" id="level-display">Level: 1</div>
+                <div class="stat-line" id="sprint-timer" style="display: none;">TIME: 0.00s</div>
+                <div class="stat-line" id="ultra-timer" style="display: none;">TIME: 0.00s</div>
+            </div>
+
+            <div id="right-controls" class="info-panel">
+                <button id="home-button" class="btn" aria-label="Početni Meni">🏠</button>
+                <button id="pause-button" class="btn" aria-label="Pauza">II</button>
+            </div>
+        </header>
+        
+        <main id="canvas-container">
+            <canvas id="gameCanvas" style="touch-action: none;"></canvas>
+        </main>
+
+        <footer id="assists-panel">
+            <div id="assist-content-wrapper">
+                <div class="assist-item">
+                    <button id="assist-bomb-button" class="assist-btn" aria-label="Bomba" disabled>💣</button>
+                    <span id="assists-bomb-count" class="count">0</span>
+                </div>
+                <div class="assist-item">
+                    <button id="assist-hammer-button" class="assist-btn" aria-label="Čekić" disabled>🔨</button>
+                    <span id="assists-hammer-count" class="count">0</span>
+                </div>
+                <div class="assist-item">
+                    <button id="assist-undo-button" class="assist-btn" aria-label="Poništi Potez" disabled>↩️</button>
+                    <span id="assists-undo-count" class="count">0</span>
+                </div>
+            </div>
+        </footer>
+        
         <div id="combo-display"></div>
     </div>
 
@@ -66,15 +62,13 @@
         <div class="menu-buttons">
             <button id="select-tetris-button">Tetris</button>
             <button id="select-blockpuzzle-button" disabled>Block Puzzle (Uskoro)</button>
-            <button id="high-scores-button">Rekordi</button>
-            <button id="how-to-play-button">Kako Igrati</button>
         </div>
         <button id="settings-button" class="btn settings-btn" aria-label="Podešavanja">⚙️</button>
     </div>
 
     <div id="tetris-menu" class="overlay" style="display: none;">
         <h1>TETRIS</h1>
-        <div id="mode-selector-container">
+        <div class="mode-selector-container">
             <label for="mode-selector" style="font-size: 0.8em;">Mod igre:</label>
             <select id="mode-selector">
                 <option value="classic">Classic</option>
@@ -109,24 +103,42 @@
         <button id="close-settings-modal-button" class="btn back-btn">Zatvori</button>
     </div>
 
-    <div id="high-scores-modal" class="overlay" style="display: none;">
-        <h2>NAJBOLJI REZULTATI</h2>
-        <div id="high-scores-list"></div>
-        <button id="close-high-scores-button" class="btn back-btn">Nazad</button>
+
+    <div id="countdown-overlay" class="overlay" style="display:none; font-size: 4em; color: var(--main-color);">3</div>
+
+    <div id="game-over-screen" class="overlay" style="display: none;">
+        <h1 id="game-over-title">GAME OVER!</h1>
+        <div id="final-score" class="final-score">Your Score: 0</div>
+        <div id="final-time" class="final-score"></div>
+        <button id="restart-button">Igraj Ponovo</button>
     </div>
 
-    <div id="new-highscore-modal" class="overlay" style="display: none;">
-        <h2>NOVI REKORD!</h2>
-        <p>Unesi svoje inicijale (3 slova):</p>
-        <input type="text" id="player-initials-input" maxlength="3">
-        <button id="submit-highscore-button" class="btn">Sačuvaj</button>
+    <div id="pause-screen" class="overlay" style="display: none;">
+        <h1>PAUSED</h1>
+        <button id="resume-button">NASTAVI IGRU</button>
+    </div>
+
+    <div id="exit-modal" class="overlay" style="display: none;">
+        <h2>Da li želite da napustite igru?</h2>
+        <div class="modal-buttons">
+            <button id="confirm-exit-button" class="btn">Da</button>
+            <button id="cancel-exit-button" class="btn">Ne</button>
+        </div>
     </div>
     
-    <div id="countdown-overlay" class="overlay" style="display:none;">3</div>
-    <div id="game-over-screen" class="overlay" style="display: none;"></div>
-    <div id="pause-screen" class="overlay" style="display: none;"></div>
-    <div id="exit-modal" class="overlay" style="display: none;"></div>
-    <div id="controls-modal" style="display: none;"></div>
+    <div id="controls-modal" style="display: none;">
+        <h2>Podesi kontrole</h2>
+        <p style="font-size: 0.8em; color: #aaa; margin-top: -10px; margin-bottom: 20px;">(Kontrole za tastaturu)</p>
+        <div class="control-item"><span>Levo:</span><input type="text" data-action="left" readonly></div>
+        <div class="control-item"><span>Desno:</span><input type="text" data-action="right" readonly></div>
+        <div class="control-item"><span>Spusti:</span><input type="text" data-action="down" readonly></div>
+        <div class="control-item"><span>Rotiraj:</span><input type="text" data-action="rotate" readonly></div>
+        <div class="control-item"><span>Hard Drop:</span><input type="text" data-action="drop" readonly></div>
+        <div class="control-item"><span>Bomba:</span><input type="text" data-action="bomb" readonly></div>
+        <div class="control-item"><span>Čekić:</span><input type="text" data-action="hammer" readonly></div>
+        <div class="control-item"><span>Poništi:</span><input type="text" data-action="undo" readonly></div>
+        <button id="close-controls-modal">Zatvori</button>
+    </div>
     
     <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
     <audio id="clearSound" src="sounds/clear.wav" preload="auto"></audio>
