@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="tetris-wrapper" style="display: none;">
+    <div id="tetris-wrapper" class="game-wrapper" style="display: none;">
         <div id="background-image"></div>
         <header id="info-section">
             <div id="next-block-container" class="info-panel">
@@ -57,8 +57,29 @@
         <div id="combo-display"></div>
     </div>
 
-    <div id="block-puzzle-wrapper" style="display: none;">
-        <button id="puzzle-back-button" class="btn back-btn">Back</button>
+    <div id="block-puzzle-wrapper" class="game-wrapper" style="display: none;">
+        <div class="puzzle-layout">
+            <div id="puzzle-game-stats" class="info-panel">
+                 <div id="puzzle-best-score-wrapper">
+                    <span id="crown-icon">👑</span>
+                    <div id="puzzle-best-score-display">0</div>
+                </div>
+                <div class="stat-line" id="puzzle-score-display">Score: 0</div>
+            </div>
+            <div id="puzzle-canvas-container">
+                <canvas id="blockPuzzleCanvas"></canvas>
+            </div>
+            <div id="puzzle-pieces-container">
+                <div class="puzzle-piece-slot"><canvas id="puzzlePieceCanvas0"></canvas></div>
+                <div class="puzzle-piece-slot"><canvas id="puzzlePieceCanvas1"></canvas></div>
+                <div class="puzzle-piece-slot"><canvas id="puzzlePieceCanvas2"></canvas></div>
+            </div>
+            <button id="puzzle-back-button" class="btn back-btn puzzle-back">Back</button>
+        </div>
+    </div>
+
+    <div id="dragging-piece" style="position: fixed; pointer-events: none; z-index: 3000; display: none;">
+        <canvas id="draggingPieceCanvas"></canvas>
     </div>
 
 
@@ -148,7 +169,6 @@
     <audio id="tetrisSound" src="sounds/tetris.wav" preload="auto"></audio>
     <audio id="backgroundMusic" src="sounds/music.mp3" preload="auto"></audio>
     <audio id="bombSound" src="sounds/bomb.wav" preload="auto"></audio>
-
-    <script src="script.js"></script>
+    <audio id="placeSound" src="sounds/place.wav" preload="auto"></audio> <script src="script.js"></script>
 </body>
 </html>
