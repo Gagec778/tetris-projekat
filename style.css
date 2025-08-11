@@ -42,9 +42,9 @@ body {
 }
 
 /* =================================
-   GLAVNI LAYOUT IGRE
+   GLAVNI LAYOUT IGRE - VRAĆEN NA STARO
    ================================= */
-.game-wrapper {
+#tetris-wrapper {
     background-color: #000; 
     border: 5px solid var(--border-color);
     border-radius: 15px;
@@ -55,52 +55,25 @@ body {
     max-width: 500px;
     max-height: 900px;
     position: relative;
+    display: flex;
     flex-direction: column;
     gap: 5px;
 }
 
-#tetris-wrapper {
-    display: flex;
-}
-
+/* Novi wrapper za drugu igru */
 #block-puzzle-wrapper {
-    display: none; /* JS će ga prikazati */
-}
-
-.puzzle-layout {
-    display: flex;
-    flex-direction: column;
+    background-color: #000;
+    border: 5px solid gold; /* Drugačija boja radi testa */
+    border-radius: 15px;
+    padding: 5px;
     width: 100%;
     height: 100%;
-    align-items: center;
-    gap: 10px;
+    max-width: 500px;
+    max-height: 900px;
+    position: relative;
+    display: flex; /* Dodaćemo flex kasnije */
 }
 
-#puzzle-canvas-container {
-    width: 90%;
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-#blockPuzzleCanvas {
-    background-color: var(--board-bg-color);
-    border: 2px solid gold;
-    border-radius: 5px;
-}
-
-#puzzle-pieces-container {
-    height: 100px;
-    width: 100%;
-    background-color: #1a1a2e;
-    border-radius: 8px;
-    border: 2px solid var(--border-color);
-}
-.puzzle-back {
-    position: absolute;
-    top: 15px;
-    left: 15px;
 
 header#info-section {
     display: flex;
@@ -334,4 +307,3 @@ canvas#gameCanvas {
 
 #game-over-screen h1 { animation: gameOverPulse 1.5s infinite; }
 @keyframes gameOverPulse { 0% { transform: scale(1); opacity: 1; color: #e63946; } 50% { transform: scale(1.1); opacity: 0.8; color: #ff5e6c; } 100% { transform: scale(1); opacity: 1; color: #e63946; } }
-
