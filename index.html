@@ -26,8 +26,8 @@
             </div>
 
             <div id="right-controls" class="info-panel">
-                <button id="home-button" class="btn" aria-label="Home Menu">🏠</button>
-                <button id="pause-button" class="btn" aria-label="Pause">II</button>
+                <button data-action="return-to-menu" class="btn" aria-label="Home Menu">🏠</button>
+                <button data-action="pause-tetris" class="btn" aria-label="Pause">II</button>
             </div>
         </header>
         
@@ -42,7 +42,7 @@
 
     <div id="block-puzzle-wrapper" class="game-wrapper" style="display: none;">
         <div class="puzzle-layout">
-            <button id="puzzle-back-button" class="btn back-btn puzzle-back">Back</button>
+            <button data-action="return-to-menu" class="btn back-btn puzzle-back">Back</button>
             <div id="puzzle-game-stats" class="info-panel">
                  <div id="puzzle-best-score-wrapper">
                     <span id="crown-icon">👑</span>
@@ -64,6 +64,7 @@
     <div id="dragging-piece" style="position: fixed; pointer-events: none; z-index: 3000; display: none; opacity: 0.8;">
         <canvas id="draggingPieceCanvas"></canvas>
     </div>
+
 
     <div id="main-menu" class="overlay">
         <h1>PUZZLE PROJECT</h1>
@@ -103,6 +104,21 @@
         <button data-action="open-controls" class="btn">Setup Controls (PC)</button>
         <button data-action="close-settings" class="btn back-btn">Close</button>
     </div>
+
+    <div id="pause-screen" class="overlay" style="display: none;">
+        <h1>PAUSED</h1>
+        <button data-action="resume-tetris">RESUME GAME</button>
+    </div>
+    
+    <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
+    <audio id="clearSound" src="sounds/clear.wav" preload="auto"></audio>
+    <audio id="rotateSound" src="sounds/rotate.wav" preload="auto"></audio>
+    <audio id="gameOverSound" src="sounds/gameover.wav" preload="auto"></audio>
+    <audio id="tSpinSound" src="sounds/tspin.wav" preload="auto"></audio>
+    <audio id="tetrisSound" src="sounds/tetris.wav" preload="auto"></audio>
+    <audio id="backgroundMusic" src="sounds/music.mp3" preload="auto"></audio>
+    <audio id="bombSound" src="sounds/bomb.wav" preload="auto"></audio>
+    <audio id="placeSound" src="sounds/place.wav" preload="auto"></audio>
 
     <script src="script.js"></script>
 </body>
