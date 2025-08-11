@@ -1,17 +1,12 @@
 'use strict';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // =================================================================================
-    // ===== GLOBALNE PROMENLJIVE =====
-    // =================================================================================
-    
-    // Objekat koji čuva sve važne UI elemente
-    const UI = {}; 
-    
+    // === Globalne promenljive ===
+    const UI = {};
     let allAudioElements = [];
     let isMuted = false;
     let currentTheme = 'classic';
-    let BLOCK_SIZE = 30; // Privremena vrednost
+    let BLOCK_SIZE_TETRIS;
     
     const THEMES = {
         'classic': { 'main-color': '#61dafb', 'background-color': '#1a1a2e', 'board-bg-color': '#000', 'border-color': '#61dafb', 'grid-color': '#333' },
@@ -21,21 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
         'lava': { 'main-color': '#FF4500', 'background-color': '#220000', 'board-bg-color': '#440000', 'border-color': '#FF4500', 'grid-color': '#662222' }
     };
 
-    // =================================================================================
-    // ===== FUNKCIJE ZA UPRAVLJANJE UI-jem =====
-    // =================================================================================
-
-    function showScreen(screenToShow) {
-        // Sakrij sve glavne ekrane
-        UI.mainMenu.style.display = 'none';
-        UI.tetrisMenu.style.display = 'none';
-        UI.settingsModal.style.display = 'none';
-        UI.tetrisWrapper.style.display = 'none';
-        UI.blockPuzzleWrapper.style.display = 'none';
-
-        // Prikaži traženi ekran
-        if (UI[screenToShow]) {
-            UI[screenToShow].style.display = 'flex';
+    // === Funkcije za UI ===
+    function showScreen(screenId) {
+        ['mainMenu', 'tetrisMenu', 'settingsModal', 'tetrisWrapper', 'blockPuzzleWrapper', 'pauseScreen'].forEach(id => {
+            if (UI[id]) UI[id].style.display = 'none';
+        });
+        if (UI[screenId]) {
+            UI[screenId].style.display = 'flex';
+            UI[screenId].classList.add('visible');
         }
     }
 
@@ -43,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTheme = themeName;
         const theme = THEMES[themeName];
         if (!theme) return;
-
         const root = document.documentElement;
         for (const [key, value] of Object.entries(theme)) {
             root.style.setProperty(`--${key}`, value);
@@ -54,41 +41,43 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleSound() {
         isMuted = !isMuted;
         allAudioElements.forEach(audio => audio.muted = isMuted);
-        UI.soundToggleButton.textContent = isMuted ? '🔇' : '🔊';
+        if (UI.soundToggleButton) UI.soundToggleButton.textContent = isMuted ? '🔇' : '🔊';
         localStorage.setItem('isMuted', JSON.stringify(isMuted));
     }
     
     function drawEmptyTetrisBoard() {
         const canvas = UI.gameCanvas;
+        if(!canvas) return;
         const ctx = canvas.getContext('2d');
         const container = UI.canvasContainer;
 
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
-        BLOCK_SIZE = Math.floor(Math.min(containerWidth / 10, containerHeight / 20));
-        canvas.width = 10 * BLOCK_SIZE;
-        canvas.height = 20 * BLOCK_SIZE;
+        BLOCK_SIZE_TETRIS = Math.floor(Math.min(containerWidth / 10, containerHeight / 20));
+        canvas.width = 10 * BLOCK_SIZE_TETRIS;
+        canvas.height = 20 * BLOCK_SIZE_TETRIS;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = THEMES[currentTheme]['grid-color'];
         ctx.lineWidth = 1;
         ctx.beginPath();
         for (let i = 1; i < 10; i++) {
-            ctx.moveTo(i * BLOCK_SIZE + 0.5, 0);
-            ctx.lineTo(i * BLOCK_SIZE + 0.5, canvas.height);
+            ctx.moveTo(i * BLOCK_SIZE_TETRIS + 0.5, 0);
+            ctx.lineTo(i * BLOCK_SIZE_TETRIS + 0.5, canvas.height);
         }
         for (let i = 1; i < 20; i++) {
-            ctx.moveTo(0, i * BLOCK_SIZE + 0.5);
-            ctx.lineTo(canvas.width, i * BLOCK_SIZE + 0.5);
+            ctx.moveTo(0, i * BLOCK_SIZE_TETRIS + 0.5);
+            ctx.lineTo(canvas.width, i * BLOCK_SIZE_TETRIS + 0.5);
         }
         ctx.stroke();
     }
 
     function drawEmptyPuzzleBoard() {
         const canvas = UI.blockPuzzleCanvas;
+        if(!canvas) return;
         const ctx = canvas.getContext('2d');
         const container = UI.puzzleCanvasContainer;
-
+        
         const size = Math.min(container.clientWidth, container.clientHeight) * 0.95;
         canvas.width = size;
         canvas.height = size;
@@ -110,15 +99,12 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.stroke();
         }
     }
-
-    // =================================================================================
-    // ===== INICIJALIZACIJA =====
-    // =================================================================================
     
+    // === Inicijalizacija ===
     function grabDOMElements() {
         const ids = [
-            'mainMenu', 'tetrisMenu', 'settingsModal', 'tetrisWrapper', 'blockPuzzleWrapper', 'gameOverScreen', 'pauseScreen',
-            'gameCanvas', 'canvasContainer', 'nextBlockCanvas', 'blockPuzzleCanvas', 'puzzleCanvasContainer',
+            'mainMenu', 'tetrisMenu', 'settingsModal', 'tetrisWrapper', 'blockPuzzleWrapper', 'pauseScreen',
+            'gameCanvas', 'canvasContainer', 'blockPuzzleCanvas', 'puzzleCanvasContainer',
             'soundToggleButton', 'themeSwitcher'
         ];
         ids.forEach(id => {
@@ -130,47 +116,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function attachEventListeners() {
         document.body.addEventListener('click', (e) => {
-            const action = e.target.dataset.action;
-            if (!action) return;
+            const target = e.target.closest('[data-action]');
+            if (!target) return;
+            const action = target.dataset.action;
 
             switch(action) {
-                case 'select-tetris':
-                    showScreen('tetrisMenu');
-                    break;
+                case 'select-tetris': showScreen('tetrisMenu'); break;
                 case 'select-blockpuzzle':
                     showScreen('blockPuzzleWrapper');
                     drawEmptyPuzzleBoard();
                     break;
-                case 'open-settings':
-                    showScreen('settingsModal');
-                    break;
+                case 'open-settings': showScreen('settingsModal'); break;
                 case 'back-to-main':
-                case 'return-to-menu':
-                    showScreen('mainMenu');
-                    break;
-                case 'close-settings':
-                    showScreen('mainMenu');
-                    break;
-                case 'toggle-sound':
-                    toggleSound();
-                    break;
+                case 'return-to-menu': showScreen('mainMenu'); break;
+                case 'close-settings': showScreen('mainMenu'); break;
+                case 'toggle-sound': toggleSound(); break;
                 case 'start-tetris':
                     showScreen('tetrisWrapper');
-                    drawEmptyTetrisBoard();
+                    // Sada se ispravno poziva resize
+                    drawEmptyTetrisBoard(); 
                     break;
-                // Privremeno, dok ne dodamo pravu logiku
-                case 'pause-tetris':
-                    UI.pauseScreen.style.display = 'flex';
-                    break;
-                case 'resume-tetris':
-                     UI.pauseScreen.style.display = 'none';
-                    break;
+                case 'pause-tetris': UI.pauseScreen.classList.add('visible'); break;
+                case 'resume-tetris': UI.pauseScreen.classList.remove('visible'); break;
             }
         });
 
         if (UI.themeSwitcher) {
             UI.themeSwitcher.addEventListener('change', (e) => applyTheme(e.target.value));
         }
+
+        // Event listener za promenu veličine prozora
+        window.addEventListener('resize', () => {
+            if (UI.tetrisWrapper.style.display === 'flex') {
+                drawEmptyTetrisBoard();
+            }
+            if (UI.blockPuzzleWrapper.style.display === 'flex') {
+                drawEmptyPuzzleBoard();
+            }
+        });
     }
     
     function loadSettings() {
@@ -180,16 +163,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if(UI.themeSwitcher) UI.themeSwitcher.value = savedTheme;
         applyTheme(savedTheme);
 
-        isMuted = savedMute;
-        if (isMuted) {
-             allAudioElements.forEach(audio => { if(audio) audio.muted = true; });
-             if(UI.soundToggleButton) UI.soundToggleButton.textContent = '🔇';
+        if (savedMute) {
+            toggleSound(); // Pozivamo toggle da bi se sve sinhronizovalo
         }
     }
 
-    // Glavni start
     grabDOMElements();
     loadSettings();
     attachEventListeners();
-    showScreen('mainMenu');
+    UI.mainMenu.classList.add('visible'); // Početni ekran
 });
