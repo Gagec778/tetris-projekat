@@ -85,12 +85,7 @@ let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, 
 let tetrisWrapper, blockPuzzleWrapper, mainMenu, tetrisMenu, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs, exitModal, confirmExitButton, cancelExitButton;
-let backgroundImageElement, settingsButton, settingsModal, closeSettingsModalButton, soundToggleButton, selectTetrisButton, selectBlockPuzzleButton, backToMainMenuButton, puzzleBackButton, blockPuzzleCanvas, blockPuzzleCtx, gameOverTitle;
-
-// Touch Control Variables
-let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
-let initialPieceX = 0;
-let lastTouchY = 0;
+let backgroundImageElement, settingsButton, settingsModal, closeSettingsModalButton, soundToggleButton, selectTetrisButton, selectBlockPuzzleButton, backToMainMenuButton, puzzleBackButton, blockPuzzleCanvas, blockPuzzleCtx, puzzleScoreDisplay, puzzleBestScoreDisplay;
 
 // Block Puzzle State
 let puzzleBoard = [];
@@ -99,6 +94,12 @@ let puzzleScore = 0;
 let puzzleBestScores = {};
 let draggingPiece = null;
 let draggingPieceCanvas, draggingPieceCtx, draggingElement;
+let puzzleGhost = { cells: [], color: ''};
+
+// Touch Control Variables
+let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+let initialPieceX = 0;
+let lastTouchY = 0;
 
 // =================================================================================
 // ===== DRAWING FUNCTIONS =====
@@ -173,12 +174,14 @@ function drawPieceInCanvas(piece, context, canvasEl, customBlockSize = null) {
     if (customBlockSize) {
         pieceBlockSize = customBlockSize;
     } else {
-        const maxDim = Math.max(...shape.map(r => r.length), shape.length) + 1;
-        pieceBlockSize = Math.floor(Math.min(canvasEl.width / maxDim, canvasEl.height / maxDim));
+        const shapeRows = shape.length;
+        const shapeCols = shape[0].length;
+        const maxDim = Math.max(shapeCols, shapeRows);
+        pieceBlockSize = Math.floor(Math.min(canvasEl.width / maxDim, canvasEl.height / maxDim) * 0.8);
     }
     
-    const shapeWidth = shape.reduce((max, row) => Math.max(max, row.lastIndexOf(1) + 1), 0);
-    const shapeHeight = shape.filter(row => row.includes(1)).length;
+    const shapeWidth = shape.reduce((max, row) => Math.max(max, row.length), 0);
+    const shapeHeight = shape.length;
     const offsetX = (canvasEl.width - shapeWidth * pieceBlockSize) / 2;
     const offsetY = (canvasEl.height - shapeHeight * pieceBlockSize) / 2;
 
@@ -236,7 +239,7 @@ function animateLineClear(timestamp) {
 }
 
 // =================================================================================
-// ===== PIECE LOGIC =====
+// ===== PIECE LOGIC (TETRIS) =====
 // =================================================================================
 function createCurrentPiece() {
     if (currentPieceIndex === undefined) return;
@@ -302,7 +305,7 @@ function dropPiece() {
 }
 
 // =================================================================================
-// ===== BOARD LOGIC =====
+// ===== BOARD LOGIC (TETRIS) =====
 // =================================================================================
 function initBoard() {
     board = Array(ROWS).fill(0).map(() => Array(COLS).fill(0));
@@ -519,7 +522,6 @@ function endGame(isSprintWin = false, exitToMainMenu = false) {
         mainMenu.style.display = 'flex';
         return;
     }
-
     if (gameOverTitle) {
         if (isSprintWin) { 
             finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; 
@@ -701,8 +703,14 @@ function initBlockPuzzle() {
         const size = Math.min(container.clientWidth, container.clientHeight) * 0.95;
         blockPuzzleCanvas.width = size;
         blockPuzzleCanvas.height = size;
-        drawPuzzleBoard();
     }
+
+    puzzleBoard = Array(PUZZLE_ROWS).fill(0).map(() => Array(PUZZLE_COLS).fill(0));
+    availablePuzzlePieces = [null, null, null];
+    
+    generateAvailablePieces();
+    drawAvailablePieces();
+    drawPuzzleBoard();
 }
 
 function drawPuzzleBoard() {
@@ -710,6 +718,15 @@ function drawPuzzleBoard() {
     const puzzleBlockSize = blockPuzzleCanvas.width / PUZZLE_COLS;
 
     blockPuzzleCtx.clearRect(0, 0, blockPuzzleCanvas.width, blockPuzzleCanvas.height);
+    
+    for (let r = 0; r < PUZZLE_ROWS; r++) {
+        for (let c = 0; c < PUZZLE_COLS; c++) {
+            if (puzzleBoard[r][c]) {
+                drawBlock(c, r, puzzleBoard[r][c], blockPuzzleCtx, puzzleBlockSize);
+            }
+        }
+    }
+    
     blockPuzzleCtx.strokeStyle = THEMES[currentTheme].gridColor;
     blockPuzzleCtx.lineWidth = 1;
     for (let i = 1; i < PUZZLE_COLS; i++) {
@@ -726,6 +743,38 @@ function drawPuzzleBoard() {
     }
 }
 
+function generateAvailablePieces() {
+    let allUsed = availablePuzzlePieces.every(p => p === null);
+    if(allUsed) {
+        for (let i = 0; i < 3; i++) {
+            const pieceIndex = Math.floor(Math.random() * PUZZLE_PIECES.length);
+            const colorIndex = Math.floor(Math.random() * THEMES[currentTheme].blockColors.length);
+            availablePuzzlePieces[i] = {
+                shape: PUZZLE_PIECES[pieceIndex],
+                color: THEMES[currentTheme].blockColors[colorIndex],
+                id: i 
+            };
+        }
+    }
+}
+
+function drawAvailablePieces() {
+    for (let i = 0; i < 3; i++) {
+        const canvasEl = document.getElementById(`puzzlePieceCanvas${i}`);
+        if (!canvasEl) continue;
+        const ctxEl = canvasEl.getContext('2d');
+        const slot = canvasEl.parentElement;
+        canvasEl.width = slot.clientWidth;
+        canvasEl.height = slot.clientHeight;
+        if (availablePuzzlePieces[i]) {
+            drawPieceInCanvas(availablePuzzlePieces[i], ctxEl, canvasEl);
+            slot.classList.remove('empty');
+        } else {
+            ctxEl.clearRect(0, 0, canvasEl.width, canvasEl.height);
+            slot.classList.add('empty');
+        }
+    }
+}
 
 // =================================================================================
 // ===== INITIALIZATION =====
@@ -823,8 +872,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners ---
     window.addEventListener('resize', resizeGame);
     if(canvas) {
-        canvas.addEventListener('click', handleCanvasClick);
-        canvas.addEventListener('mousemove', handleCanvasHover);
         canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     }
     document.addEventListener('keydown', handleKeydown);
@@ -878,7 +925,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(restartButton) restartButton.addEventListener('click', () => {
         gameOverScreen.style.display = 'none';
         tetrisWrapper.style.display = 'none';
-        tetrisMenu.style.display = 'flex'; // ISPRAVKA: Vrati na Tetris meni, ne glavni
+        tetrisMenu.style.display = 'flex';
     });
 
     if(pauseButton) pauseButton.addEventListener('click', togglePause);
@@ -949,8 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     loadSettings();
-    resizeGame();
-}
+});
 
 function loadSettings() {
     const savedTheme = localStorage.getItem('theme') || 'classic';
@@ -996,5 +1042,3 @@ function pauseBackgroundMusic() {
     }
     backgroundMusicPlaying = false;
 }
-
-document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
