@@ -1,5 +1,5 @@
 // =================================================================================
-// ===== KONSTANTE I PODEŠAVANJA =====
+// ===== CONSTANTS AND SETTINGS =====
 // =================================================================================
 const THEMES = {
     'classic': { background: '#1a1a2e', boardBackground: '#000', lineColor: '#61dafb', blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000'], flashColor: '#FFFFFF', gridColor: '#333', backgroundImage: null },
@@ -81,11 +81,19 @@ let COLORS, currentTheme;
 let currentMode = 'classic';
 let isMuted = false;
 let allAudioElements;
-let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound;
+let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, backgroundMusic, bombSound, placeSound;
 let tetrisWrapper, blockPuzzleWrapper, mainMenu, tetrisMenu, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs, exitModal, confirmExitButton, cancelExitButton;
 let backgroundImageElement, settingsButton, settingsModal, closeSettingsModalButton, soundToggleButton, selectTetrisButton, selectBlockPuzzleButton, backToMainMenuButton, puzzleBackButton, blockPuzzleCanvas, blockPuzzleCtx;
+
+// Block Puzzle State
+let puzzleBoard = [];
+let availablePuzzlePieces = [null, null, null];
+let puzzleScore = 0;
+let puzzleBestScore = 0;
+let draggingPiece = null;
+let draggingPieceCanvas, draggingPieceCtx, draggingElement;
 
 // Touch Control Variables
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
@@ -155,17 +163,25 @@ function drawGhostPiece() {
     ctx.globalAlpha = 1.0;
 }
 
-function drawPieceInCanvas(piece, context, canvasEl) {
+function drawPieceInCanvas(piece, context, canvasEl, customBlockSize = null) {
     if (!piece || !context || !canvasEl) return;
     context.clearRect(0, 0, canvasEl.width, canvasEl.height);
     const { shape, color } = piece;
     if (!shape) return;
-    const maxDim = Math.max(...shape.map(r => r.length), shape.length) + 1;
-    const pieceBlockSize = Math.floor(Math.min(canvasEl.width / maxDim, canvasEl.height / maxDim));
+
+    let pieceBlockSize;
+    if (customBlockSize) {
+        pieceBlockSize = customBlockSize;
+    } else {
+        const maxDim = Math.max(...shape.map(r => r.length), shape.length) + 1;
+        pieceBlockSize = Math.floor(Math.min(canvasEl.width / maxDim, canvasEl.height / maxDim));
+    }
+    
     const shapeWidth = shape.reduce((max, row) => Math.max(max, row.lastIndexOf(1) + 1), 0);
     const shapeHeight = shape.filter(row => row.includes(1)).length;
     const offsetX = (canvasEl.width - shapeWidth * pieceBlockSize) / 2;
     const offsetY = (canvasEl.height - shapeHeight * pieceBlockSize) / 2;
+
     shape.forEach((row, r) => row.forEach((cell, c) => { 
         if (cell) { 
             context.save(); 
@@ -768,6 +784,7 @@ function initDOMAndEventListeners() {
     tetrisSound = document.getElementById('tetrisSound');
     backgroundMusic = document.getElementById('backgroundMusic');
     bombSound = document.getElementById('bombSound');
+    placeSound = document.getElementById('placeSound');
     
     function resizeGame() {
         if (!canvas) return;
@@ -851,12 +868,10 @@ function initDOMAndEventListeners() {
     
     if(homeButton) homeButton.addEventListener('click', () => {
         if (gameOver) {
-            // Ako je igra gotova, vrati se na glavni meni
             gameOverScreen.style.display = 'none';
             tetrisWrapper.style.display = 'none';
             mainMenu.style.display = 'flex';
         } else if (!isPaused) {
-            // Ako igra traje, otvori modal
             togglePause();
             exitModal.style.display = 'flex';
         }
@@ -869,7 +884,7 @@ function initDOMAndEventListeners() {
 
     if(confirmExitButton) confirmExitButton.addEventListener('click', () => {
         exitModal.style.display = 'none';
-        endGame(false, true); // Završi igru i vrati se na meni
+        endGame(false, true);
     });
 
     if(themeSwitcher) themeSwitcher.addEventListener('change', (e) => {
@@ -916,7 +931,6 @@ function initDOMAndEventListeners() {
     });
 
     loadSettings();
-    resizeGame();
 }
 
 function loadSettings() {
