@@ -1,5 +1,5 @@
 // =================================================================================
-// ===== CONSTANTS AND SETTINGS =====
+// ===== KONSTANTE I PODEŠAVANJA =====
 // =================================================================================
 const THEMES = {
     'classic': { background: '#1a1a2e', boardBackground: '#000', lineColor: '#61dafb', blockColors: ['#00FFFF', '#0000FF', '#FFA500', '#FFFF00', '#00FF00', '#800080', '#FF0000'], flashColor: '#FFFFFF', gridColor: '#333', backgroundImage: null },
@@ -131,9 +131,9 @@ function drawBoard() {
 function drawCurrentPiece() { 
     if (!currentPiece) return;
     ctx.save();
-    ctx.translate(visualX, 0);
+    ctx.translate(visualX - (currentPiece.x * BLOCK_SIZE), 0);
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(0 + c, currentPiece.y + r, currentPiece.color); 
+        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
     })); 
     ctx.restore();
 }
@@ -147,9 +147,9 @@ function drawGhostPiece() {
 
     ctx.globalAlpha = 0.3;
     ctx.save();
-    ctx.translate(visualX, 0);
+    ctx.translate(visualX - (currentPiece.x * BLOCK_SIZE), 0);
     currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(0 + c, ghostY + r, currentPiece.color); 
+        if (cell) drawBlock(currentPiece.x + c, ghostY + r, currentPiece.color); 
     }));
     ctx.restore();
     ctx.globalAlpha = 1.0;
@@ -212,10 +212,7 @@ function animateLineClear(timestamp) {
         board[r].forEach((cell, c) => { if (cell) drawBlock(c, r, cell); }); 
         ctx.globalAlpha = 1; 
     });
-    // Tokom animacije, koristimo logičku poziciju
-    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
-        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
-    }));
+    drawCurrentPiece(); 
     requestAnimationFrame(animateLineClear);
 }
 
@@ -663,15 +660,16 @@ function initBlockPuzzle() {
     
     if (!blockPuzzleCanvas) {
         blockPuzzleCanvas = document.getElementById('blockPuzzleCanvas');
-        blockPuzzleCtx = blockPuzzleCanvas.getContext('2d');
+        if (blockPuzzleCanvas) blockPuzzleCtx = blockPuzzleCanvas.getContext('2d');
     }
     
     const container = document.getElementById('puzzle-canvas-container');
-    const size = Math.min(container.clientWidth, container.clientHeight) * 0.95;
-    blockPuzzleCanvas.width = size;
-    blockPuzzleCanvas.height = size;
-
-    drawPuzzleBoard();
+    if (container && blockPuzzleCanvas) {
+        const size = Math.min(container.clientWidth, container.clientHeight) * 0.95;
+        blockPuzzleCanvas.width = size;
+        blockPuzzleCanvas.height = size;
+        drawPuzzleBoard();
+    }
 }
 
 function drawPuzzleBoard() {
@@ -797,7 +795,6 @@ function initDOMAndEventListeners() {
     document.addEventListener('keydown', handleKeydown);
     document.addEventListener('keyup', handleKeyup);
     
-    // Menu Navigation
     if(selectTetrisButton) selectTetrisButton.addEventListener('click', () => {
         mainMenu.style.display = 'none';
         tetrisMenu.style.display = 'flex';
@@ -817,7 +814,6 @@ function initDOMAndEventListeners() {
         mainMenu.style.display = 'flex';
     });
 
-    // Settings
     if(settingsButton) settingsButton.addEventListener('click', () => {
         settingsModal.style.display = 'flex';
     });
@@ -828,7 +824,6 @@ function initDOMAndEventListeners() {
 
     if(soundToggleButton) soundToggleButton.addEventListener('click', toggleSound);
 
-    // Game Actions
     if(startButton) startButton.addEventListener('click', () => {
         countdownOverlay.style.display = 'flex';
         let count = 3;
@@ -855,22 +850,26 @@ function initDOMAndEventListeners() {
     if(resumeButton) resumeButton.addEventListener('click', togglePause);
     
     if(homeButton) homeButton.addEventListener('click', () => {
-        if (gameOver) return;
-        isPaused = true;
-        if(animationFrameId) cancelAnimationFrame(animationFrameId);
-        pauseStartTime = performance.now();
-        pauseBackgroundMusic();
-        exitModal.style.display = 'flex';
+        if (gameOver) {
+            // Ako je igra gotova, vrati se na glavni meni
+            gameOverScreen.style.display = 'none';
+            tetrisWrapper.style.display = 'none';
+            mainMenu.style.display = 'flex';
+        } else if (!isPaused) {
+            // Ako igra traje, otvori modal
+            togglePause();
+            exitModal.style.display = 'flex';
+        }
     });
 
     if(cancelExitButton) cancelExitButton.addEventListener('click', () => {
         exitModal.style.display = 'none';
-        isPaused = false;
         togglePause();
     });
 
     if(confirmExitButton) confirmExitButton.addEventListener('click', () => {
-        window.location.reload();
+        exitModal.style.display = 'none';
+        endGame(false, true); // Završi igru i vrati se na meni
     });
 
     if(themeSwitcher) themeSwitcher.addEventListener('change', (e) => {
@@ -887,11 +886,13 @@ function initDOMAndEventListeners() {
     if(assistsUndoButton) assistsUndoButton.addEventListener('click', useUndoAssist);
 
     if(controlsButton) controlsButton.addEventListener('click', () => {
-        updateControlsDisplay();
-        controlsModal.style.display = 'block';
+        if (controlsModal) {
+            updateControlsDisplay();
+            controlsModal.style.display = 'block';
+        }
     });
     if(closeControlsModal) closeControlsModal.addEventListener('click', () => {
-        controlsModal.style.display = 'none';
+        if (controlsModal) controlsModal.style.display = 'none';
     });
     if(controlInputs) controlInputs.forEach(input => {
         input.addEventListener('click', (e) => {
@@ -950,9 +951,7 @@ function loadSettings() {
 }
 
 function playBackgroundMusic() {
-    if (backgroundMusic && !backgroundMusicPlaying) {
-        backgroundMusic.loop = true;
-        backgroundMusic.volume = 0.3;
+    if (backgroundMusic) {
         playSound(backgroundMusic);
         backgroundMusicPlaying = true;
     }
