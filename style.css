@@ -6,43 +6,136 @@
     --background-color: #1a1a2e;
     --board-bg-color: #000;
     --border-color: var(--main-color);
-    --flash-color: #FFFFFF;
     --grid-color: #333;
-}
-
-@font-face {
-    font-family: 'Press Start 2P';
-    src: url('https://fonts.gstatic.com/s/pressstart2p/v14/87gXNl-Oa4hA1xV_8_YhshxJz5_Yg4B7jX5l.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-}
-
-html {
-    box-sizing: border-box;
-    height: 100%; 
-}
-
-*, *:before, *:after {
-    box-sizing: inherit;
+    --font-game: 'Press Start 2P', cursive;
+    --font-menu: 'Poppins', sans-serif;
 }
 
 body {
-    font-family: 'Press Start 2P', cursive;
-    background: linear-gradient(to bottom right, #1a1a2e, #16213e, #0f3460);
+    font-family: var(--font-menu); /* Glavni font je sada moderniji */
+    background-color: #10101d;
     color: #e0e0e0;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 12px;
     margin: 0;
     padding: 0;
     width: 100vw;
-    height: 100%;
+    height: 100vh;
     overflow: hidden;
+    background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
 }
 
 /* =================================
-   GLAVNI LAYOUT IGRE
+   PREKRIVAČI (OVERLAYS) I MENIJI - NOVI DIZAJN
+   ================================= */
+.overlay { 
+    position: fixed; top: 0; left: 0; 
+    width: 100%; height: 100%; 
+    background-color: rgba(16, 16, 29, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    text-align: center; 
+    gap: 25px; 
+    z-index: 1000; 
+    padding: 15px; 
+    box-sizing: border-box;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.overlay h1 { 
+    font-family: var(--font-game);
+    font-size: 2.5em; 
+    color: #fff; 
+    text-shadow: 0 0 15px var(--main-color), 0 0 25px var(--main-color);
+    margin-bottom: 10px;
+}
+.overlay h2 { 
+    font-family: var(--font-game);
+    font-size: 1.8em; 
+    color: #fff;
+    text-shadow: 0 0 10px var(--main-color);
+}
+.overlay p { 
+    font-size: 1.1em; 
+    margin-bottom: 15px; 
+}
+
+.overlay button, .overlay select { 
+    font-family: var(--font-menu);
+    font-weight: 700;
+    font-size: 1.2em;
+    padding: 15px 40px; 
+    color: #fff; 
+    border: none; 
+    border-radius: 50px; /* Zaobljeni dugmići */
+    cursor: pointer; 
+    transition: all 0.3s ease;
+    background: linear-gradient(45deg, #e63946, #a81d27);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    border: 2px solid #e63946;
+}
+.overlay button:hover { 
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    filter: brightness(1.1);
+}
+.overlay button:active { 
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); 
+}
+.overlay button:disabled { 
+    background: #555;
+    color: #999; 
+    cursor: not-allowed; 
+    transform: none; 
+    box-shadow: none;
+    border-color: #555;
+}
+
+.menu-buttons { display: flex; flex-direction: column; gap: 20px; width: 80%; max-width: 350px; }
+
+.settings-btn { 
+    position: absolute; top: 20px; right: 20px; 
+    font-size: 1.5em; padding: 10px; 
+    width: 60px; height: 60px; 
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.2);
+}
+
+.back-btn { 
+    background: #4a4a4a;
+    border-color: #4a4a4a;
+    margin-top: 10px; 
+    padding: 10px 25px; 
+    font-size: 0.9em; 
+}
+.back-btn:hover { background: #333; }
+
+.sound-btn { 
+    font-size: 1.5em; background: none; 
+    box-shadow: none; padding: 10px; 
+    border: 2px solid transparent;
+}
+.sound-btn:hover { background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); }
+
+#settings-modal .settings-item { display: flex; justify-content: space-between; align-items: center; width: 90%; max-width: 350px; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+#settings-modal .settings-item span { font-size: 1em; font-weight: 700; }
+#settings-modal select { font-size: 1em; padding: 10px; border-radius: 8px; }
+
+/* =================================
+   STARI KOD (malo pročišćen)
    ================================= */
 .game-wrapper {
     background-color: #000; 
@@ -55,330 +148,46 @@ body {
     max-width: 500px;
     max-height: 900px;
     position: relative;
-    display: flex;
+    display: flex; /* Bilo je sakriveno, sada je flex */
     flex-direction: column;
     gap: 5px;
     box-sizing: border-box;
 }
 
-header#info-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: stretch;
-    width: 100%;
-    gap: 5px;
-    height: 80px;
-    flex-shrink: 0;
-}
+#tetris-wrapper { font-family: var(--font-game); }
+#block-puzzle-wrapper { font-family: var(--font-game); border-color: gold; }
 
-main#canvas-container {
-    flex-grow: 1; 
-    min-height: 0; 
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+.puzzle-layout { display: flex; flex-direction: column; width: 100%; height: 100%; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; box-sizing: border-box; position: relative; }
+#puzzle-game-stats { width: 100%; height: 60px; flex-shrink: 0; flex-direction: row; justify-content: space-around; }
+#puzzle-canvas-container { width: 100%; flex-grow: 1; display: flex; justify-content: center; align-items: center; padding: 10px 0; }
+#blockPuzzleCanvas { background-color: var(--board-bg-color); border: 2px solid gold; border-radius: 5px; }
+#puzzle-pieces-container { height: 100px; width: 100%; flex-shrink: 0; display: flex; justify-content: space-around; align-items: center; gap: 10px; }
+.puzzle-piece-slot { width: 30%; height: 100%; background-color: #1a1a2e; border-radius: 8px; border: 2px solid var(--border-color); display: flex; justify-content: center; align-items: center; cursor: grab; transition: background-color 0.2s; }
+.puzzle-piece-slot:active { cursor: grabbing; background-color: #0f3460; }
+.puzzle-piece-slot.empty { opacity: 0.3; cursor: default; background-color: #1a1a2e; }
+.puzzle-piece-slot.empty:active { background-color: #1a1a2e; }
+.puzzle-back { position: absolute; top: 15px; left: 15px; z-index: 10; padding: 8px 12px; font-size: 0.8em; }
 
-footer#assists-panel {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    margin: 0;
-    height: 45px;
-    flex-shrink: 0;
-}
-
-/* =================================
-   BLOCK PUZZLE STILOVI
-   ================================= */
-#block-puzzle-wrapper {
-    border-color: gold;
-}
-
-.puzzle-layout {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 10px;
-    box-sizing: border-box;
-    position: relative;
-}
-
-#puzzle-game-stats {
-    width: 100%;
-    height: 60px;
-    flex-shrink: 0;
-    flex-direction: row;
-    justify-content: space-around;
-}
-
-#puzzle-canvas-container {
-    width: 100%;
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 10px 0;
-}
-
-#blockPuzzleCanvas {
-    background-color: var(--board-bg-color);
-    border: 2px solid gold;
-    border-radius: 5px;
-}
-
-#puzzle-pieces-container {
-    height: 100px;
-    width: 100%;
-    flex-shrink: 0;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    gap: 10px;
-}
-
-.puzzle-piece-slot {
-    width: 30%;
-    height: 100%;
-    background-color: #1a1a2e;
-    border-radius: 8px;
-    border: 2px solid var(--border-color);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: grab;
-    transition: background-color 0.2s;
-}
-
-.puzzle-piece-slot:active {
-    cursor: grabbing;
-    background-color: #0f3460;
-}
-
-.puzzle-piece-slot.empty {
-    opacity: 0.3;
-    cursor: default;
-    background-color: #1a1a2e;
-}
-.puzzle-piece-slot.empty:active {
-    background-color: #1a1a2e;
-}
-
-.puzzle-back {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    z-index: 10;
-    padding: 8px 12px;
-    font-size: 0.8em;
-}
-
-/* =================================
-   MREŽA ZA IGRU (CANVAS)
-   ================================= */
-canvas#gameCanvas {
-    display: block;
-    background-color: var(--board-bg-color);
-    border-radius: 5px;
-    border: 2px solid gold;
-    box-shadow: 0 0 8px gold;
-}
-
-/* =================================
-   GORNJI I DONJI PANELI
-   ================================= */
-.info-panel {
-    background-color: #1a1a2e;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: inset 0 0 8px rgba(97, 218, 251, 0.3);
-    white-space: nowrap;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 2px;
-    gap: 2px;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    height: 100%;
-}
-
-.panel-header {
-    font-size: 0.7em;
-    width: 100%;
-    text-align: center;
-}
-
-#next-block-container {
-    min-height: initial;
-}
-
-#next-block-container canvas {
-    height: 90%;
-    aspect-ratio: 1 / 1;
-    width: auto;
-}
-
-#game-stats {
-    flex-grow: 2;
-    padding: 5px;
-    justify-content: space-around;
-}
-
-#best-score-wrapper, #puzzle-best-score-wrapper {
-    position: relative;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 0;
-}
-#crown-icon {
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 1.1em;
-    text-shadow: 0 0 5px gold, 0 0 10px yellow;
-}
-
-#best-score-display, #puzzle-best-score-display {
-    font-weight: bold;
-    color: #FFD700;
-    font-size: 1em;
-    padding: 2px 6px;
-    border: 2px solid gold;
-    border-radius: 5px;
-    background-color: #111;
-    box-shadow: 0 0 8px gold;
-}
-
-.stat-line {
-    width: 100%;
-    text-align: center;
-    font-size: 0.7em;
-    padding: 1px 0;
-}
+header#info-section { display: flex; justify-content: space-between; align-items: stretch; width: 100%; gap: 5px; height: 80px; flex-shrink: 0; }
+main#canvas-container { flex-grow: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+footer#assists-panel { display: flex; justify-content: center; align-items: center; width: 100%; margin: 0; height: 45px; flex-shrink: 0; }
+canvas#gameCanvas { display: block; background-color: var(--board-bg-color); border-radius: 5px; border: 2px solid gold; box-shadow: 0 0 8px gold; }
+.info-panel { background-color: #1a1a2e; border: 2px solid var(--border-color); border-radius: 8px; box-shadow: inset 0 0 8px rgba(97, 218, 251, 0.3); white-space: nowrap; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2px; gap: 2px; flex: 1; min-width: 0; overflow: hidden; height: 100%; }
+.panel-header { font-size: 0.7em; width: 100%; text-align: center; }
+#next-block-container { min-height: initial; }
+#next-block-container canvas { height: 90%; aspect-ratio: 1 / 1; width: auto; }
+#game-stats { flex-grow: 2; padding: 5px; justify-content: space-around; }
+#best-score-wrapper, #puzzle-best-score-wrapper { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 0; }
+#crown-icon { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 1.1em; text-shadow: 0 0 5px gold, 0 0 10px yellow; }
+#best-score-display, #puzzle-best-score-display { font-weight: bold; color: #FFD700; font-size: 1em; padding: 2px 6px; border: 2px solid gold; border-radius: 5px; background-color: #111; box-shadow: 0 0 8px gold; }
+.stat-line { width: 100%; text-align: center; font-size: 0.7em; padding: 1px 0; }
 #level-display { color: #fff; }
-#sprint-timer, #ultra-timer { color: #ffcc00; }
-
-
-#assist-content-wrapper {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-    align-items: center;
-}
-.assist-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-}
-.count {
-    font-size: 1.1em;
-    color: var(--main-color);
-    font-weight: bold;
-}
-
-/* =================================
-   DUGMIĆI
-   ================================= */
-.btn { 
-    padding: 8px; 
-    background-color: #e63946; 
-    color: #fff; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    transition: background-color 0.2s, transform 0.1s; 
-    font-family: 'Press Start 2P', cursive; 
-}
-.btn:hover { background-color: #c72c38; }
-.btn:active { transform: translateY(1px); }
-
-#right-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    justify-content: space-around;
-}
-
-#home-button, #pause-button {
-    width: 100%;
-    height: 45%;
-    font-size: 1.2em;
-    padding: 2px;
-}
-
-.assist-btn {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-size: 2.2em;
-    line-height: 1;
-    transition: transform 0.2s ease, opacity 0.2s ease;
-    text-shadow: 0 0 8px rgba(97, 218, 251, 0.7);
-}
-.assist-btn:active {
-    transform: scale(0.9);
-}
-.assist-btn:disabled { 
-    opacity: 0.4; 
-    cursor: not-allowed;
-    text-shadow: none;
-    transform: none;
-}
-
-/* =================================
-   PREKRIVAČI (OVERLAYS) I MENIJI
-   ================================= */
-.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(26, 26, 46, 0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 20px; z-index: 1000; font-family: 'Press Start 2P', cursive; padding: 15px; box-sizing: border-box; }
-.overlay h1 { font-size: 1.8em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
-.overlay h2 { font-size: 1.5em; color: var(--main-color); text-shadow: 0 0 10px rgba(97, 218, 251, 0.8); margin-bottom: 5px; }
-.overlay p { font-size: 1em; margin-bottom: 15px; }
-.overlay .final-score { font-size: 1.5em; color: #e0e0e0; margin-bottom: 15px; }
-.overlay button, .overlay select { padding: 15px 30px; font-size: 1.1em; background-color: #e63946; color: #fff; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; box-shadow: 0 5px 8px rgba(0, 0, 0, 0.4); font-family: 'Press Start 2P', cursive; }
-.overlay button:hover { background-color: #c72c38; transform: translateY(-3px); }
-.overlay button:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
-.overlay button:disabled { background-color: #555; color: #999; cursor: not-allowed; transform: none; box-shadow: none; }
-.overlay select { padding: 8px 16px; font-size: 0.8em; color: var(--main-color); background-color: #1a1a2e; border: 2px solid var(--main-color); appearance: none; }
-.overlay select option { background-color: #1a1a2e; color: var(--main-color); }
-
-.menu-buttons { display: flex; flex-direction: column; gap: 15px; width: 80%; max-width: 300px; }
-.settings-btn { position: absolute; top: 20px; right: 20px; font-size: 1.5em; padding: 10px; width: 50px; height: 50px; background-color: rgba(255,255,255,0.1); }
-.back-btn { background-color: #4a4a4a; margin-top: 10px; padding: 10px 20px; font-size: 0.9em; }
-.back-btn:hover { background-color: #333; }
-.sound-btn { font-size: 1.5em; background: none; box-shadow: none; padding: 10px; }
-.sound-btn:hover { background: none; }
-
-#settings-modal .settings-item { display: flex; justify-content: space-between; align-items: center; width: 80%; max-width: 300px; padding: 10px 0; }
-#settings-modal .settings-item span { font-size: 0.9em; }
-
-#controls-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; background-color: #1a1a2e; border: 3px solid var(--main-color); border-radius: 10px; padding: 20px; box-shadow: 0 0 20px rgba(97, 218, 251, 0.5); z-index: 2000; }
-#controls-modal h2 { font-size: 1.2em; margin-bottom: 15px; }
-.control-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9em; }
-.control-item span { color: #fff; }
-.control-item input { background-color: #000; color: var(--main-color); border: 1px solid var(--main-color); padding: 5px; width: 100px; text-align: center; font-family: 'Press Start 2P', cursive; transition: all 0.2s ease; }
-.control-item input.listening { border-color: #e63946; box-shadow: 0 0 8px #e63946; color: #e63946; }
-#close-controls-modal { margin-top: 20px; width: 100%; }
-
-#exit-modal .modal-buttons { display: flex; gap: 15px; margin-top: 20px; }
-
-/* =================================
-   ANIMACIJE
-   ================================= */
-#combo-display { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5em; color: #fff; text-shadow: 0 0 10px var(--main-color); text-align: center; z-index: 10; animation: fadeOut 1.5s forwards; display: none; white-space: pre-wrap; pointer-events: none; }
-@keyframes fadeOut { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
-
-#game-over-screen h1 { animation: gameOverPulse 1.5s infinite; }
-@keyframes gameOverPulse { 0% { transform: scale(1); opacity: 1; color: #e63946; } 50% { transform: scale(1.1); opacity: 0.8; color: #ff5e6c; } 100% { transform: scale(1); opacity: 1; color: #e63946; } }
+#assist-content-wrapper { display: flex; justify-content: space-around; width: 100%; align-items: center; }
+.assist-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.count { font-size: 1.1em; color: var(--main-color); }
+.btn { padding: 8px; background-color: #e63946; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; font-family: var(--font-game); }
+#right-controls { display: flex; flex-direction: column; gap: 5px; justify-content: space-around; }
+#home-button, #pause-button { width: 100%; height: 45%; font-size: 1.2em; padding: 2px; }
+.assist-btn { background: none; border: none; padding: 0; cursor: pointer; font-size: 2.2em; line-height: 1; transition: transform 0.2s ease, opacity 0.2s ease; text-shadow: 0 0 8px rgba(97, 218, 251, 0.7); }
+.assist-btn:active { transform: scale(0.9); }
+.assist-btn:disabled { opacity: 0.4; cursor: not-allowed; text-shadow: none; transform: none; }
