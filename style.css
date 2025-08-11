@@ -112,6 +112,7 @@ footer#assists-panel {
     gap: 10px;
     padding: 10px;
     box-sizing: border-box;
+    position: relative;
 }
 
 #puzzle-game-stats {
@@ -168,11 +169,11 @@ footer#assists-panel {
 .puzzle-piece-slot.empty {
     opacity: 0.3;
     cursor: default;
+    background-color: #1a1a2e;
 }
 .puzzle-piece-slot.empty:active {
     background-color: #1a1a2e;
 }
-
 
 .puzzle-back {
     position: absolute;
@@ -181,10 +182,6 @@ footer#assists-panel {
     z-index: 10;
     padding: 8px 12px;
     font-size: 0.8em;
-}
-
-#dragging-piece {
-    opacity: 0.8;
 }
 
 
@@ -242,7 +239,7 @@ canvas#gameCanvas {
     justify-content: space-around;
 }
 
-#best-score-wrapper {
+#best-score-wrapper, #puzzle-best-score-wrapper {
     position: relative;
     width: 100%;
     display: flex;
@@ -259,7 +256,7 @@ canvas#gameCanvas {
     text-shadow: 0 0 5px gold, 0 0 10px yellow;
 }
 
-#best-score-display {
+#best-score-display, #puzzle-best-score-display {
     font-weight: bold;
     color: #FFD700;
     font-size: 1em;
