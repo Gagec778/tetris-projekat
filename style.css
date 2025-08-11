@@ -55,8 +55,7 @@ body {
     max-width: 500px;
     max-height: 900px;
     position: relative;
-    /* Sakriven po defaultu, JS ga prikazuje */
-    /* display: flex; */
+    /* display: flex; je sada u JS */
     flex-direction: column;
     gap: 5px;
 }
