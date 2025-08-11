@@ -85,20 +85,20 @@ let dropSound, clearSound, rotateSound, gameOverSound, tSpinSound, tetrisSound, 
 let tetrisWrapper, blockPuzzleWrapper, mainMenu, tetrisMenu, gameOverScreen, pauseScreen, scoreDisplay, finalScoreDisplay, finalTimeDisplay, comboDisplay, startButton, restartButton, resumeButton, themeSwitcher, modeSelector, assistsBombButton, assistsBombCountDisplay, assistsHammerButton, assistsHammerCountDisplay, assistsUndoButton, assistsUndoCountDisplay, bestScoreDisplay, homeButton, pauseButton, levelDisplay, sprintTimerDisplay, ultraTimerDisplay, countdownOverlay;
 let backgroundMusicPlaying = false;
 let controlsModal, controlsButton, closeControlsModal, controlInputs, exitModal, confirmExitButton, cancelExitButton;
-let backgroundImageElement, settingsButton, settingsModal, closeSettingsModalButton, soundToggleButton, selectTetrisButton, selectBlockPuzzleButton, backToMainMenuButton, puzzleBackButton, blockPuzzleCanvas, blockPuzzleCtx;
-
-// Block Puzzle State
-let puzzleBoard = [];
-let availablePuzzlePieces = [null, null, null];
-let puzzleScore = 0;
-let puzzleBestScore = 0;
-let draggingPiece = null;
-let draggingPieceCanvas, draggingPieceCtx, draggingElement;
+let backgroundImageElement, settingsButton, settingsModal, closeSettingsModalButton, soundToggleButton, selectTetrisButton, selectBlockPuzzleButton, backToMainMenuButton, puzzleBackButton, blockPuzzleCanvas, blockPuzzleCtx, gameOverTitle;
 
 // Touch Control Variables
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
 let initialPieceX = 0;
 let lastTouchY = 0;
+
+// Block Puzzle State
+let puzzleBoard = [];
+let availablePuzzlePieces = [null, null, null];
+let puzzleScore = 0;
+let puzzleBestScores = {};
+let draggingPiece = null;
+let draggingPieceCanvas, draggingPieceCtx, draggingElement;
 
 // =================================================================================
 // ===== DRAWING FUNCTIONS =====
@@ -228,7 +228,10 @@ function animateLineClear(timestamp) {
         board[r].forEach((cell, c) => { if (cell) drawBlock(c, r, cell); }); 
         ctx.globalAlpha = 1; 
     });
-    drawCurrentPiece(); 
+    // Tokom animacije, koristimo logičku poziciju
+    currentPiece.shape.forEach((row, r) => row.forEach((cell, c) => { 
+        if (cell) drawBlock(currentPiece.x + c, currentPiece.y + r, currentPiece.color); 
+    }));
     requestAnimationFrame(animateLineClear);
 }
 
@@ -499,7 +502,10 @@ function startGame() {
 }
 
 function endGame(isSprintWin = false, exitToMainMenu = false) {
-    gameOver = true; if (animationFrameId) cancelAnimationFrame(animationFrameId); pauseBackgroundMusic();
+    gameOver = true; 
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    pauseBackgroundMusic();
     
     const currentBest = bestScores[currentMode] || 0;
     if (score > currentBest) {
@@ -513,10 +519,20 @@ function endGame(isSprintWin = false, exitToMainMenu = false) {
         mainMenu.style.display = 'flex';
         return;
     }
-    if (isSprintWin) { finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; finalTimeDisplay.style.display = 'block'; document.getElementById('game-over-title').textContent = 'PERFECT!'; }
-    else { playSound(gameOverSound); finalTimeDisplay.style.display = 'none'; document.getElementById('game-over-title').textContent = 'GAME OVER!'; }
-    finalScoreDisplay.textContent = `Your Score: ${score}`;
-    gameOverScreen.style.display = 'flex';
+
+    if (gameOverTitle) {
+        if (isSprintWin) { 
+            finalTimeDisplay.textContent = `TIME: ${sprintTimerDisplay.textContent.split(': ')[1]}`; 
+            finalTimeDisplay.style.display = 'block'; 
+            gameOverTitle.textContent = 'PERFECT!'; 
+        } else { 
+            playSound(gameOverSound); 
+            finalTimeDisplay.style.display = 'none'; 
+            gameOverTitle.textContent = 'GAME OVER!'; 
+        }
+    }
+    if(finalScoreDisplay) finalScoreDisplay.textContent = `Your Score: ${score}`;
+    if(gameOverScreen) gameOverScreen.style.display = 'flex';
 }
 
 function togglePause() { 
@@ -524,6 +540,7 @@ function togglePause() {
     isPaused = !isPaused; 
     if (isPaused) { 
         if(animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
         pauseStartTime = performance.now();
         pauseScreen.style.display = 'flex'; 
         pauseBackgroundMusic(); 
@@ -713,7 +730,7 @@ function drawPuzzleBoard() {
 // =================================================================================
 // ===== INITIALIZATION =====
 // =================================================================================
-function initDOMAndEventListeners() {
+document.addEventListener('DOMContentLoaded', () => {
     // Menus and Wrappers
     tetrisWrapper = document.getElementById('tetris-wrapper');
     blockPuzzleWrapper = document.getElementById('block-puzzle-wrapper');
@@ -725,6 +742,7 @@ function initDOMAndEventListeners() {
     exitModal = document.getElementById('exit-modal');
     countdownOverlay = document.getElementById('countdown-overlay');
     controlsModal = document.getElementById('controls-modal');
+    gameOverTitle = document.getElementById('game-over-title');
 
     // Canvases
     canvas = document.getElementById('gameCanvas');
@@ -860,7 +878,7 @@ function initDOMAndEventListeners() {
     if(restartButton) restartButton.addEventListener('click', () => {
         gameOverScreen.style.display = 'none';
         tetrisWrapper.style.display = 'none';
-        mainMenu.style.display = 'flex';
+        tetrisMenu.style.display = 'flex'; // ISPRAVKA: Vrati na Tetris meni, ne glavni
     });
 
     if(pauseButton) pauseButton.addEventListener('click', togglePause);
@@ -931,6 +949,7 @@ function initDOMAndEventListeners() {
     });
 
     loadSettings();
+    resizeGame();
 }
 
 function loadSettings() {
@@ -978,5 +997,4 @@ function pauseBackgroundMusic() {
     backgroundMusicPlaying = false;
 }
 
-// Glavna ulazna tačka
 document.addEventListener('DOMContentLoaded', initDOMAndEventListeners);
