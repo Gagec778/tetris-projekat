@@ -12,17 +12,17 @@ document.addEventListener('DOMContentLoaded', () => {
     screens[id].style.display = 'flex';
   }
 
-  /* Glavni meni navigacija */
   document.body.addEventListener('click', e => {
     const action = e.target.dataset.action;
     switch(action){
-      case 'select-tetris':  show('tetris'); break;
-      case 'select-blockpuzzle': show('puzzle'); break;
-      case 'open-settings':  show('settings'); break;
+      case 'select-tetris':      show('tetris');  break;
+      case 'select-blockpuzzle': show('puzzle');  break;
+      case 'open-settings':      show('settings');break;
       case 'return-to-menu':
-      case 'back-to-main':   show('main');  break;
-      case 'pause-tetris':   screens.pause.style.display='flex'; break;
-      case 'resume-tetris':  screens.pause.style.display='none'; break;
+      case 'back-to-main':
+      case 'close-settings':     show('main');    break;
+      case 'pause-tetris':       screens.pause.style.display='flex'; break;
+      case 'resume-tetris':      screens.pause.style.display='none'; break;
     }
   });
 
