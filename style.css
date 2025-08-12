@@ -26,4 +26,3 @@ h1{font-size:2rem;text-shadow:0 0 6px rgba(255,255,255,.5)}
 .previewBox{display:grid;grid-template-columns:repeat(4,6vw);grid-template-rows:repeat(4,6vw);gap:2px;background:#111;padding:3px;border-radius:6px}
 .previewBox div{background:#222;border-radius:3px}
 .previewBox .filled{background:var(--accent)}
-
