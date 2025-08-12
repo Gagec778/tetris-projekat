@@ -20,63 +20,60 @@
 
     <!-- Tetris wrapper -->
     <div id="tetris-wrapper" class="game-wrapper">
+        <div id="background-image"></div>
         <header id="info-section">
             <div id="next-block-container" class="info-panel">
                 <div class="panel-header">Next:</div>
-                <canvas id="nextCanvas" width="80" height="80"></canvas>
+                <canvas id="nextBlockCanvas"></canvas>
             </div>
             <div id="game-stats" class="info-panel">
-                <div id="best-score-wrapper"><span class="crown">👑</span><span id="bestScore">0</span></div>
-                <div class="stat-line">Score: <span id="score">0</span></div>
-                <div class="stat-line">Level: <span id="level">1</span></div>
+                <div id="best-score-wrapper">
+                    <span class="crown">👑</span>
+                    <div id="best-score-display">0</div>
+                </div>
+                <div class="stat-line">Score: <span id="score-display">0</span></div>
+                <div class="stat-line">Level: <span id="level-display">1</span></div>
             </div>
             <div id="right-controls" class="info-panel">
-                <button data-action="return-to-menu" class="btn">🏠</button>
-                <button data-action="pause-tetris" class="btn">⏸️</button>
+                <button data-action="return-to-menu" class="btn" aria-label="Home Menu">🏠</button>
+                <button data-action="pause-tetris" class="btn" aria-label="Pause">⏸️</button>
             </div>
         </header>
         <main id="canvas-container">
-            <canvas id="gameCanvas" width="300" height="600"></canvas>
+            <canvas id="gameCanvas" style="touch-action: none;"></canvas>
         </main>
-        <div id="touch-controls">
-            <button id="leftBtn">⬅️</button>
-            <button id="rotateBtn">🔄</button>
-            <button id="rightBtn">➡️</button>
-            <button id="downBtn">⬇️</button>
-            <button id="dropBtn">⬇️⬇️</button>
-        </div>
-        <div id="pause-overlay" class="overlay-small" style="display:none">
-            <h2>PAUSED</h2>
-            <button data-action="resume-tetris">Resume</button>
-            <button data-action="return-to-menu">Main menu</button>
-        </div>
+        <footer id="assists-panel"></footer>
+        <div id="combo-display"></div>
     </div>
 
     <!-- Block Puzzle wrapper -->
     <div id="block-puzzle-wrapper" class="game-wrapper">
-        <header class="puzzle-header">
-            <button data-action="return-to-menu" class="btn back-btn">Back</button>
-            <div id="puzzle-stats" class="info-panel">
-                <div id="puzzle-best-score-wrapper"><span class="crown">👑</span><span id="puzzleBest">0</span></div>
-                <div class="stat-line">Score: <span id="puzzleScore">0</span></div>
+        <div class="puzzle-layout">
+            <button data-action="return-to-menu" class="btn back-btn puzzle-back">Back</button>
+            <div id="puzzle-game-stats" class="info-panel">
+                <div id="puzzle-best-score-wrapper">
+                    <span class="crown">👑</span>
+                    <div id="puzzle-best-score-display">0</div>
+                </div>
+                <div class="stat-line">Score: <span id="puzzle-score-display">0</span></div>
             </div>
-        </header>
-        <main id="puzzle-canvas-container">
-            <canvas id="blockPuzzleCanvas" width="320" height="320"></canvas>
-        </main>
-        <footer id="puzzle-pieces-container">
-            <canvas class="puzzle-piece" width="80" height="80"></canvas>
-            <canvas class="puzzle-piece" width="80" height="80"></canvas>
-            <canvas class="puzzle-piece" width="80" height="80"></canvas>
-        </footer>
+            <div id="puzzle-canvas-container">
+                <canvas id="blockPuzzleCanvas"></canvas>
+            </div>
+            <div id="puzzle-pieces-container">
+                <div class="puzzle-piece-slot"><canvas class="puzzle-piece" width="80" height="80"></canvas></div>
+                <div class="puzzle-piece-slot"><canvas class="puzzle-piece" width="80" height="80"></canvas></div>
+                <div class="puzzle-piece-slot"><canvas class="puzzle-piece" width="80" height="80"></canvas></div>
+            </div>
+        </div>
     </div>
 
     <!-- Settings modal -->
     <div id="settings-modal" class="overlay">
         <h2>Settings</h2>
         <div class="settings-item">
-            <label>Theme:</label>
-            <select id="theme-select">
+            <span>Theme:</span>
+            <select id="theme-switcher">
                 <option value="classic">Classic</option>
                 <option value="dark">Dark</option>
                 <option value="forest">Forest</option>
@@ -85,18 +82,19 @@
             </select>
         </div>
         <div class="settings-item">
-            <label>Sound:</label>
-            <button data-action="toggle-sound" id="sound-btn">🔊</button>
+            <span>Sound:</span>
+            <button data-action="toggle-sound" class="btn sound-btn">🔊</button>
         </div>
-        <button data-action="back-to-main" class="back-btn">Close</button>
+        <button data-action="close-settings" class="btn back-btn">Close</button>
     </div>
 
-    <audio id="snd-drop" src="sounds/drop.wav" preload="auto"></audio>
-    <audio id="snd-clear" src="sounds/clear.wav" preload="auto"></audio>
-    <audio id="snd-rotate" src="sounds/rotate.wav" preload="auto"></audio>
-    <audio id="snd-gameover" src="sounds/gameover.wav" preload="auto"></audio>
-    <audio id="snd-tetris" src="sounds/tetris.wav" preload="auto"></audio>
-    <audio id="snd-music" src="sounds/music.mp3" preload="auto"></audio>
+    <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
+    <audio id="clearSound" src="sounds/clear.wav" preload="auto"></audio>
+    <audio id="rotateSound" src="sounds/rotate.wav" preload="auto"></audio>
+    <audio id="gameOverSound" src="sounds/gameover.wav" preload="auto"></audio>
+    <audio id="tSpinSound" src="sounds/tspin.wav" preload="auto"></audio>
+    <audio id="tetrisSound" src="sounds/tetris.wav" preload="auto"></audio>
+    <audio id="backgroundMusic" src="sounds/music.mp3" preload="auto"></audio>
 
     <script src="script.js"></script>
 </body>
