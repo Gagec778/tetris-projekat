@@ -1,116 +1,16 @@
-/* ========== RESET & VARIABLES ========== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-:root {
-    --main-color: #61dafb;
-    --bg-color: #1a1a2e;
-    --board-bg: #000;
-    --border: var(--main-color);
-    --grid-color: #333;
-    --font-game: 'Press Start 2P', monospace;
-    --font-ui: 'Poppins', sans-serif;
-}
-body {
-    font-family: var(--font-ui);
-    background: var(--bg-color) url("https://www.transparenttextures.com/patterns/cubes.png");
-    color: #e0e0e0;
-    overflow: hidden;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* ========== OVERLAYS ========== */
-.overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(16,16,29,.85);
-    backdrop-filter: blur(8px);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-}
-.overlay h1, .overlay h2 { font-family: var(--font-game); }
-button {
-    background: var(--main-color);
-    color: var(--bg-color);
-    border: none;
-    padding: .75rem 1.5rem;
-    border-radius: 6px;
-    font-weight: 700;
-    cursor: pointer;
-}
-button:hover { filter: brightness(1.2); }
-
-/* ========== GAME WRAPPERS ========== */
-.game-wrapper {
-    display: none;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-}
-#tetris-wrapper { background: var(--bg-color); }
-
-/* Info bar */
-#info-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: .5rem 1rem;
-    background: rgba(0,0,0,.4);
-}
-.info-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-size: .8rem;
-}
-#nextCanvas { border: 2px solid var(--border); }
-
-/* Canvas container */
-#canvas-container {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-#gameCanvas {
-    border: 2px solid var(--border);
-    background: var(--board-bg);
-}
-
-/* Touch kontrole */
-#touch-controls {
-    display: flex;
-    justify-content: space-around;
-    padding: .5rem;
-}
-#touch-controls button {
-    flex: 1;
-    margin: 0 .25rem;
-    min-height: 48px;
-}
-
-/* Pause overlay */
-#pause-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,.7);
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    display: none;
-}
-
-/* ========== RESPONSIVE ========== */
-@media (max-width: 600px) {
-    #info-section { flex-direction: column; gap: .5rem; font-size: .7rem; }
-    #gameCanvas { width: 100%; max-width: 300px; height: auto; }
-}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--main:#61dafb;--bg:#1a1a2e;--board:#000;--font:'Poppins',sans-serif}
+body{font-family:var(--font);background:var(--bg) url("https://www.transparenttextures.com/patterns/cubes.png");color:#e0e0e0;height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden}
+.overlay{position:fixed;inset:0;background:rgba(16,16,29,.85);backdrop-filter:blur(8px);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:1rem}
+button{background:var(--main);color:var(--bg);border:none;padding:.75rem 1.5rem;border-radius:6px;font-weight:700;cursor:pointer}
+.game-wrapper{display:none;flex-direction:column;width:100%;height:100%}
+#info-section{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background:rgba(0,0,0,.4)}
+.info-panel{display:flex;flex-direction:column;align-items:center;font-size:.8rem}
+#gameCanvas{border:2px solid var(--main);background:var(--board)}
+#touch-controls{display:flex;justify-content:space-around;padding:.5rem}
+#touch-controls button{flex:1;margin:0 .25rem;min-height:48px}
+#puzzleCanvas{border:2px solid var(--main);background:var(--board)}
+#puzzle-pieces{display:flex;justify-content:space-around;padding:.5rem}
+.piece{border:1px solid var(--main)}
+#pause-overlay{position:absolute;inset:0;background:rgba(0,0,0,.7);flex-direction:column;justify-content:center;align-items:center;gap:1rem;display:none}
+@media(max-width:600px){#info-section{flex-direction:column;font-size:.7rem}}
