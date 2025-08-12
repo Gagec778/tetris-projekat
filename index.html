@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>PUZZLE PROJECT</title>
-
-    <!-- Google Fonts (radi i ako nema interneta, fallback na monospace) -->
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Poppins:wght@400;700&display=swap" rel="stylesheet" />
-
-    <link rel="stylesheet" href="style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- ========== TETRIS ========== -->
@@ -18,89 +15,65 @@
                 <div class="panel-header">Next:</div>
                 <canvas id="nextCanvas" width="80" height="80"></canvas>
             </div>
-
             <div id="game-stats" class="info-panel">
-                <div id="best-score-wrap">
-                    <span class="crown">👑</span>
-                    <span id="bestScore">0</span>
-                </div>
+                <div><span class="crown">👑</span><span id="bestScore">0</span></div>
                 <div>Score: <span id="score">0</span></div>
                 <div>Level: <span id="level">1</span></div>
                 <div>Lines: <span id="lines">0</span></div>
             </div>
-
             <div id="right-controls" class="info-panel">
-                <button data-action="return-to-menu" class="btn" aria-label="Home">🏠</button>
-                <button data-action="pause" class="btn" aria-label="Pause">⏸️</button>
+                <button data-action="return-to-menu" class="btn">🏠</button>
+                <button data-action="pause" class="btn">⏸️</button>
             </div>
         </header>
-
         <main id="canvas-container">
             <canvas id="gameCanvas" width="300" height="600"></canvas>
         </main>
-
-        <!-- Touch kontrole -->
         <div id="touch-controls">
-            <button id="leftBtn">⬅️</button>
-            <button id="rotateBtn">🔄</button>
-            <button id="rightBtn">➡️</button>
-            <button id="downBtn">⬇️</button>
-            <button id="dropBtn">⬇️⬇️</button>
+            <button id="leftBtn">⬅️</button><button id="rotateBtn">🔄</button><button id="rightBtn">➡️</button><button id="downBtn">⬇️</button><button id="dropBtn">⬇️⬇️</button>
         </div>
-
-        <!-- Pause Overlay -->
-        <div id="pause-overlay" class="overlay-small">
-            <h2>PAUSED</h2>
-            <button data-action="resume">Resume</button>
-            <button data-action="return-to-menu">Main menu</button>
-        </div>
+        <div id="pause-overlay" class="overlay-small"><h2>PAUSED</h2><button data-action="resume">Resume</button><button data-action="return-to-main">Main menu</button></div>
     </div>
 
-    <!-- ========== MAIN MENU ========== -->
+    <!-- ========== BLOCK PUZZLE ========== -->
+    <div id="block-puzzle-wrapper" class="game-wrapper">
+        <header class="puzzle-header">
+            <button data-action="return-to-main" class="btn">Back</button>
+            <div class="info-panel">
+                <div><span class="crown">👑</span><span id="puzzleBest">0</span></div>
+                <div>Score: <span id="puzzleScore">0</span></div>
+            </div>
+        </header>
+        <main id="puzzle-canvas-container"><canvas id="puzzleCanvas" width="320" height="320"></canvas></main>
+        <footer id="puzzle-pieces">
+            <canvas class="piece" width="80" height="80"></canvas>
+            <canvas class="piece" width="80" height="80"></canvas>
+            <canvas class="piece" width="80" height="80"></canvas>
+        </footer>
+    </div>
+
+    <!-- ========== MENIJI ========== -->
     <div id="main-menu" class="overlay">
         <h1>PUZZLE PROJECT</h1>
-        <div class="menu-buttons">
-            <button data-action="select-tetris">Tetris</button>
-            <button data-action="select-blockpuzzle">Block Puzzle</button>
-        </div>
+        <button data-action="select-tetris">Tetris</button>
+        <button data-action="select-blockpuzzle">Block Puzzle</button>
         <button data-action="open-settings" class="settings-btn">⚙️</button>
     </div>
-
-    <!-- ========== TETRIS MENU ========== -->
-    <div id="tetris-menu" class="overlay">
-        <h1>TETRIS</h1>
-        <button data-action="start-tetris">Start Game</button>
-        <button data-action="back-to-main" class="back-btn">Back</button>
-    </div>
-
-    <!-- ========== SETTINGS ========== -->
     <div id="settings-modal" class="overlay">
         <h2>Settings</h2>
-        <div class="settings-item">
-            <label>Theme:</label>
-            <select id="theme-select">
-                <option value="classic">Classic</option>
-                <option value="dark">Dark</option>
-                <option value="forest">Forest</option>
-                <option value="modern">Modern</option>
-                <option value="lava">Lava</option>
-            </select>
-        </div>
-        <div class="settings-item">
-            <label>Sound:</label>
-            <button data-action="toggle-sound" id="sound-btn">🔊</button>
-        </div>
+        <div class="settings-item"><label>Theme:</label><select id="theme-select"><option value="classic">Classic</option><option value="dark">Dark</option><option value="forest">Forest</option><option value="modern">Modern</option><option value="lava">Lava</option></select></div>
+        <div class="settings-item"><label>Sound:</label><button data-action="toggle-sound" id="sound-btn">🔊</button></div>
         <button data-action="back-to-main" class="back-btn">Close</button>
     </div>
 
-    <!-- Audio -->
-    <audio id="snd-drop"    src="sounds/drop.wav"    preload="auto"></audio>
-    <audio id="snd-clear"   src="sounds/clear.wav"   preload="auto"></audio>
-    <audio id="snd-rotate"  src="sounds/rotate.wav"  preload="auto"></audio>
-    <audio id="snd-gameover"src="sounds/gameover.wav"preload="auto"></audio>
-    <audio id="snd-tetris"  src="sounds/tetris.wav"  preload="auto"></audio>
-    <audio id="snd-music"   src="sounds/music.mp3"   loop preload="auto"></audio>
+    <audio id="snd-drop" src="sounds/drop.wav" preload="auto"></audio>
+    <audio id="snd-clear" src="sounds/clear.wav" preload="auto"></audio>
+    <audio id="snd-rotate" src="sounds/rotate.wav" preload="auto"></audio>
+    <audio id="snd-gameover" src="sounds/gameover.wav" preload="auto"></audio>
+    <audio id="snd-tetris" src="sounds/tetris.wav" preload="auto"></audio>
+    <audio id="snd-music" src="sounds/music.mp3" loop preload="auto"></audio>
 
     <script src="script.js"></script>
+    <script src="block-puzzle.js"></script>
 </body>
 </html>
