@@ -1,1 +1,29 @@
+:root{
+  --accent:#00bcd4;
+  --bg:linear-gradient(135deg,#0f2027 0%,#203a43 50%,#2c5364 100%);
+  --text:#fff;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,sans-serif}
+body{background:var(--bg);color:var(--text);height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.screen,#mainMenu{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:transform .4s}
+.hidden{transform:translateY(120%)}
+button{background:#fff;color:#0f2027;border:none;padding:12px 30px;border-radius:30px;font-weight:700;box-shadow:0 0 15px rgba(0,0,0,.4);cursor:pointer;font-size:1rem}
+button:active{background:#00bcd4;color:#fff}
+h1{font-size:2rem;text-shadow:0 0 6px rgba(255,255,255,.5)}
+#settingsBtn{position:absolute;top:15px;right:15px;background:transparent;border:none;font-size:2rem;color:var(--text)}
+
+/* Tetris */
+#tetrisCanvas{background:#111;border-radius:8px;display:block;max-width:90vw;max-height:60vh}
+#tetrisInfo{display:flex;gap:20px;font-size:1.2rem}
+#tetrisControls{position:absolute;bottom:20px;width:90%;display:flex;justify-content:space-around}
+#tetrisControls button{width:60px;height:60px;font-size:1.6rem;border-radius:50%}
+
+/* Blok puzle */
+#blockGrid{display:grid;grid-template-columns:repeat(10,8vw);grid-template-rows:repeat(10,8vw);gap:2px;background:#111;padding:4px;border-radius:8px}
+#blockGrid div{background:#222;border-radius:4px}
+#blockGrid .filled{background:var(--accent)}
+#blockPreview{display:flex;gap:10px;margin-bottom:10px}
+.previewBox{display:grid;grid-template-columns:repeat(4,6vw);grid-template-rows:repeat(4,6vw);gap:2px;background:#111;padding:3px;border-radius:6px}
+.previewBox div{background:#222;border-radius:3px}
+.previewBox .filled{background:var(--accent)}
 
