@@ -1,101 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>PUZZLE PROJECT</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>PUZZLE PROJECT</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Glavni meni -->
-    <div id="main-menu" class="overlay visible">
-        <h1>PUZZLE PROJECT</h1>
-        <div class="menu-buttons">
-            <button data-action="select-tetris">Tetris</button>
-            <button data-action="select-blockpuzzle">Block Puzzle</button>
-        </div>
-        <button data-action="open-settings" class="settings-btn">⚙️</button>
+
+<!-- Glavni meni -->
+<div id="main-menu" class="overlay visible">
+  <h1>PUZZLE PROJECT</h1>
+  <button data-action="select-tetris">Tetris</button>
+  <button data-action="select-blockpuzzle">Block Puzzle</button>
+  <button data-action="open-settings">⚙️ Settings</button>
+</div>
+
+<!-- Tetris wrapper -->
+<div id="tetris-wrapper" class="game-wrapper">
+  <header id="info-section">
+    <div id="next-block-container" class="info-panel">
+      <div class="panel-header">Next:</div>
+      <canvas id="nextBlockCanvas" width="80" height="80"></canvas>
     </div>
-
-    <!-- Tetris wrapper -->
-    <div id="tetris-wrapper" class="game-wrapper">
-        <div id="background-image"></div>
-        <header id="info-section">
-            <div id="next-block-container" class="info-panel">
-                <div class="panel-header">Next:</div>
-                <canvas id="nextBlockCanvas"></canvas>
-            </div>
-            <div id="game-stats" class="info-panel">
-                <div id="best-score-wrapper">
-                    <span class="crown">👑</span>
-                    <div id="best-score-display">0</div>
-                </div>
-                <div class="stat-line">Score: <span id="score-display">0</span></div>
-                <div class="stat-line">Level: <span id="level-display">1</span></div>
-            </div>
-            <div id="right-controls" class="info-panel">
-                <button data-action="return-to-menu" class="btn" aria-label="Home Menu">🏠</button>
-                <button data-action="pause-tetris" class="btn" aria-label="Pause">⏸️</button>
-            </div>
-        </header>
-        <main id="canvas-container">
-            <canvas id="gameCanvas" style="touch-action: none;"></canvas>
-        </main>
-        <footer id="assists-panel"></footer>
-        <div id="combo-display"></div>
+    <div id="game-stats" class="info-panel">
+      <div id="best-score-wrapper"><span class="crown">👑</span><span id="bestScore">0</span></div>
+      <div class="stat-line">Score: <span id="score">0</span></div>
+      <div class="stat-line">Level: <span id="level">1</span></div>
     </div>
-
-    <!-- Block Puzzle wrapper -->
-    <div id="block-puzzle-wrapper" class="game-wrapper">
-        <div class="puzzle-layout">
-            <button data-action="return-to-menu" class="btn back-btn puzzle-back">Back</button>
-            <div id="puzzle-game-stats" class="info-panel">
-                <div id="puzzle-best-score-wrapper">
-                    <span class="crown">👑</span>
-                    <div id="puzzle-best-score-display">0</div>
-                </div>
-                <div class="stat-line">Score: <span id="puzzle-score-display">0</span></div>
-            </div>
-            <div id="puzzle-canvas-container">
-                <canvas id="blockPuzzleCanvas"></canvas>
-            </div>
-            <div id="puzzle-pieces-container">
-                <div class="puzzle-piece-slot"><canvas class="puzzle-piece" width="80" height="80"></canvas></div>
-                <div class="puzzle-piece-slot"><canvas class="puzzle-piece" width="80" height="80"></canvas></div>
-                <div class="puzzle-piece-slot"><canvas class="puzzle-piece" width="80" height="80"></canvas></div>
-            </div>
-        </div>
+    <div id="right-controls" class="info-panel">
+      <button data-action="return-to-menu" class="btn">🏠</button>
+      <button data-action="pause-tetris" class="btn">⏸️</button>
     </div>
+  </header>
+  <main id="canvas-container">
+    <canvas id="gameCanvas" width="300" height="600"></canvas>
+  </main>
+  <footer id="touch-controls">
+    <button id="leftBtn">⬅️</button>
+    <button id="rotateBtn">🔄</button>
+    <button id="rightBtn">➡️</button>
+    <button id="downBtn">⬇️</button>
+    <button id="dropBtn">⬇️⬇️</button>
+  </footer>
+  <div id="pause-overlay" style="display:none;">
+    <h2>PAUSED</h2>
+    <button data-action="resume-tetris">Resume</button>
+    <button data-action="return-to-menu">Main menu</button>
+  </div>
+</div>
 
-    <!-- Settings modal -->
-    <div id="settings-modal" class="overlay">
-        <h2>Settings</h2>
-        <div class="settings-item">
-            <span>Theme:</span>
-            <select id="theme-switcher">
-                <option value="classic">Classic</option>
-                <option value="dark">Dark</option>
-                <option value="forest">Forest</option>
-                <option value="modern">Modern</option>
-                <option value="lava">Lava</option>
-            </select>
-        </div>
-        <div class="settings-item">
-            <span>Sound:</span>
-            <button data-action="toggle-sound" class="btn sound-btn">🔊</button>
-        </div>
-        <button data-action="close-settings" class="btn back-btn">Close</button>
+<!-- Block Puzzle wrapper -->
+<div id="block-puzzle-wrapper" class="game-wrapper">
+  <header class="puzzle-header">
+    <button data-action="return-to-menu" class="btn back-btn">Back</button>
+    <div id="puzzle-game-stats" class="info-panel">
+      <div id="puzzle-best-score-wrapper"><span class="crown">👑</span><span id="puzzleBest">0</span></div>
+      <div class="stat-line">Score: <span id="puzzleScore">0</span></div>
     </div>
+  </header>
+  <main id="puzzle-canvas-container">
+    <canvas id="blockPuzzleCanvas" width="320" height="320"></canvas>
+  </main>
+  <div id="puzzle-pieces-container">
+    <div class="puzzle-piece-slot"><canvas class="puzzle-piece" width="80" height="80"></canvas></div>
+    <div class="puzzle-piece-slot"><canvas class="puzzle-piece" width="80" height="80"></canvas></div>
+    <div class="puzzle-piece-slot"><canvas class="puzzle-piece" width="80" height="80"></canvas></div>
+  </div>
+</div>
 
-    <audio id="dropSound" src="sounds/drop.wav" preload="auto"></audio>
-    <audio id="clearSound" src="sounds/clear.wav" preload="auto"></audio>
-    <audio id="rotateSound" src="sounds/rotate.wav" preload="auto"></audio>
-    <audio id="gameOverSound" src="sounds/gameover.wav" preload="auto"></audio>
-    <audio id="tSpinSound" src="sounds/tspin.wav" preload="auto"></audio>
-    <audio id="tetrisSound" src="sounds/tetris.wav" preload="auto"></audio>
-    <audio id="backgroundMusic" src="sounds/music.mp3" preload="auto"></audio>
+<!-- Settings modal -->
+<div id="settings-modal" class="overlay">
+  <h2>Settings</h2>
+  <div class="settings-item">
+    <span>Theme:</span>
+    <select id="theme-switcher">
+      <option value="classic">Classic</option>
+      <option value="dark">Dark</option>
+      <option value="forest">Forest</option>
+      <option value="modern">Modern</option>
+      <option value="lava">Lava</option>
+    </select>
+  </div>
+  <div class="settings-item">
+    <span>Sound:</span>
+    <button data-action="toggle-sound" id="sound-btn">🔊</button>
+  </div>
+  <button data-action="close-settings" class="back-btn">Close</button>
+</div>
 
-    <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
