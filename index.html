@@ -1,45 +1,585 @@
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
-    <title>Tetris & Blok Puzle</title>
-    <link rel="stylesheet" href="style.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Mini Arcade – Tetris & Block Puzzle</title>
+    <style>
+        /* ---------- GLOBAL ---------- */
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,Helvetica,sans-serif}
+        body{background:#111;color:#fff;overflow:hidden}
+        button{cursor:pointer;border:none;font-size:1em;padding:.6em 1.2em;border-radius:6px;transition:.2s}
+        button:hover{filter:brightness(1.2)}
+        .hidden{display:none!important}
+        /* ---------- MENU ---------- */
+        #menu{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:linear-gradient(135deg,#222 0%, #000 100%)}
+        #menu h1{font-size:3em;margin-bottom:.5em}
+        #menu button{margin:.4em 0;width:240px;background:#ff0066;color:#fff;font-weight:600}
+        /* ---------- GAME ---------- */
+        #gameScreen{height:100vh;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;background:#000}
+        #hud{width:100%;padding:.5em 1em;display:flex;justify-content:space-between;background:#222}
+        #hud button{background:#ff0066;color:#fff}
+        canvas{background:#000;border:2px solid #333}
+        #sidePanel{margin-left:1em;display:flex;flex-direction:column;gap:.4em}
+        #sidePanel div{background:#222;padding:.6em;border-radius:6px;min-width:140px}
+        /* ---------- MODAL ---------- */
+        #modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);display:flex;justify-content:center;align-items:center;z-index:999}
+        #modalBox{background:#222;padding:2em;border-radius:10px;text-align:center}
+        #modalBox button{margin-top:1em}
+    </style>
 </head>
 <body>
-    <!-- GLAVNI MENI -->
-    <section id="mainMenu">
-        <h1>Izaberi igricu</h1>
-        <button id="btnTetris">Tetris</button>
-        <button id="btnBlock">Blok puzle</button>
-        <button id="settingsBtn">⚙️</button>
-    </section>
 
-    <!-- TETRIS -->
-    <section id="tetrisScreen" class="screen">
-        <button class="back">⬅ Nazad</button>
-        <canvas id="tetrisCanvas"></canvas>
-        <div id="tetrisInfo">
-            <span id="score">0</span>
-            <span id="level">1</span>
-            <span id="lines">0</span>
+<!-- GLAVNI MENI -->
+<section id="menu">
+    <h1>Mini Arcade</h1>
+    <button onclick="startGame('tetris')">🎮 Tetris</button>
+    <button onclick="startGame('blockPuzzle')">🧩 Block Puzzle</button>
+</section>
+
+<!-- EKRAN ZA IGRU -->
+<section id="gameScreen" class="hidden">
+    <div id="hud">
+        <div>
+            <span id="gameTitle">Tetris</span> |
+            Score: <span id="score">0</span> |
+            Level: <span id="level">1</span> |
+            Lines: <span id="lines">0</span>
         </div>
-        <!-- touch kontrole -->
-        <div id="tetrisControls">
-            <button id="tLeft">←</button>
-            <button id="tRight">→</button>
-            <button id="tRotate">↻</button>
-            <button id="tDrop">↓</button>
+        <button onclick="pauseToggle()">⏸️ Pause</button>
+        <button onclick="backToMenu()">🏠 Menu</button>
+    </div>
+
+    <div style="display:flex;align-items:flex-start;margin-top:1em">
+        <canvas id="board" width="300" height="600"></canvas>
+        <div id="sidePanel">
+            <div>
+                <h4>Next</h4>
+                <canvas id="next" width="120" height="120"></canvas>
+            </div>
+            <div>
+                <h4>Hold</h4>
+                <canvas id="hold" width="120" height="120"></canvas>
+                <button onclick="holdPiece()">Hold (C)</button>
+            </div>
+            <div>
+                <h4>Goal</h4>
+                <span id="goal">Clear 10 lines</span>
+            </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- BLOK PUZLE -->
-    <section id="blockScreen" class="screen">
-        <button class="back">⬅ Nazad</button>
-        <div id="blockPreview"></div>
-        <div id="blockGrid"></div>
-    </section>
+<!-- MODAL (Game Over / Pause) -->
+<div id="modal" class="hidden">
+    <div id="modalBox">
+        <h2 id="modalTitle">Game Over</h2>
+        <p id="modalText">Your score: 0</p>
+        <button onclick="restart()">Restart</button>
+        <button onclick="backToMenu()">Main Menu</button>
+    </div>
+</div>
 
-    <script src="script.js"></script>
+<script type="module">
+/* ===========================================================
+   1. GLOBALNE PROMENLJIVE & UTILS
+   ===========================================================*/
+const menu = document.getElementById('menu');
+const gameScreen = document.getElementById('gameScreen');
+const modal = document.getElementById('modal');
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const nextCanvas = document.getElementById('next');
+const nextCtx = nextCanvas.getContext('2d');
+const holdCanvas = document.getElementById('hold');
+const holdCtx = holdCanvas.getContext('2d');
+const scoreSpan = document.getElementById('score');
+const levelSpan = document.getElementById('level');
+const linesSpan = document.getElementById('lines');
+const goalSpan = document.getElementById('goal');
+const gameTitleSpan = document.getElementById('gameTitle');
+
+// Globalne veličine ćelija
+const CELL_SIZE = 30; // 300 / 10 = 30
+const COLS = 10;
+const ROWS = 20;
+
+// Trenutna igra
+let currentGame = null;
+
+// Mapa boja
+const COLORS = {
+    0:'#000', 1:'#00f0f0', 2:'#0000f0', 3:'#f0a000',
+    4:'#f000f0', 5:'#00f000', 6:'#f00000', 7:'#f0f000'
+};
+
+/* ===========================================================
+   2. TETRIS LOGIKA
+   ===========================================================*/
+class TetrisGame {
+    constructor() {
+        this.board = this.createBoard();
+        this.nextPiece = this.randomPiece();
+        this.holdPieceObj = null;
+        this.canHold = true;
+        this.dropCounter = 0;
+        this.dropInterval = 1000; // ms
+        this.lastTime = 0;
+        this.score = 0;
+        this.lines = 0;
+        this.level = 1;
+        this.linesToNextLevel = 10;
+        this.gameOver = false;
+        this.paused = false;
+        this.spawnPiece();
+    }
+
+    createBoard() {
+        return Array.from({length: ROWS}, () => Array(COLS).fill(0));
+    }
+
+    randomPiece() {
+        const shapes = [
+            // T, O, L, J, I, S, Z
+            [[0,1,0],[1,1,1]], // T
+            [[2,2],[2,2]],     // O
+            [[0,0,3],[3,3,3]], // L
+            [[4,0,0],[4,4,4]], // J
+            [[0,5,0,0],[0,5,0,0],[0,5,0,0],[0,5,0,0]], // I
+            [[0,6,6],[6,6,0]], // S
+            [[7,7,0],[0,7,7]]  // Z
+        ];
+        const shape = shapes[Math.floor(Math.random()*shapes.length)];
+        return {shape, x:3, y:0};
+    }
+
+    spawnPiece() {
+        this.activePiece = this.nextPiece;
+        this.nextPiece = this.randomPiece();
+        if (this.collision()) {
+            this.gameOver = true;
+            this.showModal('Game Over', `Your score: ${this.score}`);
+            return;
+        }
+        this.canHold = true;
+        this.drawNext();
+    }
+
+    drawNext() {
+        nextCtx.clearRect(0,0,120,120);
+        this.nextPiece.shape.forEach((row,y)=>{
+            row.forEach((val,x)=>{
+                if(val){
+                    nextCtx.fillStyle = COLORS[val];
+                    nextCtx.fillRect(x*30, y*30, 30, 30);
+                }
+            });
+        });
+    }
+
+    drawHold() {
+        holdCtx.clearRect(0,0,120,120);
+        if(this.holdPieceObj){
+            this.holdPieceObj.shape.forEach((row,y)=>{
+                row.forEach((val,x)=>{
+                    if(val){
+                        holdCtx.fillStyle = COLORS[val];
+                        holdCtx.fillRect(x*30, y*30, 30, 30);
+                    }
+                });
+            });
+        }
+    }
+
+    collision(offsetX=0, offsetY=0, shape=null) {
+        const piece = shape || this.activePiece.shape;
+        for(let y=0;y<piece.length;y++){
+            for(let x=0;x<piece[y].length;x++){
+                if(piece[y][x]){
+                    const newX = this.activePiece.x + x + offsetX;
+                    const newY = this.activePiece.y + y + offsetY;
+                    if(newX < 0 || newX >= COLS || newY >= ROWS) return true;
+                    if(newY >= 0 && this.board[newY][newX]) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    rotate() {
+        // Transponuj i okreni
+        const rotated = this.activePiece.shape[0].map((_, i) =>
+            this.activePiece.shape.map(row => row[i]).reverse()
+        );
+        if(!this.collision(0,0,rotated)) {
+            this.activePiece.shape = rotated;
+        }
+    }
+
+    move(dir) {
+        if(!this.collision(dir,0)) {
+            this.activePiece.x += dir;
+        }
+    }
+
+    drop() {
+        if(!this.collision(0,1)){
+            this.activePiece.y++;
+        } else {
+            this.merge();
+            this.clearLines();
+            this.spawnPiece();
+        }
+    }
+
+    hardDrop() {
+        while(!this.collision(0,1)) {
+            this.activePiece.y++;
+            this.score += 2;
+        }
+        this.drop();
+    }
+
+    merge() {
+        this.activePiece.shape.forEach((row,y)=>{
+            row.forEach((val,x)=>{
+                if(val){
+                    const boardY = this.activePiece.y + y;
+                    const boardX = this.activePiece.x + x;
+                    if(boardY >= 0) this.board[boardY][boardX] = val;
+                }
+            });
+        });
+    }
+
+    clearLines() {
+        let linesCleared = 0;
+        outer: for(let y=ROWS-1;y>=0;y--){
+            for(let x=0;x<COLS;x++){
+                if(this.board[y][x] === 0) continue outer;
+            }
+            this.board.splice(y,1);
+            this.board.unshift(Array(COLS).fill(0));
+            linesCleared++;
+            y++;
+        }
+        if(linesCleared>0){
+            this.lines += linesCleared;
+            this.score += [0,40,100,300,1200][linesCleared]*this.level;
+            this.linesToNextLevel -= linesCleared;
+            if(this.linesToNextLevel <= 0){
+                this.level++;
+                this.linesToNextLevel = 10*this.level;
+                this.dropInterval = Math.max(100, 1000 - (this.level-1)*50);
+            }
+            this.updateHUD();
+        }
+    }
+
+    hold() {
+        if(!this.canHold) return;
+        if(!this.holdPieceObj){
+            this.holdPieceObj = {shape:this.activePiece.shape.map(r=>[...r])};
+            this.spawnPiece();
+        } else {
+            [this.activePiece.shape, this.holdPieceObj.shape] = [this.holdPieceObj.shape.map(r=>[...r]), this.activePiece.shape.map(r=>[...r])];
+            this.activePiece.x = 3;
+            this.activePiece.y = 0;
+        }
+        this.canHold = false;
+        this.drawHold();
+    }
+
+    updateHUD() {
+        scoreSpan.textContent = this.score;
+        levelSpan.textContent = this.level;
+        linesSpan.textContent = this.lines;
+        goalSpan.textContent = `Clear ${this.linesToNextLevel} lines`;
+    }
+
+    draw() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        // Iscrtaj board
+        this.board.forEach((row,y)=>{
+            row.forEach((val,x)=>{
+                if(val){
+                    ctx.fillStyle = COLORS[val];
+                    ctx.fillRect(x*CELL_SIZE,y*CELL_SIZE,CELL_SIZE,CELL_SIZE);
+                    ctx.strokeStyle = '#000';
+                    ctx.strokeRect(x*CELL_SIZE,y*CELL_SIZE,CELL_SIZE,CELL_SIZE);
+                }
+            });
+        });
+        // Iscrtaj aktivni komad
+        this.activePiece.shape.forEach((row,y)=>{
+            row.forEach((val,x)=>{
+                if(val){
+                    ctx.fillStyle = COLORS[val];
+                    const drawX = (this.activePiece.x+x)*CELL_SIZE;
+                    const drawY = (this.activePiece.y+y)*CELL_SIZE;
+                    ctx.fillRect(drawX,drawY,CELL_SIZE,CELL_SIZE);
+                    ctx.strokeStyle='#000';
+                    ctx.strokeRect(drawX,drawY,CELL_SIZE,CELL_SIZE);
+                }
+            });
+        });
+    }
+
+    update(deltaTime) {
+        if(this.gameOver || this.paused) return;
+        this.dropCounter += deltaTime;
+        if(this.dropCounter > this.dropInterval) {
+            this.drop();
+            this.dropCounter = 0;
+        }
+    }
+
+    showModal(title,text){
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalText').textContent = text;
+        modal.classList.remove('hidden');
+    }
+
+    togglePause(){
+        this.paused = !this.paused;
+        if(this.paused) this.showModal('Paused','Press Resume or Menu');
+        else modal.classList.add('hidden');
+    }
+}
+
+/* ===========================================================
+   3. BLOCK PUZZLE LOGIKA
+   ===========================================================*/
+class BlockPuzzleGame {
+    constructor() {
+        this.board = this.createBoard(8,8);
+        this.bag = this.generateBag();
+        this.activePiece = null;
+        this.score = 0;
+        this.level = 1;
+        this.gameOver = false;
+        this.paused = false;
+        this.pickNewPiece();
+    }
+
+    createBoard(w,h){
+        return Array.from({length:h}, () => Array(w).fill(0));
+    }
+
+    generateBag(){
+        // 3-tetromino oblici
+        const shapes = [
+            [[1]],
+            [[1,1]],
+            [[1],[1]],
+            [[1,1,1]],
+            [[1],[1],[1]],
+            [[1,1],[1,0]],
+            [[1,1],[0,1]],
+            [[1,1],[1,1]],
+            [[1,1,1,1]],
+            [[1,1,0],[0,1,1]],
+        ];
+        return [...Array(100)].map(()=>shapes[Math.floor(Math.random()*shapes.length)]);
+    }
+
+    pickNewPiece(){
+        if(this.bag.length < 3) this.bag.push(...this.generateBag());
+        this.activePiece = this.bag.shift();
+    }
+
+    draw() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        const cell = 300/8;
+        this.board.forEach((row,y)=>{
+            row.forEach((val,x)=>{
+                if(val){
+                    ctx.fillStyle = COLORS[val];
+                    ctx.fillRect(x*cell,y*cell,cell,cell);
+                    ctx.strokeStyle='#000';
+                    ctx.strokeRect(x*cell,y*cell,cell,cell);
+                }
+            });
+        });
+
+        // Crtaj preview aktivnog komada ispod miša
+        if(this.activePiece){
+            const mouse = this.mousePos;
+            if(mouse){
+                const col = Math.floor(mouse.x / cell);
+                const row = Math.floor(mouse.y / cell);
+                this.activePiece.forEach((r,dy)=>{
+                    r.forEach((val,dx)=>{
+                        if(val){
+                            ctx.fillStyle = COLORS[val]+'80'; // transparent
+                            ctx.fillRect((col+dx)*cell,(row+dy)*cell,cell,cell);
+                        }
+                    });
+                });
+            }
+        }
+    }
+
+    canPlace(piece,x,y){
+        for(let dy=0;dy<piece.length;dy++){
+            for(let dx=0;dx<piece[dy].length;dx++){
+                if(piece[dy][dx]){
+                    const nx=x+dx, ny=y+dy;
+                    if(nx<0||nx>=8||ny<0||ny>=8||this.board[ny][nx]) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    placePiece(x,y){
+        if(!this.canPlace(this.activePiece,x,y)) return false;
+        const val = Math.floor(Math.random()*6)+1;
+        this.activePiece.forEach((row,dy)=>{
+            row.forEach((bit,dx)=>{
+                if(bit) this.board[y+dy][x+dx] = val;
+            });
+        });
+        this.score += this.activePiece.flat().reduce((a,b)=>a+b,0)*10;
+        this.clearLines();
+        this.pickNewPiece();
+        this.updateHUD();
+        return true;
+    }
+
+    clearLines(){
+        let removed = 0;
+        // Rows
+        for(let y=7;y>=0;y--){
+            if(this.board[y].every(v=>v)){
+                this.board.splice(y,1);
+                this.board.unshift(Array(8).fill(0));
+                removed++;
+                y++;
+            }
+        }
+        // Cols
+        for(let x=0;x<8;x++){
+            if(this.board.every(r=>r[x])){
+                this.board.forEach(r=>r[x]=0);
+                removed++;
+            }
+        }
+        this.score += removed*100;
+    }
+
+    updateHUD(){
+        scoreSpan.textContent = this.score;
+        levelSpan.textContent = this.level;
+        linesSpan.textContent = '';
+        goalSpan.textContent = 'Fill rows/columns';
+    }
+
+    togglePause(){
+        this.paused = !this.paused;
+        if(this.paused) showModal('Paused','');
+        else hideModal();
+    }
+
+    showModal(title,text){
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalText').textContent = text;
+        modal.classList.remove('hidden');
+    }
+}
+
+/* ===========================================================
+   4. KONTROLA / MENI / EVENTI
+   ===========================================================*/
+let gameLoopId = null;
+
+function startGame(type){
+    menu.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    if(type==='tetris'){
+        gameTitleSpan.textContent = 'Tetris';
+        currentGame = new TetrisGame();
+        attachTetrisControls();
+    } else {
+        gameTitleSpan.textContent = 'Block Puzzle';
+        currentGame = new BlockPuzzleGame();
+        attachBlockPuzzleControls();
+    }
+    currentGame.updateHUD();
+    loop(0);
+}
+
+function backToMenu(){
+    cancelAnimationFrame(gameLoopId);
+    currentGame = null;
+    gameScreen.classList.add('hidden');
+    modal.classList.add('hidden');
+    menu.classList.remove('hidden');
+}
+
+function restart(){
+    modal.classList.add('hidden');
+    startGame(gameTitleSpan.textContent.toLowerCase().includes('tetris') ? 'tetris' : 'blockPuzzle');
+}
+
+function pauseToggle(){
+    currentGame.togglePause();
+}
+
+function holdPiece(){
+    if(currentGame instanceof TetrisGame){
+        currentGame.hold();
+    }
+}
+
+function loop(time){
+    const deltaTime = time - currentGame.lastTime;
+    currentGame.lastTime = time;
+    currentGame.update(deltaTime);
+    currentGame.draw();
+    gameLoopId = requestAnimationFrame(loop);
+}
+
+/* Tetris kontrole */
+function attachTetrisControls(){
+    document.onkeydown = e=>{
+        if(currentGame.gameOver || currentGame.paused) return;
+        switch(e.code){
+            case 'ArrowLeft': currentGame.move(-1); break;
+            case 'ArrowRight': currentGame.move(1); break;
+            case 'ArrowDown': currentGame.drop(); currentGame.score += 1; break;
+            case 'ArrowUp': currentGame.rotate(); break;
+            case 'Space': currentGame.hardDrop(); break;
+            case 'KeyC': holdPiece(); break;
+        }
+        currentGame.updateHUD();
+    };
+}
+
+/* Block Puzzle kontrole */
+function attachBlockPuzzleControls(){
+    canvas.onmousemove = e=>{
+        const rect = canvas.getBoundingClientRect();
+        currentGame.mousePos = {x:e.clientX-rect.left, y:e.clientY-rect.top};
+    };
+    canvas.onclick = e=>{
+        if(currentGame.paused) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX-rect.left)/(300/8));
+        const y = Math.floor((e.clientY-rect.top)/(300/8));
+        if(currentGame.placePiece(x,y)){
+            currentGame.draw();
+        }
+    };
+    document.onkeydown = e=>{
+        if(e.code==='KeyR') currentGame.rotatePiece?.();
+    };
+}
+
+/* Modal buttons */
+window.addEventListener('keydown', e=>{
+    if(e.code==='Escape') pauseToggle();
+});
+</script>
 </body>
 </html>
