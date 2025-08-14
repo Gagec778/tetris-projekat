@@ -1,6 +1,7 @@
 :root {
     --font-family: 'Inter', sans-serif;
-    --transition-speed: 0.6s;
+    --transition-speed-fast: 0.3s;
+    --transition-speed-med: 0.6s;
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -10,14 +11,14 @@ body.dark-theme {
     --accent-gradient: linear-gradient(45deg, #f72585, #7209b7);
     --card-bg: rgba(30, 36, 46, 0.7); --card-border: rgba(137, 147, 163, 0.2);
     --shadow: rgba(0,0,0,0.4); --primary-btn-bg: #238636;
-    --game-board-bg: rgba(0,0,0,0.2);
+    --game-board-bg: rgba(0,0,0,0.2); --game-board-frame: transparent;
 }
 body.light-theme {
     --bg-color: #f0f2f5; --primary-text: #1c1e21; --secondary-text: #606770;
     --accent-gradient: linear-gradient(45deg, #007bff, #00aaff);
     --card-bg: rgba(255, 255, 255, 0.7); --card-border: rgba(0, 0, 0, 0.1);
     --shadow: rgba(0,0,0,0.1); --primary-btn-bg: #007bff;
-    --game-board-bg: rgba(0,0,0,0.05);
+    --game-board-bg: rgba(0,0,0,0.05); --game-board-frame: transparent;
 }
 body.neon-theme {
     --bg-color: #000000; --primary-text: #00ffde; --secondary-text: #8d8d8d;
@@ -25,218 +26,134 @@ body.neon-theme {
     --card-bg: rgba(15, 15, 15, 0.7); --card-border: rgba(0, 255, 222, 0.3);
     --shadow: rgba(0, 255, 222, 0.2); --primary-btn-bg: #ff00ff;
     --game-board-bg: rgba(255,255,255,0.05);
+    --game-board-frame: linear-gradient(160deg, #ff00ff, #00ffde, #ff00ff);
     text-shadow: 0 0 2px var(--secondary-text);
 }
-.neon-theme h1, .neon-theme h2 { text-shadow: 0 0 5px var(--primary-text), 0 0 10px var(--primary-text); }
-.neon-theme .game-block { box-shadow: inset 0 0 5px rgba(0,0,0,0.5), 0 0 3px var(--glow-color); }
+body.gold-theme {
+    --bg-color: #1a160d; --primary-text: #f5e8c7; --secondary-text: #a89a7f;
+    --accent-gradient: linear-gradient(45deg, #ffd700, #f0e68c, #daa520);
+    --card-bg: rgba(40, 32, 20, 0.7); --card-border: rgba(255, 215, 0, 0.2);
+    --shadow: rgba(0,0,0,0.5); --primary-btn-bg: #b8860b;
+    --game-board-bg: rgba(0,0,0,0.2);
+    --game-board-frame: linear-gradient(160deg, #b8860b, #ffd700, #b8860b);
+}
 
+.neon-theme h1, .neon-theme h2, .gold-theme h1, .gold-theme h2 { text-shadow: 0 0 8px var(--shadow); }
 
 /* --- OSNOVNI STILOVI TELA I POZADINE --- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: -webkit-fill-available; }
 body {
-    font-family: var(--font-family);
-    background: var(--bg-color);
-    color: var(--primary-text);
-    margin: 0;
-    overflow: hidden;
-    height: 100vh;
-    height: -webkit-fill-available;
-    width: 100vw;
+    font-family: var(--font-family); background: var(--bg-color); color: var(--primary-text);
+    margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; width: 100vw;
     transition: background-color 0.5s, color 0.5s;
 }
-
-@keyframes aurora-move {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-.aurora-background {
-    position: fixed; top: 50%; left: 50%;
-    width: 150vmax; height: 150vmax;
-    animation: aurora-move 40s infinite linear;
-    z-index: -1;
-}
-.aurora-dot {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(100px);
-    opacity: 0.6;
-}
+@keyframes aurora-move { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+.aurora-background { position: fixed; top: 50%; left: 50%; width: 150vmax; height: 150vmax; animation: aurora-move 40s infinite linear; z-index: -1; }
+.aurora-dot { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.6; }
 .aurora-dot:nth-child(1) { width: 600px; height: 600px; top: 0; left: 10%; background: #f72585; }
 .aurora-dot:nth-child(2) { width: 500px; height: 500px; top: 20%; left: 60%; background: #7209b7; }
 .aurora-dot:nth-child(3) { width: 400px; height: 400px; top: 70%; left: 20%; background: #4361ee; }
 
 /* --- EKRANI I TRANZICIJE --- */
 .screen {
-    position: absolute; width: 100%; height: 100%;
-    display: flex; flex-direction: column;
-    opacity: 0; visibility: hidden; pointer-events: none;
-    transform: translateY(20px);
-    transition: opacity var(--transition-speed) var(--ease-out-expo), transform var(--transition-speed) var(--ease-out-expo);
+    position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column;
+    opacity: 0; visibility: hidden; pointer-events: none; transform: scale(0.95);
+    transition: opacity var(--transition-speed-med) var(--ease-out-expo), transform var(--transition-speed-med) var(--ease-out-expo);
 }
-.screen.active {
-    opacity: 1; visibility: visible; pointer-events: auto;
-    transform: translateY(0);
-}
+.screen.active { opacity: 1; visibility: visible; pointer-events: auto; transform: scale(1); }
 
 /* --- GLAVNI MENI --- */
 #main-menu-screen { align-items: center; justify-content: center; text-align: center; }
-.main-header {
-    padding: 1rem;
-}
 .main-header h1 {
-    font-size: clamp(3rem, 15vw, 6rem);
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.05em;
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em;
+    background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     margin-bottom: 2rem;
 }
 .menu-item {
-    border: 1px solid var(--card-border);
-    border-radius: 1rem; padding: 1.5rem; margin: 1rem auto;
-    width: 90%; max-width: 400px;
-    backdrop-filter: blur(20px); background: var(--card-bg);
+    border: 1px solid var(--card-border); border-radius: 1rem; padding: 1px; margin: 1rem auto;
+    width: 90%; max-width: 400px; backdrop-filter: blur(20px); background: transparent;
     cursor: pointer; position: relative;
     transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo);
 }
-.menu-item::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    border-radius: 1rem; border: 2px solid transparent;
-    background: var(--accent-gradient) border-box;
-    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: destination-out;
-    mask-composite: exclude;
-    opacity: 0; transition: opacity 0.4s var(--ease-out-expo);
-}
+.menu-item-content { background: var(--card-bg); border-radius: inherit; padding: 1.5rem; }
 .menu-item:hover { transform: translateY(-10px); }
-.menu-item:hover::before { opacity: 1; }
 .menu-item h2 { margin: 0; font-weight: 700; font-size: 1.5rem;}
-.menu-item p { margin: 0.25rem 0 0; color: var(--secondary-text); }
 .highscore { font-size: 0.8rem; color: var(--secondary-text); margin-top: 0.5rem; font-weight: 700; }
 .footer-menu { position: absolute; bottom: 2rem; }
 
 /* --- EKRAN SA IGROM --- */
-#game-screen { justify-content: space-between; align-items: center; padding: 1rem 0; }
-.game-header-bar {
-    width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem;
-    flex-shrink: 0;
-}
+#game-screen { align-items: center; padding-top: 1rem; }
+.game-header-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem; flex-shrink: 0; }
 .game-score { font-size: 1.5rem; font-weight: 700; }
-.game-area {
-    display: none; flex-grow: 1; width: 100%;
-    justify-content: center; align-items: center;
-    gap: 1rem; padding-bottom: 1rem;
-}
+.game-content-wrapper { flex-grow: 1; width: 100%; display: flex; justify-content: center; align-items: center; }
+.game-area { display: none; width: 100%; justify-content: center; align-items: center; gap: 1rem; }
 .game-area.active { display: flex; }
 
 .icon-btn {
-    background: var(--card-bg); border: 1px solid var(--card-border);
-    color: var(--primary-text);
-    border-radius: 50%; font-size: 1.5rem; user-select: none;
-    display: flex; justify-content: center; align-items: center;
-    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    background: var(--card-bg); border: 1px solid var(--card-border); color: var(--primary-text);
+    border-radius: 50%; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; user-select: none;
 }
 .icon-btn:active { transform: scale(0.9); }
-.icon-btn.large { width: 60px; height: 60px; font-size: 2rem; }
-.icon-btn.small { width: 44px; height: 44px; font-size: 1.5rem; }
+.icon-btn.large { width: 56px; height: 56px; font-size: 1.8rem; }
+.icon-btn.small { width: 40px; height: 40px; font-size: 1.4rem; }
 
-/* --- TETRIS --- */
-#tetris-game-area { align-items: flex-start; }
-#tetris-board-container {
-    border: 2px solid var(--card-border); border-radius: 8px;
-    background: var(--game-board-bg);
-    padding: 5px; position: relative; overflow: hidden;
+/* --- IGRE I TABLE --- */
+.game-board-frame {
+    padding: 6px; border-radius: 12px;
+    background: var(--game-board-frame);
+    background-size: 300% 300%;
+    animation: gold-border-flow 5s linear infinite;
 }
+@keyframes gold-border-flow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 #tetris-board {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    grid-template-rows: repeat(20, 1fr);
-    width: min(70vw, 250px);
-    height: min(140vw, 500px);
-    gap: 1px;
+    display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr);
+    height: calc(100vh - 220px); max-height: 600px;
+    width: calc((100vh - 220px) / 2); max-width: 300px;
+    background: var(--game-board-bg); gap: 1px;
 }
-.side-panel { text-align: center; }
-.side-panel h3 { margin: 0 0 10px 0; color: var(--secondary-text); font-weight: 400; }
-#tetris-next-container {
-    width: 100px; height: 180px;
-    display: flex; flex-direction: column; align-items: center; justify-content: space-around;
-}
-.next-piece-display { display: grid; gap: 1px; }
-
-.on-screen-controls {
-    display: flex; width: 100%; justify-content: space-around;
-    padding: 0 1rem 1rem; flex-shrink: 0;
-}
-.on-screen-controls button {
-    background: var(--card-bg); border: 1px solid var(--card-border);
-    color: var(--primary-text); width: 60px; height: 60px;
-    border-radius: 20px; font-size: 2rem; user-select: none;
-}
-.on-screen-controls button:active { transform: scale(0.9); }
-
-/* --- BLOCK PUZZLE --- */
-#block-puzzle-game-area { flex-direction: column; justify-content: space-around; }
 #puzzle-board {
     display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr);
     width: 90vw; height: 90vw; max-width: 400px; max-height: 400px;
-    background: var(--game-board-bg);
-    border-radius: 8px; border: 1px solid var(--card-border);
-    padding: 5px; gap: 1px; position: relative; overflow: hidden;
+    background: var(--game-board-bg); gap: 2px;
 }
-#puzzle-pieces-container {
-    width: 100%; display: flex; justify-content: space-around; align-items: center;
-    padding: 20px 0; flex-shrink: 0;
-}
-.puzzle-piece { display: grid; touch-action: none; cursor: grab; }
-.puzzle-piece.dragging {
-    position: absolute; z-index: 1000; pointer-events: none;
-    opacity: 0.8; transform: scale(1.2) !important;
-}
-.puzzle-piece-cell { width: 25px; height: 25px; }
+#puzzle-pieces-container-wrapper { padding: 1rem 0; width: 100%; flex-shrink: 0; }
+#puzzle-pieces-container { width: 100%; display: flex; justify-content: space-around; align-items: center; height: 80px; }
 
-/* --- ZAJEDNIČKI STILOVI ZA IGRE --- */
+/* --- BLOKOVI --- */
 .game-block {
-    border-radius: min(20%, 5px);
-    box-shadow: inset 0px 2px 5px rgba(255, 255, 255, 0.3), inset 0px -2px 5px rgba(0, 0, 0, 0.3);
+    border-radius: min(25%, 6px);
+    box-shadow: inset 0px 2px 2px rgba(255, 255, 255, 0.5), inset 0px -2px 2px rgba(0, 0, 0, 0.4);
     transition: transform 0.2s, background-color 0.2s;
+    transform: scale(0);
+    animation: spawn-in 0.3s var(--ease-out-expo) forwards;
 }
+@keyframes spawn-in { to { transform: scale(1); } }
 .tetris-cell.ghost { background-color: rgba(255, 255, 255, 0.1); border-radius: 4px; }
 .puzzle-cell { background-color: transparent; border-radius: 2px; transition: all 0.2s; }
-.puzzle-cell.ghost-path { transform: scale(0.9); }
-.puzzle-cell.filled { transform: scale(1.05); }
+.puzzle-cell.ghost-path { background-color: var(--color) !important; opacity: 0.2; transform: scale(0.95); }
 
-/* --- ODBROJAVANJE i ANIMACIJE --- */
+/* --- ANIMACIJE --- */
 #countdown-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;
-    z-index: 1000; font-size: 20vw; font-weight: 900;
+    z-index: 1000; font-size: 25vw; font-weight: 900;
     opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
 }
 #countdown-overlay.active { opacity: 1; visibility: visible; }
-@keyframes countdown-pop {
-    0% { transform: scale(0.5); opacity: 0; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-}
-#countdown-text { animation: countdown-pop 1s infinite; }
+@keyframes countdown-pop { 0%{transform:scale(0.5);opacity:0;} 50%{transform:scale(1.2);opacity:1;} 100%{transform:scale(1);opacity:1;} }
+#countdown-text { animation: countdown-pop 1s infinite; animation-timing-function: var(--ease-out-expo); }
 
-@keyframes place-pop { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
-.placed { animation: place-pop 0.3s var(--ease-out-expo); }
-@keyframes line-clear-flash { 0%, 100% { opacity: 1; } 50% { opacity: 0; transform: scale(1.1); } }
-.line-clearing { animation: line-clear-flash 0.5s forwards; }
+@keyframes lock-in { 0% {transform: scale(1.1);} 100% {transform: scale(1);} }
+.lock-in { animation: lock-in 0.2s; }
 
-.particle {
-    position: absolute; width: 8px; height: 8px;
-    border-radius: 50%; z-index: 100; pointer-events: none;
-}
-@keyframes screen-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 75% { transform: translateX(-3px); }
-}
-.screen-shake { animation: screen-shake 0.2s 1; }
+@keyframes line-clear-flash { 0%, 100% {transform: scale(1);} 50% {transform: scale(1.05); background-color: white;} }
+.line-clearing { animation: line-clear-flash 0.4s forwards; }
+
+.particle { position: absolute; border-radius: 50%; z-index: 100; pointer-events: none; }
+@keyframes screen-shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 50%{transform:translateX(4px);} 75%{transform:translateX(-4px);} }
+.screen-shake { animation: screen-shake 0.15s 1; }
 
 /* --- MODALI --- */
 .modal-overlay {
@@ -254,25 +171,16 @@ body {
 }
 .modal-overlay.active .modal-content { transform: scale(1); }
 .modal-content h2 { margin-top: 0; }
-.modal-content ul { padding-left: 1.5rem; } .modal-content li { margin-bottom: 0.5rem; }
-.close-modal {
-    position: absolute; top: 1rem; right: 1.5rem; font-size: 2rem;
-    color: var(--secondary-text); cursor: pointer;
-}
-.help-content { display: none; }
-.help-content.active { display: block; }
+.close-modal { position: absolute; top: 1rem; right: 1.5rem; font-size: 2rem; color: var(--secondary-text); cursor: pointer; }
+.help-content { display: none; } .help-content.active { display: block; }
 .final-score-container { font-size: 1.5rem; margin: 1rem 0 2rem; }
 .primary-btn {
-    background: var(--primary-btn-bg); color: white;
-    border: none; border-radius: 0.5rem; padding: 1rem 2rem;
-    font-size: 1.2rem; font-weight: 700; cursor: pointer;
+    background: var(--primary-btn-bg); color: white; border: none; border-radius: 0.5rem;
+    padding: 1rem 2rem; font-size: 1.2rem; font-weight: 700; cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 .primary-btn:hover { transform: scale(1.05); box-shadow: 0 5px 15px var(--shadow); }
-.settings-option {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 1rem 0; border-bottom: 1px solid var(--card-border);
-}
+.settings-option { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--card-border); }
 select {
     background: var(--card-bg); color: var(--primary-text);
     border: 1px solid var(--card-border); border-radius: 0.5rem; padding: 0.5rem;
@@ -285,3 +193,4 @@ select {
 .toggle-btn.active { background: #238636; color: white; border-color: #238636;}
 .light-theme .toggle-btn.active { background: #007bff; border-color: #007bff; }
 .neon-theme .toggle-btn.active { background: #00ffde; color: #000; border-color: #00ffde; }
+.gold-theme .toggle-btn.active { background: #b8860b; border-color: #b8860b; }
