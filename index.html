@@ -2,25 +2,33 @@
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Puzzle Universe</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
-<body class="dark-theme"> <div id="main-menu-screen" class="screen active">
-        <div class="background-art"></div>
-        <header class="game-header">
-            <h1>Puzzle Universe</h1>
-            <p>Tvoja doza mozgalica</p>
+<body class="dark-theme">
+
+    <div class="aurora-background">
+        <div class="aurora-dot"></div>
+        <div class="aurora-dot"></div>
+        <div class="aurora-dot"></div>
+    </div>
+
+    <div id="main-menu-screen" class="screen active">
+        <header class="main-header">
+            <h1>Puzzle<br>Universe</h1>
         </header>
         <main class="menu-container">
             <div class="menu-item" data-game="tetris">
-                <h2>Classic Tetris</h2>
-                <p>Brzina, linije i nostalgija</p>
+                <h2>Classic Blocks</h2>
+                <p>Brza akcija i čiste linije.</p>
             </div>
             <div class="menu-item" data-game="block-puzzle">
-                <h2>Block Puzzle</h2>
-                <p>Strateško popunjavanje table</p>
+                <h2>Puzzle Board</h2>
+                <p>Strateško popunjavanje table.</p>
             </div>
         </main>
         <footer class="footer-menu">
@@ -31,39 +39,60 @@
     <div id="game-screen" class="screen">
         <div class="game-header-bar">
             <button class="icon-btn back-btn">&larr;</button>
-            <div class="game-title"></div>
-            <div class="game-score">Poeni: <span id="score">0</span></div>
+            <div class="game-score">SCORE: <span id="score">0</span></div>
+            <button id="help-btn" class="icon-btn">?</button>
         </div>
 
         <div id="tetris-game-area" class="game-area">
-            <div class="game-panel side-panel">
-                <h3>HOLD</h3>
-                <canvas id="hold-canvas" width="80" height="80"></canvas>
+            <div id="tetris-board-container">
+                <div id="tetris-board"></div>
             </div>
-            <canvas id="tetris-canvas"></canvas>
-            <div class="game-panel side-panel">
+            <div class="side-panel">
                 <h3>NEXT</h3>
-                <canvas id="next-canvas" width="80" height="180"></canvas>
+                <div id="tetris-next-container"></div>
             </div>
         </div>
+        <div id="tetris-controls" class="on-screen-controls">
+             <button data-action="move-left">←</button>
+             <button data-action="rotate">↻</button>
+             <button data-action="move-right">→</button>
+             <button data-action="hard-drop">↓</button>
+        </div>
+
 
         <div id="block-puzzle-game-area" class="game-area">
             <div id="puzzle-board"></div>
             <div id="puzzle-pieces-container"></div>
         </div>
+    </div>
 
-        <div id="game-over-modal" class="game-over-lay">
-             <div class="game-over-box">
-                <h2 id="game-over-title">Kraj Igre</h2>
-                <p>Tvoji poeni: <span id="final-score">0</span></p>
-                <button id="restart-btn">Igraj Ponovo</button>
+    <div id="game-over-modal" class="modal-overlay">
+        </div>
+    <div id="help-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="help-title">Kako Igrati</h2>
+            <div id="help-tetris-content" class="help-content">
+                <p>Cilj je očistiti što više horizontalnih linija.</p>
+                <ul>
+                    <li><strong>Prevlačenje levo/desno:</strong> Pomeranje bloka.</li>
+                    <li><strong>Kratko prevlačenje dole:</strong> Ubrzavanje pada.</li>
+                    <li><strong>Dugo prevlačenje dole:</strong> Trenutno spuštanje (Hard Drop).</li>
+                    <li><strong>Dodir na tablu:</strong> Rotacija bloka.</li>
+                    <li>Koristite i dugmiće na ekranu za preciznu kontrolu.</li>
+                </ul>
+            </div>
+            <div id="help-block-puzzle-content" class="help-content">
+                <p>Prevucite blokove na tablu 10x10.</p>
+                <ul>
+                    <li>Popunite celu horizontalnu ili vertikalnu liniju da biste je očistili.</li>
+                    <li>Igra je gotova kada ne možete postaviti nijedan od preostalih blokova.</li>
+                    <li>Dobićete 3 nova bloka tek kada postavite sva 3 postojeća.</li>
+                </ul>
             </div>
         </div>
     </div>
-
-    <div id="settings-modal" class="modal-overlay">
-        </div>
-
+    
     <script src="script.js"></script>
 </body>
 </html>
