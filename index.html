@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Puzzle Universe</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
-    
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,18 +12,32 @@
 <body class="dark-theme">
 
     <div class="aurora-background">
-        <div class="aurora-dot"></div><div class="aurora-dot"></div><div class="aurora-dot"></div>
+        <div class="aurora-dot"></div>
+        <div class="aurora-dot"></div>
+        <div class="aurora-dot"></div>
     </div>
 
     <div id="main-menu-screen" class="screen active">
-        <header class="main-header"><h1>Puzzle<br>Universe</h1></header>
+        <header class="main-header">
+            <h1>Puzzle<br>Universe</h1>
+        </header>
         <main class="menu-container">
-            <div class="menu-item" data-game="tetris">...</div>
-            <div class="menu-item" data-game="block-puzzle">...</div>
+            <div class="menu-item" data-game="tetris">
+                <div class="menu-item-content">
+                    <h2>Classic Blocks</h2>
+                    <div class="highscore">HIGH SCORE: <span id="highscore-tetris">0</span></div>
+                </div>
+            </div>
+            <div class="menu-item" data-game="block-puzzle">
+                <div class="menu-item-content">
+                    <h2>Puzzle Board</h2>
+                    <div class="highscore">HIGH SCORE: <span id="highscore-block-puzzle">0</span></div>
+                </div>
+            </div>
         </main>
         <footer class="footer-menu">
             <button id="stats-btn" class="icon-btn large">📊</button>
-            <button id="settings-btn" class.icon-btn large">⚙️</button>
+            <button id="settings-btn" class="icon-btn large">⚙️</button>
         </footer>
     </div>
 
@@ -58,7 +67,9 @@
                 <button id="resume-btn" class="primary-btn">Nastavi</button>
             </div>
         </div>
-        <div id="countdown-overlay">...</div>
+        <div id="countdown-overlay">
+            <span id="countdown-text">3</span>
+        </div>
         <header class="game-header-bar">
             <button id="pause-btn" class="icon-btn small">||</button>
             <div class="game-info-container">
@@ -67,7 +78,29 @@
             </div>
             <button id="help-btn" class="icon-btn small">?</button>
         </header>
-        </div>
+
+        <main class="game-content-wrapper">
+            <div id="tetris-game-area" class="game-area">
+                <div id="tetris-board-container" class="game-board-frame">
+                    <div id="tetris-board"></div>
+                </div>
+                <div class="side-panel">
+                    <h3>NEXT</h3>
+                    <div id="tetris-next-container"></div>
+                </div>
+            </div>
+
+            <div id="block-puzzle-game-area" class="game-area">
+                <div id="puzzle-board-container" class="game-board-frame">
+                    <div id="puzzle-board"></div>
+                </div>
+            </div>
+        </main>
+        
+        <footer id="puzzle-pieces-container-wrapper">
+             <div id="puzzle-pieces-container"></div>
+        </footer>
+    </div>
 
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-content">
@@ -75,7 +108,12 @@
             <h2>Podešavanja</h2>
             <div class="settings-option">
                 <label for="theme-select">Tema</label>
-                <select id="theme-select">...</select>
+                <select id="theme-select">
+                    <option value="dark">Tamna</option>
+                    <option value="light">Svetla</option>
+                    <option value="neon">Neon</option>
+                    <option value="gold">Zlatna</option>
+                </select>
             </div>
             <div class="settings-option">
                 <label>Muzika</label>
@@ -87,6 +125,39 @@
             </div>
         </div>
     </div>
+
+    <div id="game-over-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="game-over-title">Kraj Igre</h2>
+            <p class="final-score-container">Tvoji poeni: <span id="final-score">0</span></p>
+            <button id="restart-btn" class="primary-btn">Igraj Ponovo</button>
+        </div>
+    </div>
+    
+    <div id="help-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="help-title">Kako Igrati</h2>
+            <div id="help-tetris-content" class="help-content">
+                <p>Očistite što više horizontalnih linija slaganjem blokova.</p>
+                <ul>
+                    <li><strong>Prevucite levo/desno:</strong> Pomeranje bloka.</li>
+                    <li><strong>Prevucite dole (kratko):</strong> Ubrzavanje pada.</li>
+                    <li><strong>Prevucite dole (brzo i dugo):</strong> Trenutno spuštanje (Hard Drop).</li>
+                    <li><strong>Dodirnite bilo gde na tabli:</strong> Rotacija bloka.</li>
+                </ul>
+            </div>
+            <div id="help-block-puzzle-content" class="help-content">
+                <p>Prevucite oblike na tablu 10x10 da biste očistili linije.</p>
+                <ul>
+                    <li>Linije se čiste i horizontalno i vertikalno.</li>
+                    <li>Dok vučete blok, polja na tabli će zasvetleti da pokažu gde će blok biti postavljen.</li>
+                    <li>Igra je gotova kada nijedan od 3 ponuđena oblika ne može da stane na tablu.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
