@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameAreas = {
         tetris: document.getElementById('tetris-game-area'),
         blockPuzzle: document.getElementById('block-puzzle-game-area'),
+        puzzlePiecesWrapper: document.getElementById('puzzle-pieces-container-wrapper'),
     };
     
     let activeGame = null;
@@ -71,7 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
             settingsBtn.addEventListener('click', () => settingsModal.classList.add('active'));
             this.closeBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
         },
-        setTheme(themeName) { document.body.className = `${themeName}-theme`; localStorage.setItem('puzzleTheme', themeName); },
+        setTheme(themeName) {
+            // ISPRAVKA: Dodajemo '-theme' na kraj imena klase
+            document.body.className = `${themeName}-theme`;
+            localStorage.setItem('puzzleTheme', themeName);
+        },
         toggleMute() { Sound.isMuted = !Sound.isMuted; localStorage.setItem('puzzleMuted', Sound.isMuted); this.updateMuteButton(); },
         updateMuteButton() {
             this.muteBtn.textContent = Sound.isMuted ? 'OFF' : 'ON';
@@ -97,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- NAVIGACIJA I TOK APLIKACIJE ---
     function showScreen(screenName) {
         Object.values(screens).forEach(screen => screen.classList.remove('active'));
+        // ISPRAVKA: Pristupamo preko ključa objekta
         screens[screenName].classList.add('active');
     }
 
@@ -109,11 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameType === 'tetris') {
             activeGameModule = Tetris;
             gameAreas.tetris.classList.add('active');
+            gameAreas.puzzlePiecesWrapper.style.display = 'none'; // Sakrij deo za puzzle
         } else if (gameType === 'block-puzzle') {
             activeGameModule = BlockPuzzle;
             gameAreas.blockPuzzle.classList.add('active');
+            gameAreas.puzzlePiecesWrapper.style.display = 'block'; // Pokaži deo za puzzle
         }
         
+        // ISPRAVKA: Pozivamo sa ispravnim ključem 'game'
         showScreen('game');
         await runCountdown();
         activeGameModule.init();
@@ -213,11 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ghost.pos.y--;
             ghost.matrix.forEach((row, y) => {
                 row.forEach((value, x) => {
-                    if (value !== 0) { const r = y + ghost.pos.y; const c = x + ghost.pos.x; if(r >= 0) fullGrid[r][c] = 'ghost'; }
+                    if (value !== 0) { const r = y + ghost.pos.y; const c = x + ghost.pos.x; if(r >= 0 && r < this.rows && c >= 0 && c < this.cols) fullGrid[r][c] = 'ghost'; }
                 });
             });
             this.player.matrix.forEach((row, y) => {
-                row.forEach((value, x) => { if (value !== 0) fullGrid[y + this.player.pos.y][x + this.player.pos.x] = value; });
+                row.forEach((value, x) => { if (value !== 0) { const r = y + this.player.pos.y; const c = x + this.player.pos.x; if(r >= 0 && r < this.rows && c >= 0 && c < this.cols) fullGrid[r][c] = value; }});
             });
             fullGrid.forEach(row => {
                 row.forEach(value => {
@@ -275,13 +284,17 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         arenaSweep() {
             let clearedRows = [];
-            for (let y = this.rows - 1; y >= 0; --y) { if (this.boardState[y].every(value => value !== 0)) clearedRows.push(y); }
+            for (let y = this.rows - 1; y >= 0; y--) {
+                if (this.boardState[y].every(value => value !== 0)) {
+                    clearedRows.push(y);
+                }
+            }
             if (clearedRows.length > 0) {
-                clearedRows.forEach(y => {
-                    this.playLineClearEffect(y);
-                    this.boardState.splice(y, 1);
+                clearedRows.forEach(y_index => {
+                    this.playLineClearEffect(y_index);
+                    this.boardState.splice(y_index, 1);
+                    this.boardState.unshift(new Array(this.cols).fill(0));
                 });
-                for (let i = 0; i < clearedRows.length; i++) this.boardState.unshift(new Array(this.cols).fill(0));
                 this.player.score += [0, 10, 30, 50, 100][clearedRows.length] * 10;
                 this.updateScore();
                 Sound.play('clear');
@@ -289,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         playLineClearEffect(rowIndex) { for (let i = 0; i < this.cols; i++) { const cellIndex = rowIndex * this.cols + i; if(this.board.children[cellIndex])this.board.children[cellIndex].classList.add('line-clearing');}},
         updateScore() { scoreElement.textContent = this.player.score; },
-        playerReset() { this.player.matrix = this.nextPieces.shift(); this.nextPieces.push(this.createPiece()); this.player.pos.y = 0; this.player.pos.x = (this.cols/2|0)-(this.player.matrix[0].length/2|0); if(this.collide(this.boardState,this.player)) this.gameOver(); },
+        playerReset() { this.player.matrix = this.nextPieces.shift(); this.nextPieces.push(this.createPiece()); this.player.pos.y = 0; this.player.pos.x = (this.cols/2|0)-Math.floor(this.player.matrix[0].length/2); if(this.collide(this.boardState,this.player)) this.gameOver(); },
         playerMove(dir) { this.player.pos.x += dir; if(this.collide(this.boardState,this.player)) this.player.pos.x-=dir; },
         playerDrop() { this.player.pos.y++; if (this.collide(this.boardState, this.player)) { this.player.pos.y--; this.merge(); this.playerReset(); this.arenaSweep(); } this.dropCounter = 0; },
         rotate(m,d) { for(let y=0;y<m.length;++y){for(let x=0;x<y;++x)[m[x][y],m[y][x]]=[m[y][x],m[x][y]];} d>0?m.forEach(r=>r.reverse()):m.reverse(); },
@@ -324,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.piecesContainer.addEventListener('mousedown',this.boundDragStart); this.piecesContainer.addEventListener('touchstart',this.boundDragStart,{passive:false});
         },
         stop() { this.isRunning=false; },
-        renderBoard() { this.boardElement.innerHTML=''; this.boardState.forEach(row=>{row.forEach(cellValue=>{ const cell=document.createElement('div'); cell.className='puzzle-cell'; if(cellValue){cell.style.background=cellValue; cell.classList.add('filled','game-block');} this.boardElement.appendChild(cell); });});},
+        renderBoard() { this.boardElement.innerHTML=''; this.boardState.forEach(row=>{row.forEach(cellValue=>{ const cell=document.createElement('div'); cell.className='puzzle-cell'; if(cellValue){const color=cellValue;cell.style.background=`linear-gradient(145deg, ${color}, ${Tetris.darkenColor(color)})`; cell.style.setProperty('--glow-color', color); cell.classList.add('filled','game-block');} this.boardElement.appendChild(cell); });});},
         generateNewPieces() {
             this.currentPieces=[]; this.piecesContainer.innerHTML='';
             for(let i=0;i<3;i++){ const pieceData={...this.pieceShapes[Math.floor(Math.random()*this.pieceShapes.length)]}; pieceData.id=`piece-${Date.now()}-${i}`; this.currentPieces.push(pieceData); this.renderPiece(pieceData); }
@@ -332,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         renderPiece(pieceData) {
             const pieceEl=document.createElement('div'); pieceEl.className='puzzle-piece'; pieceEl.dataset.id=pieceData.id; pieceEl.style.gridTemplateColumns=`repeat(${pieceData.shape[0].length},1fr)`;
-            pieceData.shape.forEach(row=>{row.forEach(cell=>{ const cellEl=document.createElement('div'); if(cell){cellEl.className='puzzle-piece-cell game-block'; cellEl.style.background=pieceData.color; cellEl.style.setProperty('--glow-color', pieceData.color);} pieceEl.appendChild(cellEl); });});
+            pieceData.shape.forEach(row=>{row.forEach(cell=>{ const cellEl=document.createElement('div'); if(cell){cellEl.className='puzzle-piece-cell game-block'; const color=pieceData.color; cellEl.style.background=`linear-gradient(145deg, ${color}, ${Tetris.darkenColor(color)})`; cellEl.style.setProperty('--glow-color', color);} pieceEl.appendChild(cellEl); });});
             this.piecesContainer.appendChild(pieceEl);
         },
         onDragStart(e) {
@@ -363,10 +376,9 @@ document.addEventListener('DOMContentLoaded', () => {
             this.boardElement.querySelectorAll('.ghost-path').forEach(c=>{c.classList.remove('ghost-path');c.style.backgroundColor='';}); if(!pieceData) return;
             const boardRect=this.boardElement.getBoundingClientRect(); const x=moveTouch.clientX-boardRect.left; const y=moveTouch.clientY-boardRect.top;
             const startCol=Math.floor(x/(boardRect.width/10)); const startRow=Math.floor(y/(boardRect.height/10));
-            const isValid=this.canPlacePiece(pieceData,startRow,startCol);
             for(let r=0;r<pieceData.shape.length;r++){for(let c=0;c<pieceData.shape[r].length;c++){ if(pieceData.shape[r][c]){
                 const bR=startRow+r; const bC=startCol+c;
-                if(bR<10&&bC<10&&bR>=0&&bC>=0){ const cellIndex=bR*10+bC; const cell=this.boardElement.children[cellIndex]; if(cell&&!this.boardState[bR][bC]){ cell.classList.add('ghost-path'); cell.style.setProperty('--color',isValid?pieceData.color:'grey');}}
+                if(bR<10&&bC<10&&bR>=0&&bC>=0){ const cellIndex=bR*10+bC; const cell=this.boardElement.children[cellIndex]; if(cell&&!this.boardState[bR][bC]){ cell.classList.add('ghost-path'); cell.style.setProperty('--color',pieceData.color);}}
             }}}
         },
         canPlacePiece(p,startRow,startCol){for(let r=0;r<p.shape.length;r++){for(let c=0;c<p.shape[r].length;c++){if(p.shape[r][c]){const bR=startRow+r;const bC=startCol+c;if(bR>=10||bC>=10||bR<0||bC<0||this.boardState[bR][bC])return false;}}}return true;},
