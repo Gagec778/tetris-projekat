@@ -12,6 +12,7 @@ body.dark-theme {
     --card-bg: rgba(30, 36, 46, 0.7); --card-border: rgba(137, 147, 163, 0.2);
     --shadow: rgba(0,0,0,0.4); --primary-btn-bg: #238636;
     --game-board-bg: rgba(0,0,0,0.2); --game-board-frame: transparent;
+    --grid-dot-color: rgba(255, 255, 255, 0.05);
 }
 body.light-theme {
     --bg-color: #f0f2f5; --primary-text: #1c1e21; --secondary-text: #606770;
@@ -19,6 +20,7 @@ body.light-theme {
     --card-bg: rgba(255, 255, 255, 0.7); --card-border: rgba(0, 0, 0, 0.1);
     --shadow: rgba(0,0,0,0.1); --primary-btn-bg: #007bff;
     --game-board-bg: rgba(0,0,0,0.05); --game-board-frame: transparent;
+    --grid-dot-color: rgba(0, 0, 0, 0.08);
 }
 body.neon-theme {
     --bg-color: #000000; --primary-text: #00ffde; --secondary-text: #8d8d8d;
@@ -27,6 +29,7 @@ body.neon-theme {
     --shadow: rgba(0, 255, 222, 0.2); --primary-btn-bg: #ff00ff;
     --game-board-bg: rgba(255,255,255,0.05);
     --game-board-frame: linear-gradient(160deg, #ff00ff, #00ffde, #ff00ff);
+    --grid-dot-color: rgba(255, 255, 255, 0.1);
     text-shadow: 0 0 2px var(--secondary-text);
 }
 body.gold-theme {
@@ -36,17 +39,14 @@ body.gold-theme {
     --shadow: rgba(0,0,0,0.5); --primary-btn-bg: #b8860b;
     --game-board-bg: rgba(0,0,0,0.2);
     --game-board-frame: linear-gradient(160deg, #b8860b, #ffd700, #b8860b);
+    --grid-dot-color: rgba(255, 215, 0, 0.1);
 }
 .neon-theme h1, .neon-theme h2, .gold-theme h1, .gold-theme h2 { text-shadow: 0 0 8px var(--shadow); }
 
 /* --- OSNOVNI STILOVI TELA I POZADINE --- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: -webkit-fill-available; }
-body {
-    font-family: var(--font-family); background: var(--bg-color); color: var(--primary-text);
-    margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; width: 100vw;
-    transition: background-color 0.5s, color 0.5s;
-}
+body { font-family: var(--font-family); background: var(--bg-color); color: var(--primary-text); margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; width: 100vw; transition: background-color 0.5s, color 0.5s; }
 @keyframes aurora-move { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
 .aurora-background { position: fixed; top: 50%; left: 50%; width: 150vmax; height: 150vmax; animation: aurora-move 40s infinite linear; z-index: -1; }
 .aurora-dot { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.6; }
@@ -55,18 +55,12 @@ body {
 .aurora-dot:nth-child(3) { width: 400px; height: 400px; top: 70%; left: 20%; background: #4361ee; }
 
 /* --- EKRANI I TRANZICIJE --- */
-.screen {
-    position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column;
-    padding: 1rem;
-    opacity: 0; visibility: hidden; pointer-events: none; transform: scale(0.95);
-    transition: opacity var(--transition-speed-med) var(--ease-out-expo), transform var(--transition-speed-med) var(--ease-out-expo);
-}
+.screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 1rem; opacity: 0; visibility: hidden; pointer-events: none; transform: scale(0.95); transition: opacity var(--transition-speed-med) var(--ease-out-expo), transform var(--transition-speed-med) var(--ease-out-expo); }
 .screen.active { opacity: 1; visibility: visible; pointer-events: auto; transform: scale(1); }
-.screen h2 { font-size: 2rem; font-weight: 900; text-align: center; }
+.screen h2 { font-size: 2rem; font-weight: 900; text-align: center; margin: 1rem 0 2rem 0; }
 
 /* --- GLAVNI MENI --- */
 #main-menu-screen { align-items: center; justify-content: center; text-align: center; }
-.main-header { padding: 1rem; }
 .main-header h1 { font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 2rem; }
 .menu-item { border: 1px solid var(--card-border); border-radius: 1rem; padding: 1px; margin: 1rem auto; width: 90%; max-width: 400px; backdrop-filter: blur(20px); background: transparent; cursor: pointer; position: relative; transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo); }
 .menu-item-content { background: var(--card-bg); border-radius: inherit; padding: 1.5rem; }
@@ -80,10 +74,12 @@ body {
 /* --- EKRAN ZA IZBOR MODA --- */
 #game-mode-screen { align-items: center; justify-content: center; gap: 1.5rem; }
 #mode-selection-container { display: flex; flex-direction: column; gap: 1rem; width: 90%; max-width: 400px; }
-.mode-btn { background: var(--card-bg); border: 1px solid var(--card-border); padding: 1.5rem; border-radius: 1rem; cursor: pointer; transition: transform 0.2s; }
-.mode-btn:hover { transform: scale(1.05); }
+.mode-btn { background: var(--card-bg); border: 1px solid var(--card-border); padding: 1.25rem; border-radius: 1rem; cursor: pointer; transition: transform 0.2s; text-align: left;}
+.mode-btn:hover { transform: scale(1.05); border-color: var(--primary-text); }
 .mode-btn h3 { margin: 0; font-size: 1.2rem; }
-.mode-btn p { margin: 0.25rem 0 0; color: var(--secondary-text); font-size: 0.9rem; }
+.mode-description { margin: 0.5rem 0 0; color: var(--secondary-text); font-size: 0.9rem; }
+.mode-details { display: flex; gap: 1rem; margin-top: 1rem; font-size: 0.8rem; color: var(--primary-text); }
+.mode-details span { font-weight: 700; }
 .difficulty-title { margin: 1rem 0 0.5rem; color: var(--secondary-text); font-weight: 400; }
 .difficulty-selector { display: flex; background: var(--card-bg); border-radius: 0.75rem; padding: 5px; }
 .difficulty-btn { background: transparent; border: none; color: var(--secondary-text); padding: 0.75rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.3s; }
@@ -92,17 +88,14 @@ body {
 /* --- EKRAN STATISTIKE --- */
 #stats-screen { align-items: center; justify-content: flex-start; gap: 1rem; }
 .stats-container { width: 100%; max-width: 500px; padding: 1rem; }
-.stats-group { margin-bottom: 2rem; }
-.stats-group h3 { border-bottom: 2px solid var(--card-border); padding-bottom: 0.5rem; }
+.stats-group { margin-bottom: 2rem; } .stats-group h3 { border-bottom: 2px solid var(--card-border); padding-bottom: 0.5rem; }
 .stat-item { display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 1.1rem; }
 .stat-item .value { font-weight: 700; }
 
 /* --- EKRAN SA IGROM --- */
 #game-screen { justify-content: flex-start; padding: 0; }
 .game-header-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 1rem; flex-shrink: 0; }
-.game-info-container { text-align: center; }
-.game-score { font-size: 1.5rem; font-weight: 700; }
-.game-timer { font-size: 1rem; color: var(--secondary-text); }
+.game-info-container { text-align: center; } .game-score { font-size: 1.5rem; font-weight: 700; } .game-timer { font-size: 1rem; color: var(--secondary-text); min-height: 1.2rem; }
 .game-content-wrapper { flex-grow: 1; width: 100%; display: flex; justify-content: center; align-items: center; }
 .game-area { display: none; width: 100%; justify-content: center; align-items: center; gap: 1rem; }
 .game-area.active { display: flex; }
@@ -111,30 +104,38 @@ body {
 .icon-btn:active { transform: scale(0.9); }
 .icon-btn.large { width: 56px; height: 56px; font-size: 1.8rem; }
 .icon-btn.small { width: 40px; height: 40px; font-size: 1.4rem; }
-.back-to-main-menu { position: absolute; top: 1rem; left: 1rem; }
+.back-to-main-menu { position: absolute; top: 1rem; left: 1rem; z-index: 10; }
+
 
 /* --- IGRE I TABLE --- */
-.game-board-frame { padding: 6px; border-radius: 12px; background: var(--game-board-frame); background-size: 300% 300%; animation: gold-border-flow 5s linear infinite; }
-@keyframes gold-border-flow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-#tetris-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); height: calc(100vh - 150px); max-height: 600px; width: calc((100vh - 150px) / 2); max-width: 300px; background: var(--game-board-bg); gap: 1px; }
-#puzzle-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr); width: 90vw; height: 90vw; max-width: 400px; max-height: 400px; background: var(--game-board-bg); gap: 2px; }
+.game-board-frame { padding: 6px; border-radius: 12px; background: var(--game-board-frame); background-size: 300% 300%; animation: frame-flow 5s linear infinite; }
+@keyframes frame-flow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+#tetris-board, #puzzle-board { background-color: var(--game-board-bg); background-image: radial-gradient(var(--grid-dot-color) 1px, transparent 0); background-size: 25px 25px; background-position: -12.5px -12.5px; }
+#tetris-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); height: calc(100vh - 120px); max-height: 600px; width: calc((100vh - 120px) / 2); max-width: 300px; gap: 1px; }
+#puzzle-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr); width: 90vw; height: 90vw; max-width: 400px; max-height: 400px; gap: 2px; }
 #puzzle-pieces-container-wrapper { padding: 1rem 0; width: 100%; flex-shrink: 0; }
 #puzzle-pieces-container { width: 100%; display: flex; justify-content: space-around; align-items: center; height: 80px; }
-.side-panel { text-align: center; }
-.side-panel h3 { margin: 0 0 10px 0; color: var(--secondary-text); font-weight: 400; }
+.side-panel { text-align: center; } .side-panel h3 { margin: 0 0 10px 0; color: var(--secondary-text); font-weight: 400; }
 #tetris-next-container { width: 100px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: space-around; }
 .next-piece-display { display: grid; gap: 1px; }
 
-
-/* --- BLOKOVI --- */
-.game-block { border-radius: min(25%, 6px); box-shadow: inset 0px 2px 2px rgba(255, 255, 255, 0.5), inset 0px -2px 2px rgba(0, 0, 0, 0.4); transition: transform 0.2s, background-color 0.2s; transform: scale(0); animation: spawn-in 0.3s var(--ease-out-expo) forwards; }
-@keyframes spawn-in { to { transform: scale(1); } }
+/* --- BLOKOVI - NOVI DIZAJN --- */
+.game-block {
+    border-radius: min(25%, 6px);
+    transition: transform 0.2s, background-color 0.2s;
+    box-shadow: inset 0px 3px 3px rgba(255, 255, 255, 0.2), 
+                inset 0px -3px 3px rgba(0, 0, 0, 0.2),
+                0 0 10px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.puzzle-piece { display: grid; touch-action: none; cursor: grab; transition: transform 0.2s; }
+.puzzle-piece:active { transform: scale(1.1); }
+.puzzle-piece-cell { width: 25px; height: 25px; }
+.puzzle-piece.dragging { position: absolute; z-index: 1000; pointer-events: none; opacity: 0.9; transform: scale(1.2) !important; }
 .tetris-cell.ghost { background-color: rgba(255, 255, 255, 0.1); border-radius: 4px; }
 .puzzle-cell { background-color: transparent; border-radius: 2px; transition: all 0.2s; }
 .puzzle-cell.ghost-path { background-color: var(--color) !important; opacity: 0.3; transform: scale(0.95); }
-.puzzle-piece { display: grid; touch-action: none; cursor: grab; }
-.puzzle-piece-cell { width: 25px; height: 25px; }
-.puzzle-piece.dragging { position: absolute; z-index: 1000; pointer-events: none; opacity: 0.8; transform: scale(1.2) !important; }
+.bomb-timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; font-weight: 900; color: white; text-shadow: 0 0 5px black; }
 
 /* --- ANIMACIJE --- */
 #countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; font-size: 25vw; font-weight: 900; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
@@ -143,7 +144,7 @@ body {
 #countdown-text { animation: countdown-pop 1s infinite; animation-timing-function: var(--ease-out-expo); }
 @keyframes lock-in { 0% {transform: scale(1.1);} 100% {transform: scale(1);} }
 .lock-in { animation: lock-in 0.2s; }
-@keyframes line-clear-flash { 0%, 100% {transform: scale(1);} 50% {transform: scale(1.05); background-color: white;} }
+@keyframes line-clear-flash { 0% {transform: scale(1.1);} 50% {transform: scale(0); opacity: 0.5;} 100% {transform: scale(0); opacity: 0;} }
 .line-clearing { animation: line-clear-flash 0.4s forwards; }
 .particle { position: absolute; border-radius: 50%; z-index: 100; pointer-events: none; }
 @keyframes screen-shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 50%{transform:translateX(4px);} 75%{transform:translateX(-4px);} }
@@ -165,4 +166,5 @@ body {
 input[type="range"] { -webkit-appearance: none; appearance: none; background: var(--card-border); height: 8px; border-radius: 5px; outline: none; flex-grow: 1; margin-left: 1rem; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--primary-text); cursor: pointer; }
 .help-content, .final-score-container, .modal-content h2, .modal-content li, .modal-content p {text-shadow: none;}
-.help-content { display: none; } .help-content.active { display: block; } .final-score-container { font-size: 1.5rem; margin: 1rem 0 2rem; }
+#help-content-container { text-align: left; } #help-content-container ul { padding-left: 1.5rem; } #help-content-container li { margin-bottom: 0.5rem; }
+.final-score-container { font-size: 1.5rem; margin: 1rem 0 2rem; }
