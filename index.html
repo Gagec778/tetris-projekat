@@ -24,23 +24,26 @@
         <main class="menu-container">
             <div class="menu-item" data-game="tetris">
                 <h2>Classic Blocks</h2>
-                <p>Brza akcija i čiste linije.</p>
+                <div class="highscore">HIGH SCORE: <span id="highscore-tetris">0</span></div>
             </div>
             <div class="menu-item" data-game="block-puzzle">
                 <h2>Puzzle Board</h2>
-                <p>Strateško popunjavanje table.</p>
+                <div class="highscore">HIGH SCORE: <span id="highscore-block-puzzle">0</span></div>
             </div>
         </main>
         <footer class="footer-menu">
-            <button id="settings-btn" class="icon-btn">⚙️</button>
+            <button id="settings-btn" class="icon-btn large">⚙️</button>
         </footer>
     </div>
 
     <div id="game-screen" class="screen">
+        <div id="countdown-overlay">
+            <span id="countdown-text">3</span>
+        </div>
         <div class="game-header-bar">
-            <button class="icon-btn back-btn">&larr;</button>
+            <button class="icon-btn small back-btn">&larr;</button>
             <div class="game-score">SCORE: <span id="score">0</span></div>
-            <button id="help-btn" class="icon-btn">?</button>
+            <button id="help-btn" class="icon-btn small">?</button>
         </div>
 
         <div id="tetris-game-area" class="game-area">
@@ -52,7 +55,7 @@
                 <div id="tetris-next-container"></div>
             </div>
         </div>
-        <div id="tetris-controls" class="on-screen-controls">
+         <div id="tetris-controls" class="on-screen-controls">
              <button data-action="move-left">←</button>
              <button data-action="rotate">↻</button>
              <button data-action="move-right">→</button>
@@ -66,8 +69,33 @@
         </div>
     </div>
 
-    <div id="game-over-modal" class="modal-overlay">
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Podešavanja</h2>
+            <div class="settings-option">
+                <label for="theme-select">Tema</label>
+                <select id="theme-select">
+                    <option value="dark">Tamna</option>
+                    <option value="light">Svetla</option>
+                    <option value="neon">Neon</option>
+                </select>
+            </div>
+            <div class="settings-option">
+                <span>Zvuk</span>
+                <button id="mute-btn" class="toggle-btn active">ON</button>
+            </div>
         </div>
+    </div>
+
+    <div id="game-over-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="game-over-title">Kraj Igre</h2>
+            <p class="final-score-container">Tvoji poeni: <span id="final-score">0</span></p>
+            <button id="restart-btn" class="primary-btn">Igraj Ponovo</button>
+        </div>
+    </div>
+    
     <div id="help-modal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
