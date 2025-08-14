@@ -61,6 +61,12 @@
     </div>
 
     <div id="game-screen" class="screen">
+        <div id="first-time-help-overlay">
+            <div class="help-bubble" id="help-bubble-score">Ovde su tvoji poeni i tajmer!</div>
+            <div class="help-bubble" id="help-bubble-board">Prevlači i tapkaj po tabli da igraš.</div>
+            <div class="help-bubble" id="help-bubble-pieces">Ovde su ti sledeći blokovi.</div>
+            <button id="dismiss-help-btn" class="primary-btn">Razumem!</button>
+        </div>
         <div id="pause-overlay">
             <div class="pause-box">
                 <h2>Pauza</h2>
@@ -84,7 +90,7 @@
                 <div id="tetris-board-container" class="game-board-frame">
                     <div id="tetris-board"></div>
                 </div>
-                <div class="side-panel">
+                <div id="tetris-side-panel" class="side-panel">
                     <h3>NEXT</h3>
                     <div id="tetris-next-container"></div>
                 </div>
