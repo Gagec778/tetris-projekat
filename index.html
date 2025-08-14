@@ -23,12 +23,16 @@
         </header>
         <main class="menu-container">
             <div class="menu-item" data-game="tetris">
-                <h2>Classic Blocks</h2>
-                <div class="highscore">HIGH SCORE: <span id="highscore-tetris">0</span></div>
+                <div class="menu-item-content">
+                    <h2>Classic Blocks</h2>
+                    <div class="highscore">HIGH SCORE: <span id="highscore-tetris">0</span></div>
+                </div>
             </div>
             <div class="menu-item" data-game="block-puzzle">
-                <h2>Puzzle Board</h2>
-                <div class="highscore">HIGH SCORE: <span id="highscore-block-puzzle">0</span></div>
+                <div class="menu-item-content">
+                    <h2>Puzzle Board</h2>
+                    <div class="highscore">HIGH SCORE: <span id="highscore-block-puzzle">0</span></div>
+                </div>
             </div>
         </main>
         <footer class="footer-menu">
@@ -40,33 +44,33 @@
         <div id="countdown-overlay">
             <span id="countdown-text">3</span>
         </div>
-        <div class="game-header-bar">
+        <header class="game-header-bar">
             <button class="icon-btn small back-btn">&larr;</button>
             <div class="game-score">SCORE: <span id="score">0</span></div>
             <button id="help-btn" class="icon-btn small">?</button>
-        </div>
+        </header>
 
-        <div id="tetris-game-area" class="game-area">
-            <div id="tetris-board-container">
-                <div id="tetris-board"></div>
+        <main class="game-content-wrapper">
+            <div id="tetris-game-area" class="game-area">
+                <div id="tetris-board-container" class="game-board-frame">
+                    <div id="tetris-board"></div>
+                </div>
+                <div class="side-panel">
+                    <h3>NEXT</h3>
+                    <div id="tetris-next-container"></div>
+                </div>
             </div>
-            <div class="side-panel">
-                <h3>NEXT</h3>
-                <div id="tetris-next-container"></div>
+
+            <div id="block-puzzle-game-area" class="game-area">
+                <div id="puzzle-board-container" class="game-board-frame">
+                    <div id="puzzle-board"></div>
+                </div>
             </div>
-        </div>
-         <div id="tetris-controls" class="on-screen-controls">
-             <button data-action="move-left">←</button>
-             <button data-action="rotate">↻</button>
-             <button data-action="move-right">→</button>
-             <button data-action="hard-drop">↓</button>
-        </div>
-
-
-        <div id="block-puzzle-game-area" class="game-area">
-            <div id="puzzle-board"></div>
-            <div id="puzzle-pieces-container"></div>
-        </div>
+        </main>
+        
+        <footer id="puzzle-pieces-container-wrapper">
+             <div id="puzzle-pieces-container"></div>
+        </footer>
     </div>
 
     <div id="settings-modal" class="modal-overlay">
@@ -79,6 +83,7 @@
                     <option value="dark">Tamna</option>
                     <option value="light">Svetla</option>
                     <option value="neon">Neon</option>
+                    <option value="gold">Zlatna</option>
                 </select>
             </div>
             <div class="settings-option">
@@ -101,21 +106,20 @@
             <span class="close-modal">&times;</span>
             <h2 id="help-title">Kako Igrati</h2>
             <div id="help-tetris-content" class="help-content">
-                <p>Cilj je očistiti što više horizontalnih linija.</p>
+                <p>Očistite što više horizontalnih linija slaganjem blokova.</p>
                 <ul>
-                    <li><strong>Prevlačenje levo/desno:</strong> Pomeranje bloka.</li>
-                    <li><strong>Kratko prevlačenje dole:</strong> Ubrzavanje pada.</li>
-                    <li><strong>Dugo prevlačenje dole:</strong> Trenutno spuštanje (Hard Drop).</li>
-                    <li><strong>Dodir na tablu:</strong> Rotacija bloka.</li>
-                    <li>Koristite i dugmiće na ekranu za preciznu kontrolu.</li>
+                    <li><strong>Prevucite levo/desno:</strong> Pomeranje bloka.</li>
+                    <li><strong>Prevucite dole (kratko):</strong> Ubrzavanje pada.</li>
+                    <li><strong>Prevucite dole (brzo i dugo):</strong> Trenutno spuštanje (Hard Drop).</li>
+                    <li><strong>Dodirnite bilo gde na tabli:</strong> Rotacija bloka.</li>
                 </ul>
             </div>
             <div id="help-block-puzzle-content" class="help-content">
-                <p>Prevucite blokove na tablu 10x10.</p>
+                <p>Prevucite oblike na tablu 10x10 da biste očistili linije.</p>
                 <ul>
-                    <li>Popunite celu horizontalnu ili vertikalnu liniju da biste je očistili.</li>
-                    <li>Igra je gotova kada ne možete postaviti nijedan od preostalih blokova.</li>
-                    <li>Dobićete 3 nova bloka tek kada postavite sva 3 postojeća.</li>
+                    <li>Linije se čiste i horizontalno i vertikalno.</li>
+                    <li>Dok vučete blok, polja na tabli će zasvetleti da pokažu gde će blok biti postavljen.</li>
+                    <li>Igra je gotova kada nijedan od 3 ponuđena oblika ne može da stane na tablu.</li>
                 </ul>
             </div>
         </div>
