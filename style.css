@@ -1,22 +1,39 @@
 :root {
     --font-family: 'Inter', sans-serif;
-    --transition-speed: 0.5s;
-    --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+    --transition-speed: 0.6s;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* --- DEFINICIJE TEMA --- */
 body.dark-theme {
-    --bg-color: #0d1117;
-    --primary-text: #e6edf3;
-    --secondary-text: #7d8590;
+    --bg-color: #0d1117; --primary-text: #e6edf3; --secondary-text: #7d8590;
     --accent-gradient: linear-gradient(45deg, #f72585, #7209b7);
-    --card-bg: rgba(30, 36, 46, 0.7);
-    --card-border: rgba(137, 147, 163, 0.2);
-    --shadow: rgba(0,0,0,0.4);
+    --card-bg: rgba(30, 36, 46, 0.7); --card-border: rgba(137, 147, 163, 0.2);
+    --shadow: rgba(0,0,0,0.4); --primary-btn-bg: #238636;
+    --game-board-bg: rgba(0,0,0,0.2);
 }
+body.light-theme {
+    --bg-color: #f0f2f5; --primary-text: #1c1e21; --secondary-text: #606770;
+    --accent-gradient: linear-gradient(45deg, #007bff, #00aaff);
+    --card-bg: rgba(255, 255, 255, 0.7); --card-border: rgba(0, 0, 0, 0.1);
+    --shadow: rgba(0,0,0,0.1); --primary-btn-bg: #007bff;
+    --game-board-bg: rgba(0,0,0,0.05);
+}
+body.neon-theme {
+    --bg-color: #000000; --primary-text: #00ffde; --secondary-text: #8d8d8d;
+    --accent-gradient: linear-gradient(45deg, #00ffde, #ff00ff);
+    --card-bg: rgba(15, 15, 15, 0.7); --card-border: rgba(0, 255, 222, 0.3);
+    --shadow: rgba(0, 255, 222, 0.2); --primary-btn-bg: #ff00ff;
+    --game-board-bg: rgba(255,255,255,0.05);
+    text-shadow: 0 0 2px var(--secondary-text);
+}
+.neon-theme h1, .neon-theme h2 { text-shadow: 0 0 5px var(--primary-text), 0 0 10px var(--primary-text); }
+.neon-theme .game-block { box-shadow: inset 0 0 5px rgba(0,0,0,0.5), 0 0 3px var(--glow-color); }
 
-/* ... (definicije za druge teme) ... */
 
+/* --- OSNOVNI STILOVI TELA I POZADINE --- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
+html { height: -webkit-fill-available; }
 body {
     font-family: var(--font-family);
     background: var(--bg-color);
@@ -24,17 +41,18 @@ body {
     margin: 0;
     overflow: hidden;
     height: 100vh;
+    height: -webkit-fill-available;
     width: 100vw;
+    transition: background-color 0.5s, color 0.5s;
 }
 
-/* --- AURORA POZADINA --- */
 @keyframes aurora-move {
     0% { transform: translate(-50%, -50%) rotate(0deg); }
     100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 .aurora-background {
     position: fixed; top: 50%; left: 50%;
-    width: 150vw; height: 150vw;
+    width: 150vmax; height: 150vmax;
     animation: aurora-move 40s infinite linear;
     z-index: -1;
 }
@@ -63,6 +81,9 @@ body {
 
 /* --- GLAVNI MENI --- */
 #main-menu-screen { align-items: center; justify-content: center; text-align: center; }
+.main-header {
+    padding: 1rem;
+}
 .main-header h1 {
     font-size: clamp(3rem, 15vw, 6rem);
     font-weight: 900;
@@ -74,82 +95,193 @@ body {
     margin-bottom: 2rem;
 }
 .menu-item {
-    background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    margin: 1rem auto;
+    border-radius: 1rem; padding: 1.5rem; margin: 1rem auto;
     width: 90%; max-width: 400px;
-    backdrop-filter: blur(10px);
-    cursor: pointer;
-    transition: transform 0.3s var(--ease-out-expo), box-shadow 0.3s var(--ease-out-expo);
+    backdrop-filter: blur(20px); background: var(--card-bg);
+    cursor: pointer; position: relative;
+    transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo);
 }
-.menu-item:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(0,0,0,0.3);
+.menu-item::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 1rem; border: 2px solid transparent;
+    background: var(--accent-gradient) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    opacity: 0; transition: opacity 0.4s var(--ease-out-expo);
 }
-.menu-item h2 { margin: 0; }
+.menu-item:hover { transform: translateY(-10px); }
+.menu-item:hover::before { opacity: 1; }
+.menu-item h2 { margin: 0; font-weight: 700; font-size: 1.5rem;}
 .menu-item p { margin: 0.25rem 0 0; color: var(--secondary-text); }
+.highscore { font-size: 0.8rem; color: var(--secondary-text); margin-top: 0.5rem; font-weight: 700; }
 .footer-menu { position: absolute; bottom: 2rem; }
 
 /* --- EKRAN SA IGROM --- */
 #game-screen { justify-content: space-between; align-items: center; padding: 1rem 0; }
 .game-header-bar {
     width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem;
+    flex-shrink: 0;
 }
 .game-score { font-size: 1.5rem; font-weight: 700; }
+.game-area {
+    display: none; flex-grow: 1; width: 100%;
+    justify-content: center; align-items: center;
+    gap: 1rem; padding-bottom: 1rem;
+}
+.game-area.active { display: flex; }
+
+.icon-btn {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    color: var(--primary-text);
+    border-radius: 50%; font-size: 1.5rem; user-select: none;
+    display: flex; justify-content: center; align-items: center;
+    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+}
+.icon-btn:active { transform: scale(0.9); }
+.icon-btn.large { width: 60px; height: 60px; font-size: 2rem; }
+.icon-btn.small { width: 44px; height: 44px; font-size: 1.5rem; }
 
 /* --- TETRIS --- */
-#tetris-game-area { width: 100%; justify-content: center; align-items: flex-start; gap: 1rem; flex-grow: 1; }
-#tetris-board-container { /* ... (stil ostaje sličan) ... */ }
-#tetris-board { /* ... (stil ostaje isti) ... */ }
+#tetris-game-area { align-items: flex-start; }
+#tetris-board-container {
+    border: 2px solid var(--card-border); border-radius: 8px;
+    background: var(--game-board-bg);
+    padding: 5px; position: relative; overflow: hidden;
+}
+#tetris-board {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(20, 1fr);
+    width: min(70vw, 250px);
+    height: min(140vw, 500px);
+    gap: 1px;
+}
+.side-panel { text-align: center; }
+.side-panel h3 { margin: 0 0 10px 0; color: var(--secondary-text); font-weight: 400; }
+#tetris-next-container {
+    width: 100px; height: 180px;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-around;
+}
+.next-piece-display { display: grid; gap: 1px; }
+
 .on-screen-controls {
-    display: flex; width: 100%; justify-content: space-around; padding: 0 1rem 1rem;
+    display: flex; width: 100%; justify-content: space-around;
+    padding: 0 1rem 1rem; flex-shrink: 0;
 }
 .on-screen-controls button {
     background: var(--card-bg); border: 1px solid var(--card-border);
     color: var(--primary-text); width: 60px; height: 60px;
-    border-radius: 50%; font-size: 2rem; user-select: none;
+    border-radius: 20px; font-size: 2rem; user-select: none;
 }
 .on-screen-controls button:active { transform: scale(0.9); }
 
 /* --- BLOCK PUZZLE --- */
-#block-puzzle-game-area { /* ... (stil ostaje isti) ... */ }
-.puzzle-piece.dragging {
-    transform: scale(1.2); /* Veći dok se vuče */
-    opacity: 0.8;
+#block-puzzle-game-area { flex-direction: column; justify-content: space-around; }
+#puzzle-board {
+    display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr);
+    width: 90vw; height: 90vw; max-width: 400px; max-height: 400px;
+    background: var(--game-board-bg);
+    border-radius: 8px; border: 1px solid var(--card-border);
+    padding: 5px; gap: 1px; position: relative; overflow: hidden;
 }
+#puzzle-pieces-container {
+    width: 100%; display: flex; justify-content: space-around; align-items: center;
+    padding: 20px 0; flex-shrink: 0;
+}
+.puzzle-piece { display: grid; touch-action: none; cursor: grab; }
+.puzzle-piece.dragging {
+    position: absolute; z-index: 1000; pointer-events: none;
+    opacity: 0.8; transform: scale(1.2) !important;
+}
+.puzzle-piece-cell { width: 25px; height: 25px; }
 
-/* --- UNAPREĐENI BLOKOVI --- */
+/* --- ZAJEDNIČKI STILOVI ZA IGRE --- */
 .game-block {
-    border-radius: 5px;
-    box-shadow: inset 0px 2px 5px rgba(255, 255, 255, 0.4), inset 0px -2px 5px rgba(0, 0, 0, 0.4);
+    border-radius: min(20%, 5px);
+    box-shadow: inset 0px 2px 5px rgba(255, 255, 255, 0.3), inset 0px -2px 5px rgba(0, 0, 0, 0.3);
     transition: transform 0.2s, background-color 0.2s;
 }
+.tetris-cell.ghost { background-color: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+.puzzle-cell { background-color: transparent; border-radius: 2px; transition: all 0.2s; }
+.puzzle-cell.ghost-path { transform: scale(0.9); }
+.puzzle-cell.filled { transform: scale(1.05); }
 
-/* --- EFEKAT POTRESA EKRANA --- */
+/* --- ODBROJAVANJE i ANIMACIJE --- */
+#countdown-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;
+    z-index: 1000; font-size: 20vw; font-weight: 900;
+    opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+}
+#countdown-overlay.active { opacity: 1; visibility: visible; }
+@keyframes countdown-pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+#countdown-text { animation: countdown-pop 1s infinite; }
+
+@keyframes place-pop { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.placed { animation: place-pop 0.3s var(--ease-out-expo); }
+@keyframes line-clear-flash { 0%, 100% { opacity: 1; } 50% { opacity: 0; transform: scale(1.1); } }
+.line-clearing { animation: line-clear-flash 0.5s forwards; }
+
+.particle {
+    position: absolute; width: 8px; height: 8px;
+    border-radius: 50%; z-index: 100; pointer-events: none;
+}
 @keyframes screen-shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  50% { transform: translateX(3px); }
-  75% { transform: translateX(-3px); }
+  25% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 75% { transform: translateX(-3px); }
 }
-.screen-shake {
-    animation: screen-shake 0.2s 1;
-}
+.screen-shake { animation: screen-shake 0.2s 1; }
 
 /* --- MODALI --- */
-.modal-overlay { /* ... (osnovni stil ostaje) ... */ backdrop-filter: blur(10px); }
-.modal-content {
-    background: rgba(30, 36, 46, 0.9);
-    border: 1px solid var(--card-border);
-    border-radius: 1rem;
-    padding: 2rem;
-    width: 90%; max-width: 450px;
-    box-shadow: 0 10px 50px var(--shadow);
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
 }
-.modal-content ul { padding-left: 1.5rem; }
-.modal-content li { margin-bottom: 0.5rem; }
-.close-modal { /* ... */ }
+.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal-content {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 1rem; padding: 2rem; width: 90%; max-width: 450px;
+    box-shadow: 0 10px 50px var(--shadow);
+    transform: scale(0.9); transition: transform 0.4s var(--ease-out-expo);
+}
+.modal-overlay.active .modal-content { transform: scale(1); }
+.modal-content h2 { margin-top: 0; }
+.modal-content ul { padding-left: 1.5rem; } .modal-content li { margin-bottom: 0.5rem; }
+.close-modal {
+    position: absolute; top: 1rem; right: 1.5rem; font-size: 2rem;
+    color: var(--secondary-text); cursor: pointer;
+}
 .help-content { display: none; }
 .help-content.active { display: block; }
+.final-score-container { font-size: 1.5rem; margin: 1rem 0 2rem; }
+.primary-btn {
+    background: var(--primary-btn-bg); color: white;
+    border: none; border-radius: 0.5rem; padding: 1rem 2rem;
+    font-size: 1.2rem; font-weight: 700; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.primary-btn:hover { transform: scale(1.05); box-shadow: 0 5px 15px var(--shadow); }
+.settings-option {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem 0; border-bottom: 1px solid var(--card-border);
+}
+select {
+    background: var(--card-bg); color: var(--primary-text);
+    border: 1px solid var(--card-border); border-radius: 0.5rem; padding: 0.5rem;
+}
+.toggle-btn {
+    padding: 0.5rem 1rem; border-radius: 0.5rem;
+    border: 1px solid var(--card-border); background: var(--card-bg);
+    color: var(--secondary-text); cursor: pointer; font-weight: 700;
+}
+.toggle-btn.active { background: #238636; color: white; border-color: #238636;}
+.light-theme .toggle-btn.active { background: #007bff; border-color: #007bff; }
+.neon-theme .toggle-btn.active { background: #00ffde; color: #000; border-color: #00ffde; }
