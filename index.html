@@ -36,7 +36,7 @@
     </div>
 
     <div id="game-mode-screen" class="screen">
-        <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+        <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
         <div id="mode-selection-container"></div>
         <div class="difficulty-selector">
             <button class="difficulty-btn" data-difficulty="easy">Lako</button>
@@ -46,7 +46,7 @@
     </div>
     
     <div id="shop-screen" class="screen">
-        <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+        <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
         <h2>Prodavnica</h2>
         <div class="shop-tabs">
             <button class="shop-tab active" data-tab="themes">Teme</button>
@@ -67,30 +67,18 @@
     <div id="game-screen" class="screen">
         <div id="tetris-game-area" class="game-area">
             <div class="tetris-ui-left-sidebar">
-                <div class="ui-frame">
-                    <div class="frame-title">Zadržano</div>
-                    <div id="tetris-hold-piece" class="piece-preview"></div>
-                </div>
+                <div class="ui-frame"><div class="frame-title">Zadržano</div><div id="tetris-hold-piece" class="piece-preview"></div></div>
             </div>
             <div class="tetris-ui-main">
                 <div class="tetris-main-header">
                     <div class="ui-frame"><div class="frame-title">Nivo</div><div id="tetris-level" class="level-display">1</div></div>
-                    <div class="ui-frame score-frame">
-                        <div id="tetris-score" class="score-display">0</div>
-                        <div class="best-score-container">
-                            <div class="gold-line"></div>
-                            <span>👑 <span id="tetris-best-score">0</span></span>
-                        </div>
-                    </div>
+                    <div class="ui-frame score-frame"><div id="tetris-score" class="score-display">0</div><div class="best-score-container"><div class="gold-line"></div><span>👑 <span id="tetris-best-score">0</span></span></div></div>
                     <div class="ui-frame"><div class="frame-title">Linije</div><div id="tetris-lines" class="level-display">0</div></div>
                 </div>
                 <div class="game-board-frame"><div id="tetris-board"></div></div>
             </div>
             <div class="tetris-ui-right-sidebar">
-                <div class="ui-frame">
-                    <div class="frame-title">Sledeći</div>
-                    <div id="tetris-next-piece" class="piece-preview"></div>
-                </div>
+                <div class="ui-frame"><div class="frame-title">Sledeći</div><div id="tetris-next-piece" class="piece-preview"></div></div>
                 <div class="game-controls">
                     <button id="back-btn-tetris" class="icon-btn large" aria-label="Nazad na meni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
                     <button id="pause-btn-tetris" class="icon-btn large" aria-label="Pauza"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></button>
@@ -98,7 +86,18 @@
             </div>
         </div>
         <div id="puzzle-game-area" class="game-area">
-             </div>
+            <div class="game-content-wrapper">
+                <div class="puzzle-only game-header-bar">
+                    <div class="ui-frame score-frame"><div class="frame-title">Skor</div><div id="puzzle-score" class="score-display game-score">0</div></div>
+                    <div class="ui-frame"><div id="game-timer" class="game-timer"></div></div>
+                    <div class="game-controls">
+                         <button id="pause-btn-puzzle" class="icon-btn small" aria-label="Pauza"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></button>
+                    </div>
+                </div>
+                <div class="game-board-frame"><div id="puzzle-board"></div></div>
+                <div id="puzzle-pieces-container-wrapper"><div id="puzzle-pieces-container"></div></div>
+            </div>
+        </div>
     </div>
 
     <div id="post-game-screen" class="screen">
@@ -106,7 +105,6 @@
         <div class="post-game-summary"><div class="final-score-title">Konačan Skor</div><div id="post-game-score" class="final-score-value">0</div><div id="post-game-new-best" class="new-best-banner">NOVI REKORD!</div></div>
         <div id="post-game-stats" class="post-game-stats"></div>
         <div class="post-game-progress"><div class="level-display-pogs"><span>Nivo <span id="pogs-level">1</span></span><span id="pogs-xp-text">0 / 100 XP</span></div><div class="xp-bar"><div id="pogs-xp-fill" class="xp-fill"></div></div><div id="pogs-level-up" class="level-up-banner">NOVI NIVO! +250 💎</div></div>
-        <div id="post-game-unlocks" class="post-game-unlocks"></div>
         <div class="post-game-actions"><button id="restart-btn-pogs" class="primary-btn secondary">Igraj Ponovo</button><button id="back-to-menu-btn-pogs" class="primary-btn">Glavni Meni</button></div>
     </div>
 
