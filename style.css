@@ -104,7 +104,6 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 .menu-item:hover::before { opacity: 1; }
 .menu-item:hover { transform: translateY(-5px) scale(1.02); }
 .menu-item h2 { margin: 0; font-weight: 700; font-size: 1.5rem;}
-.highscore-display { font-size: 0.9rem; color: var(--secondary-text); margin-top: 0.75rem; }
 
 /* --- IZBOR MODA I POTEŠKOĆE --- */
 #game-mode-screen { justify-content: center; align-items: center; gap: 2rem; }
