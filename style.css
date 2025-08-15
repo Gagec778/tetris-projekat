@@ -1,208 +1,123 @@
-/* --- GLOBALNE VARIJABLE --- */
-:root {
-    --font-family: 'Inter', sans-serif;
-    --transition-speed-fast: 0.3s;
-    --transition-speed-med: 0.6s;
-    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* --- DEFINICIJE TEMA --- */
-body.dark-theme {
-    --bg-color: #0d1117; --primary-text: #e6edf3; --secondary-text: #7d8590;
-    --accent-gradient: linear-gradient(45deg, #f72585, #7209b7);
-    --card-bg: rgba(30, 36, 46, 0.85); --card-border: rgba(137, 147, 163, 0.2);
-    --shadow: rgba(0,0,0,0.4); --primary-btn-bg: #238636;
-    --game-board-bg: rgba(0,0,0,0.3); --game-board-frame: transparent;
-    --grid-line-color: rgba(107, 114, 128, 0.4); --accent-highlight-color: #ffc9e5;
-}
-body.light-theme {
-    --bg-color: #f0f2f5; --primary-text: #1c1e21; --secondary-text: #606770;
-    --accent-gradient: linear-gradient(45deg, #007bff, #00aaff);
-    --card-bg: rgba(255, 255, 255, 0.85); --card-border: rgba(0, 0, 0, 0.1);
-    --shadow: rgba(0,0,0,0.1); --primary-btn-bg: #007bff;
-    --game-board-bg: rgba(255,255,255,0.8); --game-board-frame: transparent;
-    --grid-line-color: rgba(0, 0, 0, 0.2); --accent-highlight-color: #cce5ff;
-}
-body.neon-theme {
-    --bg-color: #000000; --primary-text: #00ffde; --secondary-text: #8d8d8d;
-    --accent-gradient: linear-gradient(45deg, #00ffde, #ff00ff);
-    --card-bg: rgba(15, 15, 15, 0.85); --card-border: rgba(0, 255, 222, 0.3);
-    --shadow: rgba(0, 255, 222, 0.2); --primary-btn-bg: #ff00ff;
-    --game-board-bg: rgba(255,255,255,0.05);
-    --game-board-frame: linear-gradient(160deg, #ff00ff, #00ffde, #ff00ff);
-    --grid-line-color: rgba(0, 255, 222, 0.3); --accent-highlight-color: #d1fff8;
-    text-shadow: 0 0 2px var(--secondary-text);
-}
-body.gold-theme {
-    --bg-color: #1a160d; --primary-text: #f5e8c7; --secondary-text: #a89a7f;
-    --accent-gradient: linear-gradient(45deg, #ffd700, #f0e68c, #daa520);
-    --card-bg: rgba(40, 32, 20, 0.85); --card-border: rgba(255, 215, 0, 0.2);
-    --shadow: rgba(0,0,0,0.5); --primary-btn-bg: #b8860b;
-    --game-board-bg: rgba(0,0,0,0.2);
-    --game-board-frame: linear-gradient(160deg, #b8860b, #ffd700, #b8860b);
-    --grid-line-color: rgba(255, 215, 0, 0.3); --accent-highlight-color: #fff8e1;
-}
-body.silver-theme {
-    --bg-color: #111827; --primary-text: #d1d5db; --secondary-text: #6b7280;
-    --accent-gradient: linear-gradient(45deg, #9ca3af, #e5e7eb, #9ca3af);
-    --card-bg: rgba(31, 41, 55, 0.85); --card-border: rgba(156, 163, 175, 0.2);
-    --shadow: rgba(0,0,0,0.5); --primary-btn-bg: #4b5563;
-    --game-board-bg: rgba(0,0,0,0.3); --game-board-frame: transparent;
-    --grid-line-color: rgba(107, 114, 128, 0.4); --accent-highlight-color: #f9fafb;
-}
-.neon-theme h1, .neon-theme h2, .gold-theme h1, .gold-theme h2, .silver-theme h1, .silver-theme h2 { text-shadow: 0 0 8px var(--shadow); }
-
-/* --- OSNOVNI STILOVI --- */
+:root { --font-family: 'Inter', sans-serif; --transition-speed-fast: 0.2s; --transition-speed-med: 0.5s; --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); }
+body.dark-theme { --bg-color: #0d1117; --primary-text: #e6edf3; --secondary-text: #7d8590; --accent-gradient: linear-gradient(45deg, #f72585, #7209b7); --card-bg: rgba(30, 36, 46, 0.85); --card-border: rgba(137, 147, 163, 0.2); --shadow: rgba(0,0,0,0.4); --primary-btn-bg: #238636; --game-board-bg: rgba(0,0,0,0.3); --grid-line-color: rgba(107, 114, 128, 0.4); }
+body.light-theme { --bg-color: #f0f2f5; --primary-text: #1c1e21; --secondary-text: #606770; --accent-gradient: linear-gradient(45deg, #007bff, #00aaff); --card-bg: rgba(255, 255, 255, 0.85); --card-border: rgba(0, 0, 0, 0.1); --shadow: rgba(0,0,0,0.1); --primary-btn-bg: #007bff; --game-board-bg: rgba(255,255,255,0.8); --grid-line-color: rgba(0, 0, 0, 0.2); }
+body.neon-theme { --bg-color: #000000; --primary-text: #00ffde; --secondary-text: #8d8d8d; --accent-gradient: linear-gradient(45deg, #00ffde, #ff00ff); --card-bg: rgba(15, 15, 15, 0.85); --card-border: rgba(0, 255, 222, 0.3); --shadow: rgba(0, 255, 222, 0.2); --primary-btn-bg: #ff00ff; --game-board-bg: rgba(255,255,255,0.05); --grid-line-color: rgba(0, 255, 222, 0.3); }
+body.gold-theme { --bg-color: #1a160d; --primary-text: #f5e8c7; --secondary-text: #a89a7f; --accent-gradient: linear-gradient(45deg, #ffd700, #f0e68c, #daa520); --card-bg: rgba(40, 32, 20, 0.85); --card-border: rgba(255, 215, 0, 0.2); --shadow: rgba(0,0,0,0.5); --primary-btn-bg: #b8860b; --game-board-bg: rgba(0,0,0,0.2); --grid-line-color: rgba(255, 215, 0, 0.3); }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: -webkit-fill-available; }
 body { font-family: var(--font-family); background: var(--bg-color); color: var(--primary-text); margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; width: 100vw; transition: background-color 0.5s, color 0.5s; }
-
-/* --- ANIMACIJE --- */
 @keyframes aurora-move { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-@keyframes new-best-pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes frame-flow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-@keyframes bomb-pulse { 50% { transform: translate(-50%,-50%) scale(1.2); color: red; } }
-@keyframes screen-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } }
-/* PROMENJENA ANIMACIJA */
-@keyframes line-clear-anim {
-    0% { transform: scale(1.05); }
-    100% { transform: scale(1); opacity: 0; }
-}
-
-/* --- POZADINA --- */
-.aurora-background { position: fixed; top: 50%; left: 50%; width: 150vmax; height: 150vmax; animation: aurora-move 40s infinite linear; z-index: -1; transition: transform 1s; }
-.aurora-dot { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.6; transition: background-color 1s; }
-.aurora-dot:nth-child(1) { width: 600px; height: 600px; top: 0; left: 10%; background: #f72585; } .aurora-dot:nth-child(2) { width: 500px; height: 500px; top: 20%; left: 60%; background: #7209b7; } .aurora-dot:nth-child(3) { width: 400px; height: 400px; top: 70%; left: 20%; background: #4361ee; }
-body.danger-state .aurora-background { animation-duration: 3s; }
-body.danger-state .aurora-dot { background-color: #9d0208 !important; }
-
-/* --- EKRANI I TRANZICIJE --- */
-.screen { position: absolute; width: 100%; height: 100%; top: 0; left: 0; display: flex; flex-direction: column; padding: 1rem; opacity: 0; visibility: hidden; pointer-events: none; transform: scale(0.95); transition: opacity var(--transition-speed-med) var(--ease-out-expo), transform var(--transition-speed-med) var(--ease-out-expo); }
-.screen.active { opacity: 1; visibility: visible; pointer-events: auto; transform: scale(1); }
+@keyframes new-item-pop { from { transform: scale(0.5) translateY(50px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+@keyframes fade-out { to { opacity: 0; transform: translateY(-20px); } }
+@keyframes line-clear-anim { 0% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 0; } }
+@keyframes generic-shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+.aurora-background { position: fixed; top: 50%; left: 50%; width: 150vmax; height: 150vmax; animation: aurora-move 40s infinite linear; z-index: -1; }
+.aurora-dot { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.6; }
+.aurora-dot:nth-child(1) { width: 600px; height: 600px; top: 0; left: 10%; background: #f72585; }
+.aurora-dot:nth-child(2) { width: 500px; height: 500px; top: 20%; left: 60%; background: #7209b7; }
+.aurora-dot:nth-child(3) { width: 400px; height: 400px; top: 70%; left: 20%; background: #4361ee; }
+.screen { position: absolute; width: 100%; height: 100%; top: 0; left: 0; display: flex; flex-direction: column; padding: 1rem; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--transition-speed-med) ease, transform var(--transition-speed-med) ease; }
+.screen.active { opacity: 1; visibility: visible; pointer-events: auto; transform: scale(1); transition-timing-function: var(--ease-out-expo); }
+.screen.slide-out { transform: translateX(-50%); opacity: 0; } .screen.slide-in { transform: translateX(50%); opacity: 0; }
 .screen h2 { font-size: 2rem; font-weight: 900; text-align: center; margin: 1rem 0 2rem 0; }
-.screen.screen-shake { animation: screen-shake 0.15s linear; }
-
-/* --- DUGMAD I KONTROLE --- */
-.primary-btn { background: var(--primary-btn-bg); color: white; border: none; border-radius: 0.5rem; padding: 1rem 2rem; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-.primary-btn:hover { transform: scale(1.05); box-shadow: 0 5px 15px var(--shadow); }
+button, .menu-item { transition: transform var(--transition-speed-fast) ease; }
+button:active, .menu-item:active { transform: scale(0.95); }
+.primary-btn { background: var(--primary-btn-bg); color: white; border: none; border-radius: 0.5rem; padding: 1rem 2rem; font-size: 1.2rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px -5px var(--shadow); }
+.primary-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -5px var(--shadow); }
 .primary-btn.secondary { background: var(--card-bg); color: var(--primary-text); }
-.icon-btn { background: transparent; border: none; padding: 0.5rem; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color var(--transition-speed-fast); }
+.icon-btn { background: transparent; border: none; padding: 0.5rem; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 .icon-btn:hover { background: var(--card-border); }
-.icon-btn.large svg { width: 32px; height: 32px; }
-.icon-btn.small svg { width: 24px; height: 24px; }
-/* PROMENJENO DUGME ZA POVRATAK */
+.icon-btn.large svg { width: 32px; height: 32px; } .icon-btn.small svg { width: 24px; height: 24px; }
 .back-to-main-menu { position: absolute; top: 1rem; left: 1rem; z-index: 10; background-color: var(--card-bg); width: 40px; height: 40px; }
 .toggle-btn { padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--secondary-text); cursor: pointer; font-weight: 700; }
 .toggle-btn.active { background: var(--primary-btn-bg); color: white; border-color: var(--primary-btn-bg); }
-
-/* --- GLAVNI MENI --- */
 #main-menu-screen { align-items: center; justify-content: center; text-align: center; }
 .main-menu-header { position: absolute; top: 1rem; left: 1rem; right: 1rem; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-.gem-balance { display: flex; align-items: center; background: var(--card-bg); border-radius: 2rem; padding: 0.5rem 1rem; font-weight: 700; font-size: 1.2rem; border: 1px solid var(--card-border); }
-.gem-icon { width: 28px; height: 28px; margin-left: 0.5rem; fill: var(--primary-text); stroke: none; }
+.gem-balance { display: flex; align-items: center; background: var(--card-bg); border-radius: 2rem; padding: 0.5rem 1rem; font-weight: 700; font-size: 1.2rem; border: 1px solid var(--card-border); transition: transform 0.3s; }
+.gem-balance.shake { animation: generic-shake 0.5s; }
+.gem-icon { width: 28px; height: 28px; margin-left: 0.5rem; fill: var(--primary-text); stroke: none; animation: gem-shine 5s infinite linear; }
+@keyframes gem-shine { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.5); } }
 .header-buttons { display: flex; gap: 0.5rem; }
-.header-icon svg { stroke: var(--primary-text); transition: all var(--transition-speed-fast); }
-.header-icon:hover svg { transform: scale(1.1) rotate(-15deg); filter: drop-shadow(0 0 5px var(--primary-text));}
 .menu-container h1 { font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 2rem 0; }
-.menu-item { border: 1px solid var(--card-border); border-radius: 1rem; padding: 1px; margin: 1rem auto; width: 90%; max-width: 400px; backdrop-filter: blur(20px); background: transparent; cursor: pointer; position: relative; transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo); }
+.menu-item { border: 1px solid var(--card-border); border-radius: 1rem; padding: 1px; margin: 1rem auto; width: 90%; max-width: 400px; backdrop-filter: blur(20px); cursor: pointer; position: relative; }
 .menu-item-content { background: var(--card-bg); border-radius: inherit; padding: 2rem; }
-.menu-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 1rem; border: 2px solid transparent; background-image: var(--accent-gradient); background-origin: border-box; background-clip: border-box; -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); -webkit-mask-composite: destination-out; mask-composite: exclude; opacity: 0; transition: opacity 0.4s var(--ease-out-expo); }
-.menu-item:hover::before { opacity: 1; }
 .menu-item:hover { transform: translateY(-5px) scale(1.02); }
 .menu-item h2 { margin: 0; font-weight: 700; font-size: 1.5rem;}
-
-/* --- IZBOR MODA I POTEŠKOĆE --- */
+.daily-challenge { margin-top: 2rem; background: var(--card-bg); padding: 1rem; border-radius: 1rem; width: 90%; max-width: 400px; font-size: 0.9rem; border: 1px solid var(--card-border); }
 #game-mode-screen { justify-content: center; align-items: center; gap: 2rem; }
 #mode-selection-container { display: flex; flex-direction: column; gap: 1rem; width: 90%; max-width: 400px; }
-.mode-btn { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--primary-text); padding: 1.5rem; border-radius: 1rem; font-size: 1.2rem; font-weight: 700; width: 100%; cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
-.mode-btn .price-tag { color: var(--secondary-text); font-size: 1rem; margin-left: 0.5rem; }
+.mode-btn { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--primary-text); padding: 1.5rem; border-radius: 1rem; font-size: 1.2rem; font-weight: 700; width: 100%; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+.mode-btn .price-tag { color: gold; font-size: 1rem; margin-left: 0.75rem; font-weight: bold; }
 .mode-btn:hover { transform: translateY(-5px); border-color: var(--accent-highlight-color); }
-.mode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .difficulty-selector { display: flex; background: var(--card-bg); border-radius: 1rem; padding: 0.5rem; }
 .difficulty-btn { background: transparent; border: none; color: var(--secondary-text); padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.3s; }
 .difficulty-btn.active { background: var(--primary-btn-bg); color: white; }
-
-/* --- EKRAN POSLE PARTIJE --- */
 #post-game-screen { justify-content: center; align-items: center; gap: 1rem; text-align: center; }
-.post-game-summary { margin-bottom: 1rem; }
-.final-score-title { font-size: 1rem; color: var(--secondary-text); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;}
+#post-game-screen > * { animation: new-item-pop 0.5s var(--ease-out-expo) backwards; }
+#post-game-screen h2 { animation-delay: 0.1s; } .post-game-summary { animation-delay: 0.2s; } .post-game-stats { animation-delay: 0.3s; } .post-game-progress { animation-delay: 0.4s; } .post-game-actions { animation-delay: 0.5s; }
+.final-score-title { font-size: 1rem; color: var(--secondary-text); text-transform: uppercase;}
 .final-score-value { font-size: 4rem; font-weight: 900; line-height: 1; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.new-best-banner { background: var(--primary-btn-bg); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-top: 0.5rem; display: inline-block; animation: new-best-pop 0.5s var(--ease-out-expo); }
+.new-best-banner { background: var(--primary-btn-bg); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-top: 0.5rem; display: inline-block; }
 .post-game-stats { width: 90%; max-width: 350px; background: var(--card-bg); border-radius: 1rem; padding: 1rem; }
 .stat-line { display: flex; justify-content: space-between; padding: 0.75rem 0; }
 .stat-line:not(:last-child) { border-bottom: 1px solid var(--card-border); }
-.post-game-unlocks { width: 90%; max-width: 350px; }
-.unlock-item { display: flex; align-items: center; gap: 1rem; background: var(--card-bg); padding: 1rem; border-radius: 0.5rem; animation: new-best-pop 0.5s var(--ease-out-expo); margin-top: 1rem; }
-.unlock-icon { font-size: 2rem; }
-.post-game-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
-
-/* --- PRODAVNICA --- */
+.post-game-progress { width: 90%; max-width: 350px; background: var(--card-bg); padding: 1rem; border-radius: 1rem; }
+.level-display-pogs { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 0.5rem; }
+.xp-bar { width: 100%; height: 15px; background: var(--card-border); border-radius: 15px; overflow: hidden; }
+.xp-fill { width: 0%; height: 100%; background: var(--accent-gradient); border-radius: 15px; transition: width 1s var(--ease-out-expo); }
+.level-up-banner { margin-top: 0.5rem; color: gold; font-weight: 700; animation: new-item-pop 0.5s; }
+.post-game-actions { display: flex; gap: 1rem; }
 #shop-screen { justify-content: flex-start; align-items: center; }
-.shop-container { width: 100%; max-width: 600px; height: calc(100vh - 80px); overflow-y: auto; padding: 1rem; }
-.shop-container h3 { border-bottom: 2px solid var(--card-border); padding-bottom: 0.5rem; margin-top: 0; }
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-.shop-item { background: var(--card-bg); border-radius: 1rem; border: 1px solid var(--card-border); padding: 1rem; text-align: center; transition: transform 0.2s; }
+.shop-tabs { display: flex; gap: 0.5rem; border-bottom: 2px solid var(--card-border); margin-bottom: 1rem; width: 100%; max-width: 600px; }
+.shop-tab { padding: 1rem; background: transparent; border: none; color: var(--secondary-text); font-weight: 700; font-size: 1rem; cursor: pointer; border-bottom: 3px solid transparent; }
+.shop-tab.active { color: var(--primary-text); border-bottom-color: var(--primary-btn-bg); }
+.shop-container { width: 100%; max-width: 600px; height: calc(100vh - 120px); overflow-y: auto; }
+.shop-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+.shop-grid.active { display: grid; }
+.shop-item { background: var(--card-bg); border-radius: 1rem; border: 2px solid var(--card-border); padding: 1rem; text-align: center; transition: transform 0.2s, border-color 0.2s; }
+.shop-item.active-item { border-color: gold; box-shadow: 0 0 10px gold; }
 .shop-item:hover { transform: translateY(-5px); }
-.shop-item-preview { height: 80px; margin-bottom: 1rem; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 900; border-radius: 0.5rem; border: 2px dashed var(--card-border); }
-.shop-item-price { display: flex; justify-content: center; align-items: center; font-weight: 700; margin: 0.5rem 0; }
+.shop-item-preview { height: 80px; margin-bottom: 1rem; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 900; border-radius: 0.5rem; padding: 0.5rem; border: 2px dashed var(--card-border); }
+.shop-item-preview .game-block { width: 25px; height: 25px; }
+.shop-item-price { font-weight: 700; margin: 0.5rem 0; }
 .shop-item-btn { width: 100%; padding: 0.75rem; border: none; border-radius: 0.5rem; cursor: pointer; background: var(--primary-btn-bg); color: white; font-weight: 700; }
 .shop-item-btn:disabled { background: var(--secondary-text); cursor: default; }
-
-/* --- EKRAN SA IGROM --- */
-#game-screen { justify-content: center; align-items: center; padding: 0; }
-.game-area { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: space-around; align-items: center; }
+#game-screen { padding: 0.5rem; justify-content: center; align-items: center; }
+.game-area { display: none; width: 100%; height: 100%; }
 .game-area.active { display: flex; }
-#tetris-game-area { flex-direction: row; flex-wrap: wrap; justify-content: center; align-content: center; gap: 1rem; }
-.game-header-bar { display: flex; width: 100%; justify-content: center; align-items: stretch; gap: 0.5rem; padding: 0.5rem; }
-.game-controls-header { display: flex; justify-content: center; gap: 1rem; padding: 0.5rem; position: absolute; top: 0; right: 0; }
-.puzzle-only.game-header-bar { padding: 1rem; }
-.ui-frame { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; padding: 0.5rem; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-height: 80px;}
-.score-frame { flex: 1.5; } 
-.frame-title { font-size: 0.7rem; color: var(--secondary-text); font-weight: 700; margin-bottom: 0.25rem; text-transform: uppercase; }
-.score-display, .level-display { font-size: 1.8rem; font-weight: 900; line-height: 1; transition: color 0.2s; }
-.score-display.score-updated, .level-display.score-updated { color: var(--accent-highlight-color); transform: scale(1.1); }
-.piece-preview { flex-grow: 1; display: grid; justify-content: center; align-content: center; }
-.piece-preview .game-block { width: 15px; height: 15px; }
-#tetris-hold-container { display: none; } body.hold-enabled #tetris-hold-container { display: flex; }
-.game-content-wrapper { display: flex; flex-direction: column; justify-content: space-around; align-items: center; width: 100%; height: 100%; }
-#puzzle-pieces-container-wrapper { padding: 1rem; width: 100%; }
-#puzzle-pieces-container { display: flex; justify-content: space-around; align-items: center; }
-.puzzle-piece { cursor: grab; } .puzzle-piece.dragging { position: fixed; z-index: 1000; pointer-events: none; opacity: 0.8; transform: scale(1.2); }
+#tetris-game-area { display: none; grid-template-columns: 1fr auto 1fr; align-items: center; justify-content: center; gap: 1rem; width: 100%; height: 100%; max-width: 500px; margin: auto; }
+#tetris-game-area.active { display: grid; }
+.tetris-ui-left-sidebar, .tetris-ui-right-sidebar { display: flex; flex-direction: column; gap: 1rem; height: 100%; justify-content: space-between; }
+.tetris-ui-main { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.tetris-main-header { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 0.5rem; width: 100%; }
+.best-score-container { position: relative; padding-top: 5px; font-size: 0.9rem; }
+.gold-line { position: absolute; top: 0; left: 10%; right: 10%; height: 2px; background: gold; }
+.ui-frame { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; padding: 0.5rem; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 80px; }
+.frame-title { font-size: 0.7rem; color: var(--secondary-text); text-transform: uppercase; margin-bottom: 0.25rem; }
+.score-display, .level-display { font-size: 1.8rem; font-weight: 900; line-height: 1; }
+.piece-preview { flex-grow: 1; display: grid; place-content: center; grid-gap: 1px; }
+.piece-preview .game-block { width: 12px; height: 12px; }
+#puzzle-pieces-container { display: flex; justify-content: space-around; align-items: center; height: 80px; }
+.puzzle-piece { cursor: grab; transition: opacity 0.2s; }
+.puzzle-piece.bad-move { animation: generic-shake 0.3s; }
+.puzzle-piece.dragging { position: fixed; z-index: 1000; pointer-events: none; opacity: 0.8; transform: scale(1.2); }
 .puzzle-piece-cell { width: 20px; height: 20px; }
-
-/* --- TABLE ZA IGRU --- */
-.game-board-frame { padding: 5px; border: none; background: var(--game-board-frame); background-size: 300% 300%; animation: frame-flow 5s linear infinite; border-radius: 12px; box-shadow: 0 0 20px var(--shadow); }
-#tetris-board, #puzzle-board { background-color: var(--game-board-bg); backdrop-filter: blur(5px); }
-#tetris-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); width: min(65vw, 280px); height: min(130vw, 560px); border-radius: 8px; }
-#puzzle-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr); width: 90vw; height: 90vw; max-width: 400px; max-height: 400px; border-radius: 8px; }
-.tetris-cell, .puzzle-cell { box-shadow: inset 0 0 0 1px var(--grid-line-color); background-color: transparent; position: relative; }
-.tetris-cell.ghost { background-color: rgba(255,255,255,0.2); border-radius: min(25%, 6px); }
-.puzzle-cell.ghost-path { background-color: var(--accent-highlight-color); opacity: 0.5; border-radius: 4px; }
-.tetris-cell.line-clearing { background-color: var(--accent-highlight-color); animation: line-clear-anim 0.3s forwards; }
-.game-block { border-radius: min(25%, 6px); background-image: linear-gradient(160deg, rgba(255,255,255,0.25), rgba(255,255,255,0) 60%); box-shadow: inset 0px 2px 1px rgba(255,255,255,0.4), inset 0px -2px 1px rgba(0,0,0,0.2), 0 5px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
-.game-block.stone { background-image: linear-gradient(45deg, #8d99ae 25%, transparent 25%), linear-gradient(-45deg, #8d99ae 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #8d99ae 75%), linear-gradient(-45deg, transparent 75%, #8d99ae 75%); background-size: 15px 15px; background-color: #adb5bd; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
-.game-block.stone.cracked::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: linear-gradient(135deg, transparent 48%, rgba(0,0,0,0.5) 48%, rgba(0,0,0,0.5) 52%, transparent 52%); }
-.bomb-timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; font-weight: 900; color: white; text-shadow: 0 0 5px black; animation: bomb-pulse 1s infinite; }
-
-/* --- STILOVI BLOKOVA PO TEMAMA --- */
+.game-board-frame { padding: 5px; background: var(--card-bg); border-radius: 12px; box-shadow: 0 0 20px var(--shadow); }
+#tetris-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); width: min(50vw, 280px); height: min(100vw, 560px); border-radius: 8px; background: var(--game-board-bg); }
+.tetris-cell, .puzzle-cell { box-shadow: inset 0 0 0 1px var(--grid-line-color); }
+.tetris-cell.ghost { background-color: rgba(255,255,255,0.2); border-radius: 25%; }
+.tetris-cell.line-clearing { background-color: white; animation: line-clear-anim 0.3s forwards; }
+.game-block { border-radius: 25%; background-image: linear-gradient(160deg, rgba(255,255,255,0.25), transparent 60%); box-shadow: inset 0px 2px 1px rgba(255,255,255,0.4), inset 0px -2px 1px rgba(0,0,0,0.2), 0 5px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
 body.neon-theme .game-block { box-shadow: 0 0 3px #fff, 0 0 8px var(--primary-text); border: 1px solid var(--primary-text); }
-body.gold-theme .game-block { background-image: linear-gradient(160deg, #fff2cc, rgba(255,255,255,0) 70%); border: 1px solid rgba(255, 215, 0, 0.5); }
-
-
-/* --- MODALI I PREKRIVAČI --- */
+body.gold-theme .game-block { background-image: linear-gradient(160deg, #fff2cc, transparent 70%); border: 1px solid rgba(255, 215, 0, 0.5); }
+body.block-style-glass .game-block { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.5); backdrop-filter: blur(2px); box-shadow: inset 0 1px 2px #fff; }
+body.block-style-wood .game-block { background-image: linear-gradient(135deg, #8c5a2e, #6b4522); box-shadow: inset 0 0 5px rgba(0,0,0,0.5); border: 1px solid #4a2d1e; }
+body.block-style-retro .game-block { border: 2px solid var(--primary-text); background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--card-bg) 2px, var(--card-bg) 4px); box-shadow: none; border-radius: 0; }
 .modal-overlay, .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
 .modal-overlay.active, .overlay.active { opacity: 1; visibility: visible; }
 .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; padding: 2rem; width: 90%; max-width: 450px; box-shadow: 0 10px 50px var(--shadow); transform: scale(0.9); transition: transform 0.4s var(--ease-out-expo); }
 .modal-overlay.active .modal-content { transform: scale(1); }
 .close-modal { position: absolute; top: 1rem; right: 1.5rem; font-size: 2rem; color: var(--secondary-text); cursor: pointer; }
-.settings-option { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--card-border); }
-.settings-option:last-child { border-bottom: none; }
-#theme-select-container { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; }
-.theme-option { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 0.25rem; border: 2px solid transparent; }
-.theme-option.active { border-color: var(--primary-btn-bg); }
-.theme-option.locked { opacity: 0.5; cursor: not-allowed; }
-.theme-preview { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--primary-text); }
-input[type="range"] { -webkit-appearance: none; appearance: none; background: var(--card-border); height: 8px; border-radius: 5px; outline: none; flex-grow: 1; margin-left: 1rem; }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--primary-text); cursor: pointer; }
-.countdown-text { font-size: 10rem; font-weight: 900; color: white; text-shadow: 0 0 20px var(--shadow); }
-.pause-box { text-align: center; color: white; } .pause-box h2 { text-shadow: 0 0 10px black;}
+.confirm-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; }
+#notification-area { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 3000; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; pointer-events: none; }
+.notification { background: var(--card-bg); color: var(--primary-text); padding: 1rem; border-radius: 0.5rem; box-shadow: var(--shadow); animation: new-item-pop 0.5s, fade-out 0.5s 3.5s forwards; }
