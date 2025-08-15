@@ -17,48 +17,66 @@
 
     <div id="main-menu-screen" class="screen active">
         <header class="main-menu-header">
-            <button id="leaderboard-btn" class="icon-btn large">🏆</button>
-            <button id="settings-btn" class="icon-btn large">⚙️</button>
+            <div id="gem-balance-display" class="gem-balance">
+                <span id="gem-balance">0</span> 💎
+            </div>
+            <div class="header-buttons">
+                <button id="shop-btn" class="icon-btn large">🛒</button>
+                <button id="achievements-btn" class="icon-btn large">🏆</button>
+                <button id="settings-btn" class="icon-btn large">⚙️</button>
+            </div>
         </header>
         <main class="menu-container">
             <h1>Puzzle<br>Universe</h1>
             <div class="menu-item" data-game="tetris">
-                <div class="menu-item-content">
-                    <h2>Classic Blocks</h2>
-                    <div class="highscore">HIGH SCORE: <span id="highscore-tetris-marathon">0</span></div>
-                </div>
+                <div class="menu-item-content"><h2>Classic Blocks</h2><div class="highscore">HIGH SCORE: <span id="highscore-tetris-marathon-hard">0</span></div></div>
             </div>
             <div class="menu-item" data-game="block-puzzle">
-                <div class="menu-item-content">
-                    <h2>Puzzle Board</h2>
-                    <div class="highscore">HIGH SCORE: <span id="highscore-block-puzzle-classic">0</span></div>
-                </div>
+                <div class="menu-item-content"><h2>Puzzle Board</h2><div class="highscore">HIGH SCORE: <span id="highscore-block-puzzle-classic-hard">0</span></div></div>
             </div>
         </main>
     </div>
 
     <div id="game-mode-screen" class="screen">
         </div>
+
+    <div id="shop-screen" class="screen">
+        <button class="icon-btn small back-to-main-menu">&larr;</button>
+        <h2>Prodavnica</h2>
+        <div class="shop-container">
+            <h3>Teme</h3>
+            <div id="shop-themes-container" class="shop-grid"></div>
+            <h3>Modovi Igre</h3>
+            <div id="shop-modes-container" class="shop-grid"></div>
+        </div>
+    </div>
+
+    <div id="achievements-screen" class="screen">
+        <button class="icon-btn small back-to-main-menu">&larr;</button>
+        <h2>Dostignuća</h2>
+        <div id="achievements-container" class="achievements-container"></div>
+    </div>
     
     <div id="game-screen" class="screen">
         </div>
+    
+    <div id="post-game-screen" class="screen">
+        </div>
 
-    <div id="leaderboard-modal" class="modal-overlay">
+    <div id="daily-login-modal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
-            <h2>🏆 Liderbord</h2>
-            <div class="leaderboard-filters">
-                <select id="leaderboard-game-filter"></select>
-                <select id="leaderboard-mode-filter"></select>
-            </div>
-            <div id="leaderboard-loading">Učitavanje...</div>
-            <ol id="leaderboard-list"></ol>
+            <h2 id="daily-login-title">Dobrodošli Nazad!</h2>
+            <p id="daily-login-text">Tvoja dnevna nagrada:</p>
+            <div id="daily-login-reward" class="gem-reward">100 💎</div>
+            <p id="daily-login-streak"></p>
         </div>
     </div>
-    
-    <div id="settings-modal" class="modal-overlay">...</div>
-    <div id="game-over-modal" class="modal-overlay">...</div>
-    <div id="help-modal" class="modal-overlay">...</div>
+
+    <div id="settings-modal" class="modal-overlay">
+        </div>
+    <div id="help-modal" class="modal-overlay">
+        </div>
     
     <script src="script.js"></script>
 </body>
