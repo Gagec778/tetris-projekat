@@ -16,93 +16,49 @@
     </div>
 
     <div id="main-menu-screen" class="screen active">
-        <header class="main-header"><h1>Puzzle<br>Universe</h1></header>
-        <main class="menu-container">
-            <div class="menu-item" data-game="tetris"><div class="menu-item-content"><h2>Classic Blocks</h2><div class="highscore">HIGH SCORE: <span id="highscore-tetris-marathon">0</span></div></div></div>
-            <div class="menu-item" data-game="block-puzzle"><div class="menu-item-content"><h2>Puzzle Board</h2><div class="highscore">HIGH SCORE: <span id="highscore-block-puzzle-classic">0</span></div></div></div>
-        </main>
-        <footer class="footer-menu">
-            <button id="stats-btn" class="icon-btn large">📊</button>
+        <header class="main-menu-header">
+            <button id="leaderboard-btn" class="icon-btn large">🏆</button>
             <button id="settings-btn" class="icon-btn large">⚙️</button>
-        </footer>
+        </header>
+        <main class="menu-container">
+            <h1>Puzzle<br>Universe</h1>
+            <div class="menu-item" data-game="tetris">
+                <div class="menu-item-content">
+                    <h2>Classic Blocks</h2>
+                    <div class="highscore">HIGH SCORE: <span id="highscore-tetris-marathon">0</span></div>
+                </div>
+            </div>
+            <div class="menu-item" data-game="block-puzzle">
+                <div class="menu-item-content">
+                    <h2>Puzzle Board</h2>
+                    <div class="highscore">HIGH SCORE: <span id="highscore-block-puzzle-classic">0</span></div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <div id="game-mode-screen" class="screen">
-        <button class="icon-btn small back-to-main-menu">&larr;</button>
-        <h2 id="mode-select-title">Izaberi Mod</h2>
-        <div id="mode-selection-container"></div>
-        <h3 class="difficulty-title">Težina</h3>
-        <div class="difficulty-selector">
-            <button data-difficulty="easy" class="difficulty-btn active">Lako</button>
-            <button data-difficulty="normal" class="difficulty-btn">Normalno</button>
-            <button data-difficulty="hard" class="difficulty-btn">Teško</button>
+        </div>
+    
+    <div id="game-screen" class="screen">
+        </div>
+
+    <div id="leaderboard-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>🏆 Liderbord</h2>
+            <div class="leaderboard-filters">
+                <select id="leaderboard-game-filter"></select>
+                <select id="leaderboard-mode-filter"></select>
+            </div>
+            <div id="leaderboard-loading">Učitavanje...</div>
+            <ol id="leaderboard-list"></ol>
         </div>
     </div>
     
-    <div id="stats-screen" class="screen">
-         <button class="icon-btn small back-to-main-menu">&larr;</button>
-         <h2>Statistika</h2>
-         <div class="stats-container"></div>
-    </div>
-
-    <div id="game-screen" class="screen">
-        <div id="first-time-help-overlay"></div>
-        <div id="pause-overlay"><div class="pause-box"><h2>Pauza</h2><button id="resume-btn" class="primary-btn">Nastavi</button></div></div>
-        <div id="countdown-overlay"><span id="countdown-text">3</span></div>
-
-        <header id="tetris-ui-header" class="game-header-bar tetris-only">
-            <div class="ui-frame" id="tetris-next-container">
-                <div class="frame-title">NEXT</div>
-                <div id="tetris-next-piece"></div>
-            </div>
-            <div class="ui-frame score-frame">
-                <div class="frame-title">SCORE</div>
-                <div id="tetris-score" class="score-display">0</div>
-                <div class="best-score-container">
-                    <div class="crown">👑</div>
-                    <div id="tetris-best-score" class="best-score-display">0</div>
-                </div>
-            </div>
-            <div class="ui-frame">
-                <div class="frame-title">LEVEL</div>
-                <div id="tetris-level" class="level-display">1</div>
-                <div class="game-controls">
-                    <button id="pause-btn-tetris" class="icon-btn small">||</button>
-                    <button id="back-btn-tetris" class="icon-btn small">&larr;</button>
-                </div>
-            </div>
-        </header>
-
-        <header class="game-header-bar puzzle-only">
-            <button id="pause-btn-puzzle" class="icon-btn small">||</button>
-            <div class="game-info-container">
-                <div class="game-score">SCORE: <span id="puzzle-score">0</span></div>
-                <div id="game-timer" class="game-timer"></div>
-            </div>
-            <button id="help-btn" class="icon-btn small">?</button>
-        </header>
-
-        <main class="game-content-wrapper">
-            <div id="tetris-game-area" class="game-area"><div id="tetris-board-container" class="game-board-frame"><div id="tetris-board"></div></div></div>
-            <div id="block-puzzle-game-area" class="game-area"><div id="puzzle-board-container" class="game-board-frame"><div id="puzzle-board"></div></div></div>
-        </main>
-        
-        <footer id="puzzle-pieces-container-wrapper" class="puzzle-only">
-             <div id="puzzle-pieces-container"></div>
-        </footer>
-    </div>
-
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span><h2>Podešavanja</h2>
-            <div class="settings-option"><label for="theme-select">Tema</label><select id="theme-select"><option value="dark">Tamna</option><option value="light">Svetla</option><option value="neon">Neon</option><option value="gold">Zlatna</option><option value="silver">Srebrna</option></select></div>
-            <div class="settings-option"><label>Muzika</label><input type="range" id="music-volume" min="0" max="1" step="0.1"></div>
-            <div class="settings-option"><label>Efekti</label><input type="range" id="sfx-volume" min="0" max="1" step="0.1"></div>
-            <div class="settings-option"><span>Vibracija</span><button id="haptics-toggle-btn" class="toggle-btn active">ON</button></div>
-        </div>
-    </div>
-    <div id="game-over-modal" class="modal-overlay"><div class="modal-content"><h2 id="game-over-title">Kraj Igre</h2><p class="final-score-container">Tvoji poeni: <span id="final-score">0</span></p><button id="restart-btn" class="primary-btn">Igraj Ponovo</button></div></div>
-    <div id="help-modal" class="modal-overlay"><div class="modal-content"><span class="close-modal">&times;</span><h2 id="help-title">Kako Igrati</h2><div id="help-content-container"></div></div></div>
+    <div id="settings-modal" class="modal-overlay">...</div>
+    <div id="game-over-modal" class="modal-overlay">...</div>
+    <div id="help-modal" class="modal-overlay">...</div>
     
     <script src="script.js"></script>
 </body>
