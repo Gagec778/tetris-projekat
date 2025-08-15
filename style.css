@@ -13,7 +13,7 @@ body.dark-theme {
     --card-bg: rgba(30, 36, 46, 0.85); --card-border: rgba(137, 147, 163, 0.2);
     --shadow: rgba(0,0,0,0.4); --primary-btn-bg: #238636;
     --game-board-bg: rgba(0,0,0,0.3); --game-board-frame: transparent;
-    --grid-line-color: rgba(107, 114, 128, 0.3); --accent-highlight-color: #ffc9e5;
+    --grid-line-color: rgba(107, 114, 128, 0.4); --accent-highlight-color: #ffc9e5;
 }
 body.light-theme {
     --bg-color: #f0f2f5; --primary-text: #1c1e21; --secondary-text: #606770;
@@ -21,7 +21,7 @@ body.light-theme {
     --card-bg: rgba(255, 255, 255, 0.85); --card-border: rgba(0, 0, 0, 0.1);
     --shadow: rgba(0,0,0,0.1); --primary-btn-bg: #007bff;
     --game-board-bg: rgba(255,255,255,0.8); --game-board-frame: transparent;
-    --grid-line-color: rgba(0, 0, 0, 0.15); --accent-highlight-color: #cce5ff;
+    --grid-line-color: rgba(0, 0, 0, 0.2); --accent-highlight-color: #cce5ff;
 }
 body.neon-theme {
     --bg-color: #000000; --primary-text: #00ffde; --secondary-text: #8d8d8d;
@@ -30,7 +30,7 @@ body.neon-theme {
     --shadow: rgba(0, 255, 222, 0.2); --primary-btn-bg: #ff00ff;
     --game-board-bg: rgba(255,255,255,0.05);
     --game-board-frame: linear-gradient(160deg, #ff00ff, #00ffde, #ff00ff);
-    --grid-line-color: rgba(0, 255, 222, 0.2); --accent-highlight-color: #d1fff8;
+    --grid-line-color: rgba(0, 255, 222, 0.3); --accent-highlight-color: #d1fff8;
     text-shadow: 0 0 2px var(--secondary-text);
 }
 body.gold-theme {
@@ -40,7 +40,7 @@ body.gold-theme {
     --shadow: rgba(0,0,0,0.5); --primary-btn-bg: #b8860b;
     --game-board-bg: rgba(0,0,0,0.2);
     --game-board-frame: linear-gradient(160deg, #b8860b, #ffd700, #b8860b);
-    --grid-line-color: rgba(255, 215, 0, 0.2); --accent-highlight-color: #fff8e1;
+    --grid-line-color: rgba(255, 215, 0, 0.3); --accent-highlight-color: #fff8e1;
 }
 body.silver-theme {
     --bg-color: #111827; --primary-text: #d1d5db; --secondary-text: #6b7280;
@@ -48,7 +48,7 @@ body.silver-theme {
     --card-bg: rgba(31, 41, 55, 0.85); --card-border: rgba(156, 163, 175, 0.2);
     --shadow: rgba(0,0,0,0.5); --primary-btn-bg: #4b5563;
     --game-board-bg: rgba(0,0,0,0.3); --game-board-frame: transparent;
-    --grid-line-color: rgba(107, 114, 128, 0.3); --accent-highlight-color: #f9fafb;
+    --grid-line-color: rgba(107, 114, 128, 0.4); --accent-highlight-color: #f9fafb;
 }
 .neon-theme h1, .neon-theme h2, .gold-theme h1, .gold-theme h2, .silver-theme h1, .silver-theme h2 { text-shadow: 0 0 8px var(--shadow); }
 
@@ -63,6 +63,11 @@ body { font-family: var(--font-family); background: var(--bg-color); color: var(
 @keyframes frame-flow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 @keyframes bomb-pulse { 50% { transform: translate(-50%,-50%) scale(1.2); color: red; } }
 @keyframes screen-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } }
+/* PROMENJENA ANIMACIJA */
+@keyframes line-clear-anim {
+    0% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 0; }
+}
 
 /* --- POZADINA --- */
 .aurora-background { position: fixed; top: 50%; left: 50%; width: 150vmax; height: 150vmax; animation: aurora-move 40s infinite linear; z-index: -1; transition: transform 1s; }
@@ -85,7 +90,8 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 .icon-btn:hover { background: var(--card-border); }
 .icon-btn.large svg { width: 32px; height: 32px; }
 .icon-btn.small svg { width: 24px; height: 24px; }
-.back-to-main-menu { position: absolute; top: 1rem; left: 1rem; z-index: 10; }
+/* PROMENJENO DUGME ZA POVRATAK */
+.back-to-main-menu { position: absolute; top: 1rem; left: 1rem; z-index: 10; background-color: var(--card-bg); width: 40px; height: 40px; }
 .toggle-btn { padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--secondary-text); cursor: pointer; font-weight: 700; }
 .toggle-btn.active { background: var(--primary-btn-bg); color: white; border-color: var(--primary-btn-bg); }
 
@@ -93,13 +99,13 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 #main-menu-screen { align-items: center; justify-content: center; text-align: center; }
 .main-menu-header { position: absolute; top: 1rem; left: 1rem; right: 1rem; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
 .gem-balance { display: flex; align-items: center; background: var(--card-bg); border-radius: 2rem; padding: 0.5rem 1rem; font-weight: 700; font-size: 1.2rem; border: 1px solid var(--card-border); }
-.gem-icon { width: 24px; height: 24px; margin-left: 0.5rem; fill: var(--primary-text); stroke: none; }
+.gem-icon { width: 28px; height: 28px; margin-left: 0.5rem; fill: var(--primary-text); stroke: none; }
 .header-buttons { display: flex; gap: 0.5rem; }
 .header-icon svg { stroke: var(--primary-text); transition: all var(--transition-speed-fast); }
 .header-icon:hover svg { transform: scale(1.1) rotate(-15deg); filter: drop-shadow(0 0 5px var(--primary-text));}
 .menu-container h1 { font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 2rem 0; }
-.menu-item { border: 1px solid var(--card-border); border-radius: 1rem; padding: 1px; margin: 0.75rem auto; width: 90%; max-width: 400px; backdrop-filter: blur(20px); background: transparent; cursor: pointer; position: relative; transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo); }
-.menu-item-content { background: var(--card-bg); border-radius: inherit; padding: 1.5rem; }
+.menu-item { border: 1px solid var(--card-border); border-radius: 1rem; padding: 1px; margin: 1rem auto; width: 90%; max-width: 400px; backdrop-filter: blur(20px); background: transparent; cursor: pointer; position: relative; transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo); }
+.menu-item-content { background: var(--card-bg); border-radius: inherit; padding: 2rem; }
 .menu-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 1rem; border: 2px solid transparent; background-image: var(--accent-gradient); background-origin: border-box; background-clip: border-box; -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); -webkit-mask-composite: destination-out; mask-composite: exclude; opacity: 0; transition: opacity 0.4s var(--ease-out-expo); }
 .menu-item:hover::before { opacity: 1; }
 .menu-item:hover { transform: translateY(-5px) scale(1.02); }
@@ -109,6 +115,7 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 #game-mode-screen { justify-content: center; align-items: center; gap: 2rem; }
 #mode-selection-container { display: flex; flex-direction: column; gap: 1rem; width: 90%; max-width: 400px; }
 .mode-btn { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--primary-text); padding: 1.5rem; border-radius: 1rem; font-size: 1.2rem; font-weight: 700; width: 100%; cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
+.mode-btn .price-tag { color: var(--secondary-text); font-size: 1rem; margin-left: 0.5rem; }
 .mode-btn:hover { transform: translateY(-5px); border-color: var(--accent-highlight-color); }
 .mode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .difficulty-selector { display: flex; background: var(--card-bg); border-radius: 1rem; padding: 0.5rem; }
@@ -129,22 +136,17 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 .unlock-icon { font-size: 2rem; }
 .post-game-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
 
-/* --- PRODAVNICA I DOSTIGNUĆA --- */
-#shop-screen, #achievements-screen { justify-content: flex-start; align-items: center; }
-.shop-container, .achievements-container { width: 100%; max-width: 500px; height: calc(100vh - 80px); overflow-y: auto; padding: 1rem; }
-.shop-container h3, .achievements-container h3 { border-bottom: 2px solid var(--card-border); padding-bottom: 0.5rem; margin-top: 0; }
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-.shop-item { background: var(--card-bg); border-radius: 1rem; border: 1px solid var(--card-border); padding: 1rem; text-align: center; }
-.shop-item-preview { height: 60px; margin-bottom: 1rem; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 900; }
+/* --- PRODAVNICA --- */
+#shop-screen { justify-content: flex-start; align-items: center; }
+.shop-container { width: 100%; max-width: 600px; height: calc(100vh - 80px); overflow-y: auto; padding: 1rem; }
+.shop-container h3 { border-bottom: 2px solid var(--card-border); padding-bottom: 0.5rem; margin-top: 0; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.shop-item { background: var(--card-bg); border-radius: 1rem; border: 1px solid var(--card-border); padding: 1rem; text-align: center; transition: transform 0.2s; }
+.shop-item:hover { transform: translateY(-5px); }
+.shop-item-preview { height: 80px; margin-bottom: 1rem; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 900; border-radius: 0.5rem; border: 2px dashed var(--card-border); }
 .shop-item-price { display: flex; justify-content: center; align-items: center; font-weight: 700; margin: 0.5rem 0; }
 .shop-item-btn { width: 100%; padding: 0.75rem; border: none; border-radius: 0.5rem; cursor: pointer; background: var(--primary-btn-bg); color: white; font-weight: 700; }
 .shop-item-btn:disabled { background: var(--secondary-text); cursor: default; }
-.achievement-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; padding: 1rem; display: flex; gap: 1rem; align-items: center; }
-.achievement-item.completed { border-left: 5px solid gold; }
-.achievement-icon { font-size: 2rem; } .achievement-details h4 { margin: 0; } .achievement-details p { margin: 0.25rem 0; font-size: 0.9rem; color: var(--secondary-text); }
-.achievement-progress-bar { width: 100%; background: var(--card-border); border-radius: 1rem; height: 10px; margin-top: 0.5rem; overflow: hidden;}
-.achievement-progress-fill { height: 100%; background: var(--accent-gradient); border-radius: 1rem; width: 0%; transition: width 0.5s; }
-.achievement-reward { margin-left: auto; font-weight: 700; }
 
 /* --- EKRAN SA IGROM --- */
 #game-screen { justify-content: center; align-items: center; padding: 0; }
@@ -159,8 +161,8 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 .frame-title { font-size: 0.7rem; color: var(--secondary-text); font-weight: 700; margin-bottom: 0.25rem; text-transform: uppercase; }
 .score-display, .level-display { font-size: 1.8rem; font-weight: 900; line-height: 1; transition: color 0.2s; }
 .score-display.score-updated, .level-display.score-updated { color: var(--accent-highlight-color); transform: scale(1.1); }
-.best-score-container { margin-top: 0.25rem; color: var(--secondary-text); font-size: 0.8rem; } .crown { font-size: 0.8rem; display: inline-block; } .best-score-display { font-weight: 700; color: var(--primary-text); }
 .piece-preview { flex-grow: 1; display: grid; justify-content: center; align-content: center; }
+.piece-preview .game-block { width: 15px; height: 15px; }
 #tetris-hold-container { display: none; } body.hold-enabled #tetris-hold-container { display: flex; }
 .game-content-wrapper { display: flex; flex-direction: column; justify-content: space-around; align-items: center; width: 100%; height: 100%; }
 #puzzle-pieces-container-wrapper { padding: 1rem; width: 100%; }
@@ -176,12 +178,16 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 .tetris-cell, .puzzle-cell { box-shadow: inset 0 0 0 1px var(--grid-line-color); background-color: transparent; position: relative; }
 .tetris-cell.ghost { background-color: rgba(255,255,255,0.2); border-radius: min(25%, 6px); }
 .puzzle-cell.ghost-path { background-color: var(--accent-highlight-color); opacity: 0.5; border-radius: 4px; }
-.tetris-cell.line-clearing { animation: line-clear-anim 0.3s forwards; }
-@keyframes line-clear-anim { 0% { background-color: var(--accent-highlight-color); transform: scale(1.1); } 100% { background-color: transparent; transform: scale(0); } }
+.tetris-cell.line-clearing { background-color: var(--accent-highlight-color); animation: line-clear-anim 0.3s forwards; }
 .game-block { border-radius: min(25%, 6px); background-image: linear-gradient(160deg, rgba(255,255,255,0.25), rgba(255,255,255,0) 60%); box-shadow: inset 0px 2px 1px rgba(255,255,255,0.4), inset 0px -2px 1px rgba(0,0,0,0.2), 0 5px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
 .game-block.stone { background-image: linear-gradient(45deg, #8d99ae 25%, transparent 25%), linear-gradient(-45deg, #8d99ae 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #8d99ae 75%), linear-gradient(-45deg, transparent 75%, #8d99ae 75%); background-size: 15px 15px; background-color: #adb5bd; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
 .game-block.stone.cracked::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: linear-gradient(135deg, transparent 48%, rgba(0,0,0,0.5) 48%, rgba(0,0,0,0.5) 52%, transparent 52%); }
 .bomb-timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; font-weight: 900; color: white; text-shadow: 0 0 5px black; animation: bomb-pulse 1s infinite; }
+
+/* --- STILOVI BLOKOVA PO TEMAMA --- */
+body.neon-theme .game-block { box-shadow: 0 0 3px #fff, 0 0 8px var(--primary-text); border: 1px solid var(--primary-text); }
+body.gold-theme .game-block { background-image: linear-gradient(160deg, #fff2cc, rgba(255,255,255,0) 70%); border: 1px solid rgba(255, 215, 0, 0.5); }
+
 
 /* --- MODALI I PREKRIVAČI --- */
 .modal-overlay, .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
