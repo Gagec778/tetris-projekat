@@ -1,36 +1,42 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- GLOBALNI ELEMENTI ---
-    const screens = { mainMenu: document.getElementById('main-menu-screen'), gameMode: document.getElementById('game-mode-screen'), game: document.getElementById('game-screen'), postGame: document.getElementById('post-game-screen') };
+    const screens = { mainMenu: document.getElementById('main-menu-screen'), gameMode: document.getElementById('game-mode-screen'), shop: document.getElementById('shop-screen'), achievements: document.getElementById('achievements-screen'), game: document.getElementById('game-screen'), postGame: document.getElementById('post-game-screen') };
     const highscoreElements = { 'tetris-marathon-hard': document.getElementById('highscore-tetris-marathon-hard'), 'block-puzzle-classic-hard': document.getElementById('highscore-block-puzzle-classic-hard') };
     const countdownOverlay = document.getElementById('countdown-overlay'); const countdownText = document.getElementById('countdown-text');
     const settingsBtn = document.getElementById('settings-btn'); const settingsModal = document.getElementById('settings-modal');
     const helpBtn = document.getElementById('help-btn'); const helpModal = document.getElementById('help-modal');
     const pauseOverlay = document.getElementById('pause-overlay'); const resumeBtn = document.getElementById('resume-btn');
-    const gameTimerElement = document.getElementById('game-timer'); const helpContentContainer = document.getElementById('help-content-container');
-    const puzzleUI = { score: document.getElementById('puzzle-score'), header: document.querySelector('.puzzle-only.game-header-bar'), pieceWrapper: document.getElementById('puzzle-pieces-container-wrapper'), pauseBtn: document.getElementById('pause-btn-puzzle')};
+    const gemBalanceDisplay = document.getElementById('gem-balance');
     const tetrisUI = { header: document.getElementById('tetris-ui-header'), score: document.getElementById('tetris-score'), bestScore: document.getElementById('tetris-best-score'), level: document.getElementById('tetris-level'), nextPiece: document.getElementById('tetris-next-piece'), holdPiece: document.getElementById('tetris-hold-piece'), pauseBtn: document.getElementById('pause-btn-tetris'), backBtn: document.getElementById('back-btn-tetris'), holdContainer: document.getElementById('tetris-hold-container')};
+    const puzzleUI = { score: document.getElementById('puzzle-score'), header: document.querySelector('.puzzle-only.game-header-bar'), pieceWrapper: document.getElementById('puzzle-pieces-container-wrapper'), pauseBtn: document.getElementById('pause-btn-puzzle'), timer: document.getElementById('game-timer')};
     const postGameUI = { title: document.getElementById('post-game-title'), score: document.getElementById('post-game-score'), newBest: document.getElementById('post-game-new-best'), stats: document.getElementById('post-game-stats'), unlocks: document.getElementById('post-game-unlocks'), restartBtn: document.getElementById('restart-btn-pogs'), shareBtn: document.getElementById('share-btn'), backToMenuBtn: document.getElementById('back-to-menu-btn-pogs'), };
     let activeGame = null, activeGameModule = null, activeGameMode = null, activeDifficulty = 'normal';
 
-    // --- MODUL ZA ZVUK I VIBRACIJU ---
-    const Sound = {
-        sfx: {}, music: null, sfxVolume: 0.3, musicVolume: 0.2, hapticsEnabled: true,
-        init() {
-            try {
-                this.sfx.place = new Audio('assets/sounds/place.mp3'); this.sfx.clear = new Audio('assets/sounds/clear.mp3'); this.sfx.gameOver = new Audio('assets/sounds/gameOver.mp3');
-                this.sfx.hardDrop = new Audio('assets/sounds/hardDrop.mp3'); this.sfx.unlock = new Audio('assets/sounds/unlock.mp3');
-                this.music = new Audio('assets/sounds/music.mp3'); this.music.loop = true;
-                this.updateSfxVolume(Settings.sfxSlider.value); this.updateMusicVolume(Settings.musicSlider.value);
-            } catch (e) { console.warn("Greška pri učitavanju zvuka. Proverite da li 'assets/sounds/' folder postoji."); }
+    // --- PODACI O IGRI (PRODAVNICA, DOSTIGNUĆA) ---
+    const GAME_DATA = {
+        shop: {
+            themes: { neon: {name: 'Neon', price: 5000}, gold: {name: 'Zlatna', price: 10000}, silver: {name: 'Srebrna', price: 7500} },
+            modes: { tetris_sprint: {name: 'Sprint Mod', price: 2000}, tetris_ultra: {name: 'Ultra Mod', price: 2000}, blockPuzzle_timeAttack: {name: 'Time Attack Mod', price: 2500}, blockPuzzle_blast: {name: 'Blast Mod', price: 3000} }
         },
-        playSfx(name) { if (this.sfx[name]) { this.sfx[name].currentTime = 0; this.sfx[name].play().catch(e => {}); } },
-        playMusic() { if(this.music && !this.isPaused) this.music.play().catch(e => {}); },
-        stopMusic() { if(this.music) { this.music.pause(); this.music.currentTime = 0; } },
-        updateSfxVolume(v) { this.sfxVolume = v; Object.values(this.sfx).forEach(s => s.volume = this.sfxVolume); },
-        updateMusicVolume(v) { this.musicVolume = v; if(this.music) this.music.volume = this.musicVolume; },
-        vibrate(duration = 10) { if(this.hapticsEnabled && 'vibrate' in navigator) navigator.vibrate(duration); }
+        achievements: {
+            tetrisNovajlija: { name: 'Tetris Početnik', desc: 'Odigraj 10 partija Tetrisa.', goal: 10, reward: 500, key: 'tetris_gamesPlayed'},
+            tetrisMaher: { name: 'Tetris Maher', desc: 'Očisti 1000 linija.', goal: 1000, reward: 1000, key: 'tetris_linesCleared'},
+            puzzleUpornost: { name: 'Puzzle Istrajnost', desc: 'Postavi 500 blokova.', goal: 500, reward: 750, key: 'blockPuzzle_piecesPlaced'},
+            puzzleCistac: { name: 'Puzzle Čistač', desc: 'Očisti 500 linija.', goal: 500, reward: 1500, key: 'blockPuzzle_linesCleared'}
+        }
     };
+
+    // --- MODUL ZA PODATKE IGRAČA ---
+    const PlayerData = {
+        state: {},
+        defaults: { gems: 500, unlockedThemes: ['dark', 'light'], unlockedModes: { tetris: ['marathon'], blockPuzzle: ['classic'] }, completedAchievements: [], lastLoginDate: null, loginStreak: 0, stats: { tetris_gamesPlayed: 0, tetris_linesCleared: 0, blockPuzzle_gamesPlayed: 0, blockPuzzle_piecesPlaced: 0, blockPuzzle_linesCleared: 0 }},
+        load() { this.state = JSON.parse(localStorage.getItem('puzzlePlayerData')) || JSON.parse(JSON.stringify(this.defaults)); gemBalanceDisplay.textContent = this.state.gems; },
+        save() { localStorage.setItem('puzzlePlayerData', JSON.stringify(this.state)); gemBalanceDisplay.textContent = this.state.gems; }
+    };
+
+    // --- MODUL ZA ZVUK I VIBRACIJU ---
+    const Sound = { sfx: {}, music: null, sfxVolume: 0.3, musicVolume: 0.2, hapticsEnabled: true, init() { try { this.sfx.place = new Audio('assets/sounds/place.mp3'); this.sfx.clear = new Audio('assets/sounds/clear.mp3'); this.sfx.gameOver = new Audio('assets/sounds/gameOver.mp3'); this.sfx.hardDrop = new Audio('assets/sounds/hardDrop.mp3'); this.sfx.unlock = new Audio('assets/sounds/unlock.mp3'); this.music = new Audio('assets/sounds/music.mp3'); this.music.loop = true; this.updateSfxVolume(Settings.sfxSlider.value); this.updateMusicVolume(Settings.musicSlider.value); } catch (e) { console.warn("Greška pri učitavanju zvuka."); } }, playSfx(name) { if (this.sfx[name]) { this.sfx[name].currentTime = 0; this.sfx[name].play().catch(e => {}); } }, playMusic() { if(this.music && !activeGameModule.isPaused) this.music.play().catch(e => {}); }, stopMusic() { if(this.music) { this.music.pause(); this.music.currentTime = 0; } }, updateSfxVolume(v) { this.sfxVolume = v; Object.values(this.sfx).forEach(s => s.volume = this.sfxVolume); }, updateMusicVolume(v) { this.musicVolume = v; if(this.music) this.music.volume = this.musicVolume; }, vibrate(duration = 10) { if(this.hapticsEnabled && 'vibrate' in navigator) navigator.vibrate(duration); } };
     
     // --- MODUL PODEŠAVANJA ---
     const Settings = {
@@ -53,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
             themes.forEach(theme => {
                 const isUnlocked = unlocked.includes(theme); const option = document.createElement('div'); option.className = 'theme-option'; option.dataset.theme = theme;
                 option.innerHTML = `<span class="theme-preview" style="background-color: ${theme==='dark'?'#0d1117':theme==='light'?'#f0f2f5':theme==='neon'?'#00ffde':theme==='gold'?'#ffd700':'#d1d5db'}"></span> ${theme.charAt(0).toUpperCase() + theme.slice(1)}`;
-                if (!isUnlocked) { option.classList.add('locked'); option.title = `Otključaj dostizanjem cilja u igri!`; option.innerHTML += ' 🔒'; }
+                if (!isUnlocked) { option.classList.add('locked'); option.title = `Otključaj u prodavnici!`; option.innerHTML += ' 🔒'; }
                 else { option.addEventListener('click', () => this.setTheme(theme)); }
                 if(theme === savedTheme) option.classList.add('active'); this.themeSelectContainer.appendChild(option);
             });
@@ -66,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- MODULI ZA STATISTIKU I REKORDE ---
-    const Stats = { get(key, defaultValue = 0) { const val = localStorage.getItem(key); return val === null ? defaultValue : val; }, set(key, value) { localStorage.setItem(key, value); }, increment(key) { localStorage.setItem(key, parseFloat(this.get(key, 0)) + 1); }, add(key, value) { localStorage.setItem(key, parseFloat(this.get(key, 0)) + value); }, render() { const container = document.querySelector('.stats-container'); const fastestSprint = this.get('highscore_tetris_sprint_hard', 'N/A'); container.innerHTML = `<div class="stats-group"><h3>Classic Blocks</h3><div class="stat-item"><span>Odigrano Partija:</span><span class="value">${this.get('tetris_gamesPlayed')}</span></div><div class="stat-item"><span>Ukupno Linija:</span><span class="value">${this.get('tetris_linesCleared')}</span></div><div class="stat-item"><span>Najbrži Sprint (Teško):</span><span class="value">${fastestSprint !== 'N/A' ? fastestSprint + ' s' : 'N/A'}</span></div><div class="stat-item"><span>Najbolji Ultra Skor (Teško):</span><span class="value">${this.get('highscore_tetris_ultra_hard')}</span></div></div><div class="stats-group"><h3>Puzzle Board</h3><div class="stat-item"><span>Odigrano Partija:</span><span class="value">${this.get('blockPuzzle_gamesPlayed')}</span></div><div class="stat-item"><span>Ukupno Linija:</span><span class="value">${this.get('blockPuzzle_linesCleared')}</span></div><div class="stat-item"><span>Najbolji Time Attack (Teško):</span><span class="value">${this.get('highscore_block-puzzle_timeAttack_hard')}</span></div><div class="stat-item"><span>Najbolji Blast Skor (Teško):</span><span class="value">${this.get('highscore_block-puzzle_blast_hard')}</span></div></div>`; }};
-    const HighScore = { get(game, mode, difficulty) { return parseFloat(localStorage.getItem(`highscore_${game}_${mode}_${difficulty}`) || '0'); }, set(game, mode, difficulty, score) { const key = `highscore_${game}_${mode}_${difficulty}`; const currentHigh = this.get(game, mode, difficulty); if (mode === 'sprint') { if (score < currentHigh || currentHigh === 0) { localStorage.setItem(key, score); this.updateDisplay(); return true; } } else { if (score > currentHigh) { localStorage.setItem(key, score); this.updateDisplay(); return true; } } return false; }, updateDisplay() { highscoreElements['tetris-marathon'].textContent = this.get('tetris', 'marathon', 'hard'); highscoreElements['block-puzzle-classic'].textContent = this.get('block-puzzle', 'classic', 'hard');}};
+    const Stats = { get(key, defaultValue = 0) { const val = PlayerData.state.stats[key]; return val === undefined ? defaultValue : val; }, set(key, value) { PlayerData.state.stats[key] = value; }, increment(key) { PlayerData.state.stats[key] = (PlayerData.state.stats[key] || 0) + 1; }, add(key, value) { PlayerData.state.stats[key] = (PlayerData.state.stats[key] || 0) + value; }, render() { const container = document.querySelector('.stats-container'); const fastestSprint = this.get('highscore_tetris_sprint_hard', 'N/A'); container.innerHTML = `<div class="stats-group"><h3>Classic Blocks</h3><div class="stat-item"><span>Odigrano Partija:</span><span class="value">${this.get('tetris_gamesPlayed')}</span></div><div class="stat-item"><span>Ukupno Linija:</span><span class="value">${this.get('tetris_linesCleared')}</span></div><div class="stat-item"><span>Najbrži Sprint (Teško):</span><span class="value">${fastestSprint !== 'N/A' ? fastestSprint + ' s' : 'N/A'}</span></div><div class="stat-item"><span>Najbolji Ultra Skor (Teško):</span><span class="value">${HighScore.get('tetris', 'ultra', 'hard')}</span></div></div><div class="stats-group"><h3>Puzzle Board</h3><div class="stat-item"><span>Odigrano Partija:</span><span class="value">${this.get('blockPuzzle_gamesPlayed')}</span></div><div class="stat-item"><span>Ukupno Linija:</span><span class="value">${this.get('blockPuzzle_linesCleared')}</span></div><div class="stat-item"><span>Najbolji Time Attack (Teško):</span><span class="value">${HighScore.get('block-puzzle', 'timeAttack', 'hard')}</span></div><div class="stat-item"><span>Najbolji Blast Skor (Teško):</span><span class="value">${HighScore.get('block-puzzle', 'blast', 'hard')}</span></div></div>`; }};
+    const HighScore = { get(game, mode, difficulty) { return parseFloat(localStorage.getItem(`highscore_${game}_${mode}_${difficulty}`) || '0'); }, set(game, mode, difficulty, score) { const key = `highscore_${game}_${mode}_${difficulty}`; const currentHigh = this.get(game, mode, difficulty); if (mode === 'sprint') { if (score < currentHigh || currentHigh === 0) { localStorage.setItem(key, score); if(difficulty === 'hard') Stats.set(key, score); this.updateDisplay(); return true; } } else { if (score > currentHigh) { localStorage.setItem(key, score); if(difficulty === 'hard') Stats.set(key, score); this.updateDisplay(); return true; } } return false; }, updateDisplay() { highscoreElements['tetris-marathon'].textContent = this.get('tetris', 'marathon', 'hard'); highscoreElements['block-puzzle-classic'].textContent = this.get('block-puzzle', 'classic', 'hard');}};
     
     // --- MODUL ZA OTKLJUČAVANJE NAGRADA ---
     const Unlocks = {
@@ -76,15 +82,15 @@ document.addEventListener('DOMContentLoaded', () => {
             gold: { name: 'Zlatna Tema', condition: stats => stats.game === 'tetris' && stats.mode === 'ultra' && stats.score >= 100000 && stats.difficulty === 'hard' },
             silver: { name: 'Srebrna Tema', condition: stats => stats.game === 'block-puzzle' && stats.mode === 'blast' && stats.bombsDefused >= 5 && stats.difficulty === 'hard' },
         },
-        getUnlockedThemes() { return JSON.parse(localStorage.getItem('unlockedThemes') || '["dark", "light"]'); },
+        getUnlockedThemes() { return PlayerData.state.unlockedThemes; },
         check(runStats) {
-            const unlocked = this.getUnlockedThemes(); const newlyUnlocked = [];
+            const newlyUnlocked = [];
             Object.keys(this.unlocks).forEach(key => {
-                if (!unlocked.includes(key) && this.unlocks[key].condition(runStats)) {
-                    unlocked.push(key); newlyUnlocked.push(this.unlocks[key]); Sound.playSfx('unlock');
+                if (!PlayerData.state.unlockedThemes.includes(key) && this.unlocks[key].condition(runStats)) {
+                    PlayerData.state.unlockedThemes.push(key); newlyUnlocked.push(this.unlocks[key]); Sound.playSfx('unlock');
                 }
             });
-            if (newlyUnlocked.length > 0) localStorage.setItem('unlockedThemes', JSON.stringify(unlocked));
+            if (newlyUnlocked.length > 0) PlayerData.save();
             return newlyUnlocked;
         }
     };
@@ -108,37 +114,99 @@ document.addEventListener('DOMContentLoaded', () => {
             animateScore(postGameUI.score, runStats.score);
         }
     };
-    
+
     // --- 3D ANIMACIJA MENIJA ---
     const MainMenu3D = { container: document.getElementById('main-menu-screen'), items: document.querySelectorAll('.menu-item'), init() { this.boundMouseMove = this.onMouseMove.bind(this); this.container.addEventListener('mousemove', this.boundMouseMove, { passive: true }); }, destroy() { this.container.removeEventListener('mousemove', this.boundMouseMove); this.items.forEach(item => { item.style.transform = ''; }); }, onMouseMove(e) { const { clientX, clientY } = e; const { innerWidth, innerHeight } = window; const x = (clientX / innerWidth) - 0.5; const y = (clientY / innerHeight) - 0.5; this.items.forEach(item => { item.style.setProperty('--rotate-y', `${x * 15}deg`); item.style.setProperty('--rotate-x', `${-y * 15}deg`); }); } };
+    
+    // --- MODUL ZA DNEVNE NAGRADE ---
+    const DailyLogin = {
+        modal: document.getElementById('daily-login-modal'),
+        init() {
+            const today = new Date().toDateString();
+            if (PlayerData.state.lastLoginDate !== today) {
+                const yesterday = new Date(Date.now() - 86400000).toDateString();
+                if (PlayerData.state.lastLoginDate === yesterday) { PlayerData.state.loginStreak++; } else { PlayerData.state.loginStreak = 1; }
+                PlayerData.state.lastLoginDate = today;
+                const reward = 50 + (PlayerData.state.loginStreak * 50);
+                PlayerData.state.gems += reward; PlayerData.save();
+                this.show(reward, PlayerData.state.loginStreak);
+            }
+        },
+        show(reward, streak) { this.modal.querySelector('#daily-login-reward').textContent = `${reward} 💎`; this.modal.querySelector('#daily-login-streak').textContent = `Niz prijavljivanja: ${streak} dan(a)!`; this.modal.classList.add('active'); this.modal.querySelector('.close-modal').onclick = () => this.modal.classList.remove('active');}
+    };
 
+    // --- MODUL ZA PRODAVNICU ---
+    const Shop = {
+        container: document.getElementById('shop-screen'),
+        themesContainer: document.getElementById('shop-themes-container'), modesContainer: document.getElementById('shop-modes-container'),
+        init() {
+            document.getElementById('shop-btn').addEventListener('click', () => { this.render(); showScreen('shop'); });
+            this.container.addEventListener('click', e => this.handleBuy(e));
+        },
+        render() {
+            this.themesContainer.innerHTML = Object.keys(GAME_DATA.shop.themes).map(key => { const item = GAME_DATA.shop.themes[key]; const isOwned = PlayerData.state.unlockedThemes.includes(key); return `<div class="shop-item"><div class="shop-item-preview">${item.name}</div><div class="shop-item-price">${item.price} 💎</div><button class="shop-item-btn" data-id="${key}" data-type="themes" ${isOwned ? 'disabled' : ''}>${isOwned ? 'Kupljeno' : 'Kupi'}</button></div>`; }).join('');
+            this.modesContainer.innerHTML = Object.keys(GAME_DATA.shop.modes).map(key => { const item = GAME_DATA.shop.modes[key]; const [game, mode] = key.split('_'); const isOwned = PlayerData.state.unlockedModes[game].includes(mode); return `<div class="shop-item"><div class="shop-item-preview">${item.name}</div><div class="shop-item-price">${item.price} 💎</div><button class="shop-item-btn" data-id="${key}" data-type="modes" ${isOwned ? 'disabled' : ''}>${isOwned ? 'Kupljeno' : 'Kupi'}</button></div>`; }).join('');
+        },
+        handleBuy(e) {
+            const btn = e.target.closest('.shop-item-btn');
+            if (!btn || btn.disabled) return;
+            const id = btn.dataset.id; const type = btn.dataset.type; const item = GAME_DATA.shop[type][id];
+            if (PlayerData.state.gems >= item.price) {
+                PlayerData.state.gems -= item.price;
+                if(type === 'themes') { PlayerData.state.unlockedThemes.push(id); }
+                else { const [game, mode] = id.split('_'); PlayerData.state.unlockedModes[game].push(mode); }
+                PlayerData.save(); this.render(); Sound.playSfx('unlock');
+            } else { alert('Nemate dovoljno dragulja!'); }
+        }
+    };
+    
     // --- Inicijalizacija ---
-    HighScore.updateDisplay(); Settings.init(); MainMenu3D.init();
+    PlayerData.load(); Settings.init(); HighScore.updateDisplay(); MainMenu3D.init(); Shop.init(); DailyLogin.init();
 
     // --- NAVIGACIJA I TOK APLIKACIJE ---
     function showScreen(screenName) { Object.values(screens).forEach(s => s.classList.remove('active')); screens[screenName].classList.add('active'); if(screenName === 'mainMenu') MainMenu3D.init(); else MainMenu3D.destroy(); }
-    async function startGame(gameType, gameMode, difficulty) { activeGameMode = gameMode; activeDifficulty = difficulty; document.body.className = `${localStorage.getItem('puzzleTheme') || 'dark'}-theme`; document.body.classList.toggle('tetris-active', gameType === 'tetris'); document.body.classList.toggle('puzzle-active', gameType === 'block-puzzle'); document.body.classList.toggle('hold-enabled', gameType === 'tetris' && Tetris.holdEnabled); if (gameType === 'tetris') { activeGameModule = Tetris; } else { activeGameModule = BlockPuzzle; } showScreen('game'); Sound.playMusic(); await runCountdown(); activeGameModule.init(gameMode, difficulty); }
-    function endGame(runStats) { Sound.stopMusic(); Sound.playSfx('gameOver'); const newBest = HighScore.set(runStats.game, runStats.mode, runStats.difficulty, runStats.score); runStats.newBest = newBest; PostGame.show(runStats); Stats.increment(`${runStats.game}_gamesPlayed`); if(runStats.linesCleared) Stats.add(`${runStats.game}_linesCleared`, runStats.linesCleared); }
+    async function startGame(gameType, gameMode, difficulty) {
+        if (!PlayerData.state.unlockedModes[gameType].includes(gameMode)) { alert('Morate prvo otključati ovaj mod u prodavnici!'); return; }
+        activeGameMode = gameMode; activeDifficulty = difficulty;
+        document.body.className = `${localStorage.getItem('puzzleTheme') || 'dark'}-theme`; 
+        document.body.classList.toggle('tetris-active', gameType === 'tetris');
+        document.body.classList.toggle('puzzle-active', gameType === 'block-puzzle');
+        document.body.classList.toggle('hold-enabled', gameType === 'tetris' && Tetris.holdEnabled);
+        if (gameType === 'tetris') { activeGameModule = Tetris; } else { activeGameModule = BlockPuzzle; }
+        showScreen('game'); Sound.playMusic();
+        await runCountdown();
+        activeGameModule.init(gameMode, difficulty);
+    }
+    function endGame(runStats) {
+        Sound.stopMusic(); Sound.playSfx('gameOver');
+        PlayerData.state.gems += Math.floor(runStats.score / 500);
+        Object.keys(runStats.stats).forEach(key => { PlayerData.state.stats[key] = (PlayerData.state.stats[key] || 0) + runStats.stats[key]; });
+        Achievements.check();
+        PlayerData.save();
+        const newBest = HighScore.set(runStats.game, runStats.mode, runStats.difficulty, runStats.score);
+        runStats.newBest = newBest;
+        PostGame.show(runStats);
+    }
     function pauseGame() { if (activeGameModule && activeGameModule.isRunning) { Sound.stopMusic(); activeGameModule.pause(); pauseOverlay.classList.add('active'); } }
     function resumeGame() { if (activeGameModule && !activeGameModule.isRunning) { Sound.playMusic(); activeGameModule.resume(); pauseOverlay.classList.remove('active'); } }
     async function runCountdown() { countdownOverlay.classList.add('active'); for (let i = 3; i > 0; i--) { countdownText.textContent = i; await new Promise(res => setTimeout(res, 800)); } countdownText.textContent = 'GO!'; await new Promise(res => setTimeout(res, 500)); countdownOverlay.classList.remove('active'); }
     function animateScore(element, finalScore) { let currentScore=0; const inc=Math.max(1,Math.floor(finalScore/100)); const int=setInterval(()=>{currentScore+=inc; if(currentScore>=finalScore){currentScore=finalScore;clearInterval(int);} element.textContent = (finalScore % 1 !== 0) ? parseFloat(currentScore).toFixed(2) : Math.round(currentScore);},10); }
     function shakeScreen() { screens.game.classList.add('screen-shake'); setTimeout(() => screens.game.classList.remove('screen-shake'), 150); }
     
-    // --- Event Listeneri ---
     document.querySelectorAll('.menu-item').forEach(item => item.addEventListener('click', () => showModeSelect(item.dataset.game)));
     document.querySelectorAll('.back-to-main-menu').forEach(btn => btn.addEventListener('click', () => { if(activeGameModule) activeGameModule.stop(); HighScore.updateDisplay(); showScreen('mainMenu'); }));
-    document.getElementById('mode-selection-container').addEventListener('click', e => { const modeBtn = e.target.closest('.mode-btn'); if (modeBtn) startGame(activeGame, modeBtn.dataset.mode, activeDifficulty); });
-    document.querySelector('.difficulty-selector').addEventListener('click', e => { const diffBtn = e.target.closest('.difficulty-btn'); if (diffBtn) { document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active')); diffBtn.classList.add('active'); activeDifficulty = diffBtn.dataset.difficulty; }});
     postGameUI.restartBtn.addEventListener('click', () => { showScreen('gameMode'); });
     postGameUI.backToMenuBtn.addEventListener('click', () => { HighScore.updateDisplay(); showScreen('mainMenu'); });
     postGameUI.shareBtn.addEventListener('click', () => { const text = `Osvojio sam ${postGameUI.score.textContent} poena u Puzzle Universe! Probaj da me pobediš!`; if (navigator.share) { navigator.share({ title: 'Puzzle Universe Rekord!', text: text }).catch(console.error); } else { alert('Funkcija deljenja nije podržana na ovom uređaju.'); }});
+    document.getElementById('mode-selection-container').addEventListener('click', e => { const modeBtn = e.target.closest('.mode-btn'); if (modeBtn) startGame(activeGame, modeBtn.dataset.mode, activeDifficulty); });
+    document.querySelector('.difficulty-selector').addEventListener('click', e => { const diffBtn = e.target.closest('.difficulty-btn'); if (diffBtn) { document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active')); diffBtn.classList.add('active'); activeDifficulty = diffBtn.dataset.difficulty; }});
     helpBtn.addEventListener('click', () => { helpContentContainer.innerHTML = activeGameModule.getHelpText(); helpModal.classList.add('active'); });
     helpModal.querySelector('.close-modal').addEventListener('click', () => helpModal.classList.remove('active'));
     tetrisUI.pauseBtn.addEventListener('click', pauseGame);
     tetrisUI.backBtn.addEventListener('click', () => { if(confirm('Da li ste sigurni? Napredak će biti izgubljen.')) { if(activeGameModule) activeGameModule.stop(); HighScore.updateDisplay(); showScreen('mainMenu'); }});
     puzzleUI.pauseBtn.addEventListener('click', pauseGame);
     resumeBtn.addEventListener('click', resumeGame);
+    document.getElementById('achievements-btn').addEventListener('click', () => { Achievements.render(); showScreen('achievements'); });
     document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 
     // ===================================================================
@@ -153,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         init(mode, difficulty) {
             this.mode = mode; this.difficulty = difficulty;
-            this.runStats = { game: 'tetris', mode, difficulty, score: 0, level: 1, linesCleared: 0, maxCombo: 0 };
+            this.runStats = { game: 'tetris', mode, difficulty, score: 0, level: 1, linesCleared: 0, maxCombo: 0, stats: {tetris_linesCleared: 0} };
             this.board = document.getElementById('tetris-board');
             this.player = { pos: {x: 0, y: 0}, matrix: null, score: 0 };
             this.combo = 0; this.linesCleared = 0; this.level = 1;
@@ -228,11 +296,10 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         draw() {
             const fullGrid = JSON.parse(JSON.stringify(this.boardState));
-            const ghost = {...this.player, matrix: JSON.parse(JSON.stringify(this.player.matrix)) };
-            while (!this.collide(this.boardState, ghost)) ghost.pos.y++;
-            ghost.pos.y--;
+            const ghost = {...this.player, matrix: JSON.parse(JSON.stringify(this.player.matrix)) }; while (!this.collide(this.boardState, ghost)) ghost.pos.y++; ghost.pos.y--;
             ghost.matrix.forEach((row, y) => { row.forEach((value, x) => { if (value !== 0) { const r = y + ghost.pos.y, c = x + ghost.pos.x; if(r >= 0 && r < this.rows && c >= 0 && c < this.cols) fullGrid[r][c] = 'ghost'; } }); });
             this.player.matrix.forEach((row, y) => { row.forEach((value, x) => { if (value !== 0) { const r = y + this.player.pos.y, c = x + this.player.pos.x; if(r >= 0 && r < this.rows && c >= 0 && c < this.cols) fullGrid[r][c] = value; }}); });
+
             for (let i = 0; i < this.cellElements.length; i++) {
                 const row = Math.floor(i / this.cols); const col = i % this.cols; const value = fullGrid[row][col];
                 const cell = this.cellElements[i]; let newClassName = 'tetris-cell'; let newStyle = '';
@@ -241,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(newClassName === 'game-block' && cell.style.backgroundColor !== newStyle) cell.style.backgroundColor = newStyle;
                 else if (newClassName !== 'game-block') cell.style.backgroundColor = '';
             }
+
             const nextDisplay = tetrisUI.nextPiece; nextDisplay.innerHTML = ''; nextDisplay.style.gridTemplateColumns = `repeat(${this.nextPiece[0].length}, 1fr)`;
             this.nextPiece.forEach(row => { row.forEach(value => { const cell = document.createElement('div'); cell.style.width = '15px'; cell.style.height = '15px'; if (value !== 0) { cell.className = 'game-block'; cell.style.backgroundColor = this.colors[value]; } nextDisplay.appendChild(cell); }); });
             const holdDisplay = tetrisUI.holdPiece; holdDisplay.innerHTML = ''; if(this.holdPiece) { holdDisplay.style.gridTemplateColumns = `repeat(${this.holdPiece[0].length}, 1fr)`; this.holdPiece.forEach(row => { row.forEach(value => { const cell = document.createElement('div'); cell.style.width = '15px'; cell.style.height = '15px'; if (value !== 0) { cell.className = 'game-block'; cell.style.backgroundColor = this.colors[value]; } holdDisplay.appendChild(cell); }); });}
@@ -256,8 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (this.boardState[y].some(value => value !== 0)) perfectClear = false;
             }
             if (clearedRows.length > 0) {
-                this.combo++; this.linesCleared += clearedRows.length;
-                this.runStats.linesCleared += clearedRows.length; this.runStats.maxCombo = Math.max(this.runStats.maxCombo, this.combo);
+                this.combo++; this.linesCleared += clearedRows.length; this.runStats.linesCleared += clearedRows.length; this.runStats.maxCombo = Math.max(this.runStats.maxCombo, this.combo);
                 const scoreMultiplier = {'easy': 1, 'normal': 1.5, 'hard': 2}[this.difficulty];
                 this.player.score += (([0, 100, 300, 500, 800][clearedRows.length] * this.level) + (this.combo * 50 * this.level)) * scoreMultiplier;
                 if(perfectClear) this.player.score += 8000;
@@ -272,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { this.combo = 0; }
             this.updateUI();
         },
-        playLineClearEffect(rowIndex) { for (let i = 0; i < this.cols; i++) { const cell = this.cellElements[rowIndex * this.cols + i]; if(cell) { cell.classList.add('line-clearing'); } }},
+        playLineClearEffect(rowIndex) { for (let i = 0; i < this.cols; i++) { const cell = this.cellElements[rowIndex * this.cols + i]; if(cell) { cell.classList.add('line-clearing'); setTimeout(()=>cell.classList.remove('line-clearing'), 300); } }},
         updateUI() { tetrisUI.score.textContent = this.player.score; tetrisUI.level.textContent = this.level; tetrisUI.bestScore.textContent = HighScore.get('tetris', this.mode, this.difficulty); if(this.mode === 'sprint') { const linesLeft = 40 - this.linesCleared; tetrisUI.level.textContent = `${linesLeft > 0 ? linesLeft : 0}`; } if(this.mode === 'ultra') { tetrisUI.level.textContent = `${Math.ceil(this.timeLeft)}`; } tetrisUI.score.classList.add('score-updated'); setTimeout(()=>tetrisUI.score.classList.remove('score-updated'), 300); },
         playerReset(getNewPiece = true) { if(getNewPiece) { this.player.matrix = this.nextPiece; this.nextPiece = this.createPiece(); } this.player.pos.y = 0; this.player.pos.x = Math.floor(this.cols/2)-Math.floor(this.player.matrix[0].length/2); if(this.collide(this.boardState,this.player)) this.gameOver(); this.canHold = true; },
         playerMove(dir) { if(this.isPaused) return; this.player.pos.x += dir; if(this.collide(this.boardState,this.player)) this.player.pos.x-=dir; },
@@ -293,40 +360,70 @@ document.addEventListener('DOMContentLoaded', () => {
         boardElement: null, piecesContainer: null, boardState: [], score: 0, isRunning: false, isPaused: false, activeDragPiece: null,
         pieceShapes: [ {shape:[[1,1,1,1,1]]},{shape:[[1,1],[1,1]]},{shape:[[0,1,0],[1,1,1],[0,1,0]]},{shape:[[1,1,1],[1,0,1]]},{shape:[[1,0,1],[1,1,1]]},{shape:[[1,1,0],[0,1,1]]},{shape:[[0,1,1],[1,1,0]]},{shape:[[1,1,1,1]]},{shape:[[1,1,1],[0,0,1]]},{shape:[[1,1,1],[1,0,0]]},{shape:[[1,1],[0,1],[0,1]]},{shape:[[1,1,1]]},{shape:[[1,1]]},{shape:[[1]]} ],
         currentPieces:[], mode: 'classic', difficulty: 'normal', combo: 0, timeLeft: 120, timerInterval: null, bombs: [], movesSinceBomb: 0, runStats: {},
-        init(mode, difficulty) { this.mode = mode; this.difficulty = difficulty; this.runStats = { game: 'block-puzzle', mode, difficulty, score: 0, piecesPlaced: 0, linesCleared: 0, bombsDefused: 0 }; this.boardElement=document.getElementById('puzzle-board'); this.piecesContainer=document.getElementById('puzzle-pieces-container'); this.boardState=Tetris.createMatrix(10,10); this.score=0; this.combo=0; this.updateScore(); this.bombs=[]; this.movesSinceBomb=0; if(this.mode === 'classic') this.spawnStoneTiles(difficulty); this.renderBoard(); this.generateNewPieces(); if(this.boundDragStart){this.piecesContainer.removeEventListener('mousedown',this.boundDragStart);this.piecesContainer.removeEventListener('touchstart',this.boundDragStart);} this.boundDragStart=this.onDragStart.bind(this); this.piecesContainer.addEventListener('mousedown',this.boundDragStart); this.piecesContainer.addEventListener('touchstart',this.boundDragStart,{passive:false}); if (this.timerInterval) clearInterval(this.timerInterval); puzzleUI.header.querySelector('.game-timer').textContent=''; if (this.mode === 'timeAttack') { this.timeLeft = 120; } if (this.mode === 'blast') { this.movesSinceBomb=0;} this.resume(); },
+        init(mode, difficulty) {
+            this.mode = mode; this.difficulty = difficulty;
+            this.runStats = { game: 'block-puzzle', mode, difficulty, score: 0, piecesPlaced: 0, linesCleared: 0, bombsDefused: 0, stats: {blockPuzzle_piecesPlaced: 0, blockPuzzle_linesCleared: 0} };
+            this.boardElement=document.getElementById('puzzle-board'); this.piecesContainer=document.getElementById('puzzle-pieces-container');
+            this.boardState=Tetris.createMatrix(10,10); this.score=0; this.combo=0; this.updateScore(); this.bombs=[]; this.movesSinceBomb=0;
+            if(this.mode === 'classic') this.spawnStoneTiles(difficulty);
+            this.renderBoard(); this.generateNewPieces();
+            if(this.boundDragStart){this.piecesContainer.removeEventListener('mousedown',this.boundDragStart);this.piecesContainer.removeEventListener('touchstart',this.boundDragStart);}
+            this.boundDragStart=this.onDragStart.bind(this);
+            this.piecesContainer.addEventListener('mousedown',this.boundDragStart); this.piecesContainer.addEventListener('touchstart',this.boundDragStart,{passive:false});
+            if (this.timerInterval) clearInterval(this.timerInterval);
+            puzzleUI.header.querySelector('.game-timer').textContent='';
+            if (this.mode === 'timeAttack') { this.timeLeft = 120; } if (this.mode === 'blast') { this.movesSinceBomb=0;}
+            this.resume();
+        },
         pause() { this.isPaused = true; this.isRunning = false; if(this.timerInterval) clearInterval(this.timerInterval); },
         resume() { this.isPaused = false; this.isRunning = true; if(this.mode === 'timeAttack' || this.mode === 'blast') this.startTimer(); },
-        startTimer() { let lastTime = Date.now(); this.timerInterval = setInterval(() => { if(!this.isPaused) { const now = Date.now(); const delta = (now - lastTime) / 1000; lastTime = now; if(this.mode === 'timeAttack') { this.timeLeft -= delta; puzzleUI.header.querySelector('.game-timer').textContent = `Vreme: ${Math.max(0, Math.ceil(this.timeLeft))}`; if (this.timeLeft <= 0) this.gameOver(); } if(this.mode === 'blast') { this.updateBombs(); }}}, 1000);},
+        startTimer() {
+            let lastTime = Date.now();
+            this.timerInterval = setInterval(() => {
+                if(!this.isPaused) {
+                    const now = Date.now(); const delta = (now - lastTime) / 1000; lastTime = now;
+                    if(this.mode === 'timeAttack') { this.timeLeft -= delta; puzzleUI.header.querySelector('.game-timer').textContent = `Vreme: ${Math.max(0, Math.ceil(this.timeLeft))}`; if (this.timeLeft <= 0) this.gameOver(); }
+                    if(this.mode === 'blast') { this.updateBombs(); }
+                }
+            }, 1000);
+        },
         stop() { this.isRunning = false; if(this.timerInterval) clearInterval(this.timerInterval); },
         renderBoard() { this.boardElement.innerHTML=''; this.boardState.forEach((row, r)=>{row.forEach((cellData, c)=>{ const cell=document.createElement('div'); cell.className='puzzle-cell'; if(cellData){ cell.classList.add('filled','game-block'); cell.style.backgroundColor = cellData.color; if(cellData.type === 'stone') { cell.classList.add('stone'); if(cellData.health === 1) cell.classList.add('cracked'); } const bomb = this.bombs.find(b=>b.r===r && b.c===c); if(bomb){ const timerEl = document.createElement('div'); timerEl.className = 'bomb-timer'; timerEl.textContent = bomb.timer; cell.appendChild(timerEl);}} this.boardElement.appendChild(cell); });});},
         spawnStoneTiles(difficulty) { const count = {'easy': 2, 'normal': 4, 'hard': 6}[difficulty]; for(let i=0; i<count; i++) { let r,c; do { r = Math.floor(Math.random()*10); c = Math.floor(Math.random()*10); } while(this.boardState[r][c] !== 0); this.boardState[r][c] = {type: 'stone', health: 2, color: '#8d99ae'}; }},
-        generateNewPieces() { /* ... ista kao u prethodnoj verziji ... */ },
-        renderPiece(pieceData) { /* ... ista kao u prethodnoj verziji ... */ },
+        generateNewPieces() { this.currentPieces=[]; this.piecesContainer.innerHTML=''; const colors = Tetris.colors.slice(1); for(let i=0;i<3;i++){ const pieceData={...this.pieceShapes[Math.floor(Math.random()*this.pieceShapes.length)]}; pieceData.id=`piece-${Date.now()}-${i}`; pieceData.color = colors[Math.floor(Math.random()*colors.length)]; this.currentPieces.push(pieceData); this.renderPiece(pieceData); } if(this.checkGameOver()){this.gameOver();}},
+        renderPiece(pieceData) { const pieceEl=document.createElement('div'); pieceEl.className='puzzle-piece'; pieceEl.dataset.id=pieceData.id; pieceEl.style.gridTemplateColumns=`repeat(${pieceData.shape[0].length},1fr)`; pieceData.shape.forEach(row=>{row.forEach(cell=>{ const cellEl=document.createElement('div'); if(cell){cellEl.className='puzzle-piece-cell game-block'; const color=pieceData.color; cellEl.style.backgroundColor = color; } pieceEl.appendChild(cellEl); });}); this.piecesContainer.appendChild(pieceEl); },
         onDragStart(e) { if(!e.target.closest('.puzzle-piece')||!this.isRunning||this.isPaused) return; e.preventDefault(); const pieceEl=e.target.closest('.puzzle-piece'); const pieceId=pieceEl.dataset.id; const pieceData=this.currentPieces.find(p=>p.id===pieceId); this.activeDragPiece=pieceData; const draggingEl=pieceEl.cloneNode(true); draggingEl.classList.add('dragging'); document.body.appendChild(draggingEl); const rect=pieceEl.getBoundingClientRect(); const touch=e.type==='touchstart'?e.touches[0]:e; this.touchOffsetX = touch.clientX - rect.left; this.touchOffsetY = touch.clientY - rect.top; pieceEl.style.opacity='0.3'; const moveHandler=(moveEvent)=>{ const moveTouch=moveEvent.type==='touchmove'?moveEvent.touches[0]:moveEvent; draggingEl.style.left=`${moveTouch.clientX-this.touchOffsetX}px`; draggingEl.style.top=`${moveTouch.clientY-this.touchOffsetY}px`; this.renderGhost(pieceData,draggingEl); }; const endHandler=(endEvent)=>{ document.removeEventListener('mousemove',moveHandler); document.removeEventListener('touchmove',moveHandler); document.removeEventListener('mouseup',endHandler); document.removeEventListener('touchend',endHandler); this.boardElement.querySelectorAll('.ghost-path').forEach(c=>{c.classList.remove('ghost-path')}); draggingEl.remove(); this.activeDragPiece=null; const {row, col} = this.getDropCoordinates(draggingEl); if(this.canPlacePiece(pieceData,row,col)){ this.placePiece(pieceData,row,col); pieceEl.remove(); this.currentPieces=this.currentPieces.filter(p=>p.id!==pieceId); if(this.currentPieces.length===0)this.generateNewPieces(); } else {pieceEl.style.opacity='1';} }; document.addEventListener('mousemove',moveHandler); document.addEventListener('touchmove',moveHandler); document.addEventListener('mouseup',endHandler); document.addEventListener('touchend',endHandler); },
         getDropCoordinates(draggedEl) { const boardRect=this.boardElement.getBoundingClientRect(); const dragRect=draggedEl.getBoundingClientRect(); const cellWidth=boardRect.width/10; const x = dragRect.left - boardRect.left; const y = dragRect.top - boardRect.top; return { row: Math.round(y/cellWidth), col: Math.round(x/cellWidth)}; },
         renderGhost(pieceData,draggingEl) { this.boardElement.querySelectorAll('.ghost-path').forEach(c=>{c.classList.remove('ghost-path')}); if(!pieceData) return; const {row: startRow, col: startCol} = this.getDropCoordinates(draggingEl); for(let r=0;r<pieceData.shape.length;r++){for(let c=0;c<pieceData.shape[r].length;c++){ if(pieceData.shape[r][c]){ const bR=startRow+r; const bC=startCol+c; if(bR<10&&bC<10&&bR>=0&&bC>=0){ const cellIndex=bR*10+bC; const cell=this.boardElement.children[cellIndex]; if(cell&&this.boardState[bR][bC]===0){ cell.classList.add('ghost-path'); cell.style.setProperty('--color',pieceData.color);}} }}} },
         canPlacePiece(p,startRow,startCol){for(let r=0;r<p.shape.length;r++){for(let c=0;c<p.shape[r].length;c++){if(p.shape[r][c]){const bR=startRow+r;const bC=startCol+c;if(bR>=10||bC>=10||bR<0||bC<0||this.boardState[bR][bC]!==0)return false;}}}return true;},
-        placePiece(pieceData,startRow,startCol) { this.runStats.piecesPlaced++; pieceData.shape.forEach((row,r)=>{row.forEach((cell,c)=>{ if(cell){this.boardState[startRow+r][startCol+c]={type: 'normal', color: pieceData.color};}});}); this.score+=pieceData.shape.flat().reduce((a,b)=>a+b); Sound.playSfx('place'); Sound.vibrate(); this.clearLines(); this.renderBoard(); this.updateScore(); if(this.mode === 'blast') { this.movesSinceBomb++; const bombThreshold = {'easy':8, 'normal': 6, 'hard': 4}[this.difficulty]; if(this.movesSinceBomb >= bombThreshold) this.spawnBomb(); }},
+        placePiece(pieceData,startRow,startCol) {
+            this.runStats.piecesPlaced++; PlayerData.state.stats.blockPuzzle_piecesPlaced++;
+            pieceData.shape.forEach((row,r)=>{row.forEach((cell,c)=>{ if(cell){this.boardState[startRow+r][startCol+c]={type: 'normal', color: pieceData.color};}});});
+            this.score+=pieceData.shape.flat().reduce((a,b)=>a+b);
+            Sound.playSfx('place'); Sound.vibrate();
+            this.clearLines(); this.renderBoard(); this.updateScore();
+            if(this.mode === 'blast') { this.movesSinceBomb++; const bombThreshold = {'easy':8, 'normal': 6, 'hard': 4}[this.difficulty]; if(this.movesSinceBomb >= bombThreshold) this.spawnBomb(); }
+        },
         clearLines() {
-            let clearedRows=[],clearedCols=[]; let linesToClear = { rows: [], cols: [] };
-            for(let r=0;r<10;r++)if(this.boardState[r].every(cell=>cell!==0 && (!cell.type || cell.type!=='stone' || cell.health<=1)))linesToClear.rows.push(r);
-            for(let c=0;c<10;c++)if(this.boardState.every(row=>row[c]!==0 && (!row[c].type || row[c].type!=='stone' || row[c].health<=1)))linesToClear.cols.push(c);
-            let clearedCount = 0;
-            for(let r=0;r<10;r++) { for(let c=0;c<10;c++) { const cell = this.boardState[r][c]; if(cell && cell.type === 'stone' && (linesToClear.rows.includes(r) || linesToClear.cols.includes(c))) { cell.health--; if(cell.health < 1) this.boardState[r][c] = 0; else cell.cracked = true; }}}
-            for(let r=0;r<10;r++)if(this.boardState[r].every(cell=>cell!==0))clearedRows.push(r);
-            for(let c=0;c<10;c++)if(this.boardState.every(row=>row[c]!==0))clearedCols.push(c);
-            this.bombs = this.bombs.filter(bomb => { const wasCleared = clearedRows.includes(bomb.r) || clearedCols.includes(bomb.c); if(wasCleared) this.runStats.bombsDefused++; return !wasCleared; });
-            clearedRows.forEach(r=>this.boardState[r].fill(0)); clearedCols.forEach(c=>this.boardState.forEach(row=>row[c]=0));
-            clearedCount=clearedRows.length+clearedCols.length;
-            if (clearedCount>0){this.combo++; this.score+=(clearedCount*clearedCount*10)+(this.combo*10);Sound.playSfx('clear'); Sound.vibrate(50); this.runStats.linesCleared += clearedCount;} else {this.combo=0;}
+            let linesToClear = { rows: [], cols: [] };
+            for(let r=0;r<10;r++)if(this.boardState[r].every(cell=>cell !== 0))linesToClear.rows.push(r);
+            for(let c=0;c<10;c++)if(this.boardState.every(row=>row[c] !== 0))linesToClear.cols.push(c);
+            
+            let linesActuallyCleared = { rows: [], cols: [] };
+
+            linesToClear.rows.forEach(r => { let canClear = true; for(let c=0;c<10;c++){ const cell = this.boardState[r][c]; if(cell.type === 'stone') { canClear=false; cell.health--; if(cell.health < 1) this.boardState[r][c] = {type:'stone', health: 0}; else cell.cracked=true; }} if(canClear) linesActuallyCleared.rows.push(r); });
+            linesToClear.cols.forEach(c => { let canClear = true; for(let r=0;r<10;r++){ const cell = this.boardState[r][c]; if(cell.type === 'stone') { canClear=false; cell.health--; if(cell.health < 1) this.boardState[r][c] = {type:'stone', health: 0}; else cell.cracked=true; }} if(canClear) linesActuallyCleared.cols.push(c); });
+
+            this.bombs = this.bombs.filter(bomb => { const wasCleared = linesActuallyCleared.rows.includes(bomb.r) || linesActuallyCleared.cols.includes(bomb.c); if(wasCleared) this.runStats.bombsDefused++; return !wasCleared; });
+            linesActuallyCleared.rows.forEach(r=>this.boardState[r].fill(0)); linesActuallyCleared.cols.forEach(c=>this.boardState.forEach(row=>row[c]=0));
+            const clearedCount=linesActuallyCleared.rows.length+linesActuallyCleared.cols.length;
+            if (clearedCount>0){this.combo++; this.score+=(clearedCount*clearedCount*10)+(this.combo*10);Sound.playSfx('clear'); Sound.vibrate(50); this.runStats.linesCleared += clearedCount; PlayerData.state.stats.blockPuzzle_linesCleared += clearedCount;} else {this.combo=0;}
         },
         checkGameOver() { for(const piece of this.currentPieces){ for(let r=0;r<10;r++){ for(let c=0;c<10;c++){ if(this.canPlacePiece(piece,r,c))return false;}}} return true; },
         spawnBomb() { this.movesSinceBomb = 0; const filledCells = []; for(let r=0;r<10;r++){for(let c=0;c<10;c++){if(this.boardState[r][c] && this.boardState[r][c].type !== 'stone' && !this.bombs.find(b=>b.r===r&&b.c===c)) filledCells.push({r,c});}} if(filledCells.length === 0) return; const cell = filledCells[Math.floor(Math.random()*filledCells.length)]; this.bombs.push({r: cell.r, c: cell.c, timer: 9}); Sound.playSfx('bomb'); this.renderBoard();},
         updateBombs() { this.bombs.forEach(bomb => bomb.timer--); if(this.bombs.some(b=>b.timer<0)) { shakeScreen(); this.gameOver(); return; } this.renderBoard();},
-        updateScore() { puzzleUI.score.textContent = this.score; puzzleUI.score.parentElement.classList.add('score-updated'); setTimeout(()=>puzzleUI.score.parentElement.classList.remove('score-updated'), 200); },
+        updateScore() { puzzleUI.score.textContent = this.score; puzzleUI.header.querySelector('.game-score').classList.add('score-updated'); setTimeout(()=>puzzleUI.header.querySelector('.game-score').classList.remove('score-updated'), 200); },
         gameOver() { this.stop(); this.runStats.score = this.score; endGame(this.runStats); },
-        getHelpText() { return `<ul><li><strong>Classic:</strong> Opustite se i ređajte blokove dok imate mesta. Pazite na kamene blokove!</li><li><strong>Time Attack:</strong> Osvojite što više poena za 2 minuta.</li><li><strong>Blast:</strong> Preživite što duže! Povremeno se pojavljuju bombe koje morate očistiti pre isteka tajmera.</li></ul>`;}
+        getHelpText() { return `<ul><li><strong>Classic:</strong> Opustite se i ređajte blokove dok imate mesta. Pazite na kamene blokove!</li><li><strong>Time Attack:</strong> Osvojite što više poena za 2 minuta.</li><li><strong>Blast:</strong> Preživite što duže! Povremeno se na tabli pojavljuju bombe koje morate očistiti pre isteka tajmera.</li></ul>`;}
     };
-    
-    fillFunctions();
 });
