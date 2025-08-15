@@ -9,7 +9,7 @@
 body.dark-theme {
     --bg-color: #0d1117; --primary-text: #e6edf3; --secondary-text: #7d8590;
     --accent-gradient: linear-gradient(45deg, #f72585, #7209b7);
-    --card-bg: rgba(30, 36, 46, 0.8); --card-border: rgba(137, 147, 163, 0.2);
+    --card-bg: rgba(30, 36, 46, 0.85); --card-border: rgba(137, 147, 163, 0.2);
     --shadow: rgba(0,0,0,0.4); --primary-btn-bg: #238636;
     --game-board-bg: rgba(0,0,0,0.3); --game-board-frame: transparent;
     --grid-line-color: rgba(107, 114, 128, 0.3); --accent-highlight-color: #ffc9e5;
@@ -17,7 +17,7 @@ body.dark-theme {
 body.light-theme {
     --bg-color: #f0f2f5; --primary-text: #1c1e21; --secondary-text: #606770;
     --accent-gradient: linear-gradient(45deg, #007bff, #00aaff);
-    --card-bg: rgba(255, 255, 255, 0.8); --card-border: rgba(0, 0, 0, 0.1);
+    --card-bg: rgba(255, 255, 255, 0.85); --card-border: rgba(0, 0, 0, 0.1);
     --shadow: rgba(0,0,0,0.1); --primary-btn-bg: #007bff;
     --game-board-bg: rgba(255,255,255,0.8); --game-board-frame: transparent;
     --grid-line-color: rgba(0, 0, 0, 0.15); --accent-highlight-color: #cce5ff;
@@ -25,7 +25,7 @@ body.light-theme {
 body.neon-theme {
     --bg-color: #000000; --primary-text: #00ffde; --secondary-text: #8d8d8d;
     --accent-gradient: linear-gradient(45deg, #00ffde, #ff00ff);
-    --card-bg: rgba(15, 15, 15, 0.8); --card-border: rgba(0, 255, 222, 0.3);
+    --card-bg: rgba(15, 15, 15, 0.85); --card-border: rgba(0, 255, 222, 0.3);
     --shadow: rgba(0, 255, 222, 0.2); --primary-btn-bg: #ff00ff;
     --game-board-bg: rgba(255,255,255,0.05);
     --game-board-frame: linear-gradient(160deg, #ff00ff, #00ffde, #ff00ff);
@@ -35,7 +35,7 @@ body.neon-theme {
 body.gold-theme {
     --bg-color: #1a160d; --primary-text: #f5e8c7; --secondary-text: #a89a7f;
     --accent-gradient: linear-gradient(45deg, #ffd700, #f0e68c, #daa520);
-    --card-bg: rgba(40, 32, 20, 0.8); --card-border: rgba(255, 215, 0, 0.2);
+    --card-bg: rgba(40, 32, 20, 0.85); --card-border: rgba(255, 215, 0, 0.2);
     --shadow: rgba(0,0,0,0.5); --primary-btn-bg: #b8860b;
     --game-board-bg: rgba(0,0,0,0.2);
     --game-board-frame: linear-gradient(160deg, #b8860b, #ffd700, #b8860b);
@@ -44,14 +44,14 @@ body.gold-theme {
 body.silver-theme {
     --bg-color: #111827; --primary-text: #d1d5db; --secondary-text: #6b7280;
     --accent-gradient: linear-gradient(45deg, #9ca3af, #e5e7eb, #9ca3af);
-    --card-bg: rgba(31, 41, 55, 0.8); --card-border: rgba(156, 163, 175, 0.2);
+    --card-bg: rgba(31, 41, 55, 0.85); --card-border: rgba(156, 163, 175, 0.2);
     --shadow: rgba(0,0,0,0.5); --primary-btn-bg: #4b5563;
     --game-board-bg: rgba(0,0,0,0.3); --game-board-frame: transparent;
     --grid-line-color: rgba(107, 114, 128, 0.3); --accent-highlight-color: #f9fafb;
 }
 .neon-theme h1, .neon-theme h2, .gold-theme h1, .gold-theme h2, .silver-theme h1, .silver-theme h2 { text-shadow: 0 0 8px var(--shadow); }
 
-/* --- OSNOVNI STILOVI --- */
+/* --- OSNOVNI STILOVI TELA I POZADINE --- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: -webkit-fill-available; }
 body { font-family: var(--font-family); background: var(--bg-color); color: var(--primary-text); margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; width: 100vw; transition: background-color 0.5s, color 0.5s; }
@@ -73,24 +73,40 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 .main-menu-header { position: absolute; top: 1rem; left: 1rem; right: 1rem; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
 .gem-balance { display: flex; align-items: center; background: var(--card-bg); border-radius: 2rem; padding: 0.5rem 1rem; font-weight: 700; font-size: 1.2rem; border: 1px solid var(--card-border); }
 .header-buttons { display: flex; gap: 0.5rem; }
-.menu-container h1 { font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 2rem 0; }
+.menu-container { width: 100%; }
+.menu-container h1 { font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 2rem; }
 .menu-item { border: 1px solid var(--card-border); border-radius: 1rem; padding: 1px; margin: 1rem auto; width: 90%; max-width: 400px; backdrop-filter: blur(20px); background: transparent; cursor: pointer; position: relative; transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo); }
 .menu-item-content { background: var(--card-bg); border-radius: inherit; padding: 1.5rem; }
 .menu-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 1rem; border: 2px solid transparent; background: var(--accent-gradient) border-box; -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); -webkit-mask-composite: destination-out; mask-composite: exclude; opacity: 0; transition: opacity 0.4s var(--ease-out-expo); }
 .menu-item:hover::before { opacity: 1; }
+.menu-item h2 { margin: 0; font-weight: 700; font-size: 1.5rem;}
+.highscore { font-size: 0.8rem; color: var(--secondary-text); margin-top: 0.5rem; font-weight: 700; }
+
+/* --- EKRAN POSLE PARTIJE --- */
+#post-game-screen { justify-content: center; align-items: center; gap: 1rem; text-align: center; }
+.post-game-summary { margin-bottom: 1rem; }
+.final-score-title { font-size: 1rem; color: var(--secondary-text); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;}
+.final-score-value { font-size: 4rem; font-weight: 900; line-height: 1; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.new-best-banner { background: var(--primary-btn-bg); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-top: 0.5rem; display: none; }
+.post-game-stats { width: 90%; max-width: 350px; background: var(--card-bg); border-radius: 1rem; padding: 1rem; }
+.stat-line { display: flex; justify-content: space-between; padding: 0.5rem 0; }
+.stat-line:not(:last-child) { border-bottom: 1px solid var(--card-border); }
+.unlock-item { display: flex; align-items: center; gap: 1rem; background: var(--card-bg); padding: 1rem; border-radius: 0.5rem; animation: new-best-pop 0.5s var(--ease-out-expo); }
+.unlock-icon { font-size: 2rem; }
+.post-game-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+.primary-btn.secondary { background: var(--card-bg); color: var(--primary-text); }
+@keyframes new-best-pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 /* --- PRODAVNICA I DOSTIGNUĆA --- */
 #shop-screen, #achievements-screen { justify-content: flex-start; align-items: center; }
 .shop-container, .achievements-container { width: 100%; max-width: 500px; height: calc(100% - 80px); overflow-y: auto; padding: 1rem; }
-.shop-container h3 { border-bottom: 2px solid var(--card-border); padding-bottom: 0.5rem; margin-top: 0; }
+.shop-container h3, .achievements-container h3 { border-bottom: 2px solid var(--card-border); padding-bottom: 0.5rem; margin-top: 0; }
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
 .shop-item { background: var(--card-bg); border-radius: 1rem; border: 1px solid var(--card-border); padding: 1rem; text-align: center; }
 .shop-item-preview { height: 60px; margin-bottom: 1rem; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 900; }
-.shop-item-name { font-weight: 700; }
 .shop-item-price { display: flex; justify-content: center; align-items: center; font-weight: 700; margin: 0.5rem 0; }
 .shop-item-btn { width: 100%; padding: 0.75rem; border: none; border-radius: 0.5rem; cursor: pointer; background: var(--primary-btn-bg); color: white; font-weight: 700; }
 .shop-item-btn:disabled { background: var(--secondary-text); cursor: default; }
-.shop-item-btn.equipped { background: #084c17; }
 .achievements-container { display: flex; flex-direction: column; gap: 1rem; }
 .achievement-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; padding: 1rem; display: flex; gap: 1rem; align-items: center; }
 .achievement-item.completed { border-left: 5px solid gold; }
@@ -99,18 +115,41 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 .achievement-progress-fill { height: 100%; background: var(--accent-gradient); border-radius: 1rem; }
 .achievement-reward { margin-left: auto; font-weight: 700; }
 
-/* --- EKRAN POSLE PARTIJE --- */
-#post-game-screen { justify-content: center; align-items: center; gap: 1rem; text-align: center; }
-.final-score-value { font-size: 4rem; font-weight: 900; line-height: 1; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.new-best-banner { background: var(--primary-btn-bg); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-top: 0.5rem; display: none; }
-.post-game-stats { width: 90%; max-width: 350px; background: var(--card-bg); border-radius: 1rem; padding: 1rem; }
-.unlock-item { display: flex; align-items: center; gap: 1rem; background: var(--card-bg); padding: 1rem; border-radius: 0.5rem; animation: new-best-pop 0.5s var(--ease-out-expo); }
-.unlock-icon { font-size: 2rem; }
-.post-game-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+/* --- EKRAN SA IGROM --- */
+#game-screen { justify-content: flex-start; padding: 0; }
+.game-header-bar { display: none; width: 100%; justify-content: space-between; align-items: center; padding: 1rem; flex-shrink: 0; position: relative; z-index: 10; }
+.game-content-wrapper { flex-grow: 1; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.game-area { display: none; width: 100%; justify-content: center; align-items: center; gap: 1rem; }
+.game-area.active { display: flex; }
+body.tetris-active #tetris-ui-header.tetris-only { display: flex; }
+body.puzzle-active .puzzle-only { display: flex; }
+#tetris-ui-header { width: 100%; padding: 1rem; justify-content: center; align-items: stretch; gap: 1rem; flex-shrink: 0;}
+.ui-frame { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; padding: 0.5rem; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-height: 90px;}
+.score-frame { flex: 1.5; } .frame-title { font-size: 0.7rem; color: var(--secondary-text); font-weight: 700; margin-bottom: 0.25rem; text-transform: uppercase; }
+.score-display, .level-display { font-size: 1.8rem; font-weight: 900; line-height: 1; }
+.best-score-container { margin-top: 0.25rem; color: var(--secondary-text); font-size: 0.8rem; } .crown { font-size: 0.8rem; display: inline-block; } .best-score-display { font-weight: 700; color: var(--primary-text); }
+#tetris-next-piece, #tetris-hold-piece { flex-grow: 1; display: flex; justify-content: center; align-items: center; } .game-controls { display: flex; justify-content: space-around; margin-top: 0.5rem; }
+.puzzle-only.game-header-bar { display: flex; }
+#tetris-hold-container { display: none; } body.hold-enabled #tetris-hold-container { display: flex; }
 
-/* --- MODALI --- */
-.modal-overlay { z-index: 2000; /* ... ostatak isti kao pre ... */ }
-#daily-login-modal .modal-content { text-align: center; }
-.gem-reward { font-size: 3rem; font-weight: 900; background: linear-gradient(45deg, #a856f7, #6c56f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 1rem 0; }
-#daily-login-streak { color: var(--secondary-text); }
-/* --- Svi ostali stilovi za dugmiće, ekrane, igre, animacije, itd. ostaju isti kao u prethodnoj "Final Touch" verziji --- */
+/* --- IGRE I TABLE --- */
+.game-board-frame { padding: 0; border: none; background: var(--game-board-frame); background-size: 300% 300%; animation: frame-flow 5s linear infinite; border-radius: 12px; }
+@keyframes frame-flow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+#tetris-board, #puzzle-board { background-color: var(--game-board-bg); }
+#tetris-game-area { flex-direction: row; align-items: center; }
+#tetris-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); width: min(65vw, 280px); height: min(130vw, 560px); }
+#puzzle-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr); width: 90vw; height: 90vw; max-width: 400px; max-height: 400px; }
+.tetris-cell, .puzzle-cell { box-shadow: inset 0 0 0 1px var(--grid-line-color); background-color: transparent; position: relative; }
+.game-block { border-radius: min(25%, 6px); background-image: linear-gradient(160deg, rgba(255,255,255,0.25), rgba(255,255,255,0) 60%); box-shadow: inset 0px 2px 1px rgba(255,255,255,0.4), inset 0px -2px 1px rgba(0,0,0,0.2), 0 5px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
+.game-block.stone { background-image: linear-gradient(45deg, #8d99ae 25%, transparent 25%), linear-gradient(-45deg, #8d99ae 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #8d99ae 75%), linear-gradient(-45deg, transparent 75%, #8d99ae 75%); background-size: 15px 15px; background-color: #adb5bd; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
+.game-block.stone.cracked::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: linear-gradient(135deg, transparent 48%, rgba(0,0,0,0.5) 48%, rgba(0,0,0,0.5) 52%, transparent 52%); }
+
+/* --- MODALI, ANIMACIJE I OSTALO --- */
+@keyframes line-clear-flash { 0%, 100% {transform: scale(1);} 50% {transform: scale(1.05); background-color: var(--accent-highlight-color); box-shadow: 0 0 20px var(--accent-highlight-color);}}
+.line-clearing { background-color: var(--accent-highlight-color) !important; animation: line-clear-flash 0.3s forwards; }
+#theme-select-container { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+.theme-option { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem; border-radius: 0.25rem; }
+.theme-option.active { background: var(--primary-btn-bg); color: white; }
+.theme-option.locked { opacity: 0.5; cursor: not-allowed; }
+.theme-preview { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--primary-text); }
+/* ... Svi ostali stilovi za dugmiće, ekrane, animacije, modale, itd. su isti kao u prethodnoj verziji ... */
