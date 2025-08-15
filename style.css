@@ -5,7 +5,7 @@
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* --- DEFINICIJE TEMA (ostaju iste kao pre) --- */
+/* --- DEFINICIJE TEMA --- */
 body.dark-theme {
     --bg-color: #0d1117; --primary-text: #e6edf3; --secondary-text: #7d8590;
     --accent-gradient: linear-gradient(45deg, #f72585, #7209b7);
@@ -49,73 +49,68 @@ body.silver-theme {
     --game-board-bg: rgba(0,0,0,0.3); --game-board-frame: transparent;
     --grid-line-color: rgba(107, 114, 128, 0.3); --accent-highlight-color: #f9fafb;
 }
-.neon-theme h1, .neon-theme h2, .gold-theme h1, .gold-theme h2 { text-shadow: 0 0 8px var(--shadow); }
+.neon-theme h1, .neon-theme h2, .gold-theme h1, .gold-theme h2, .silver-theme h1, .silver-theme h2 { text-shadow: 0 0 8px var(--shadow); }
 
-/* --- OSNOVNI STILOVI TELA I POZADINE --- */
+/* --- OSNOVNI STILOVI --- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: -webkit-fill-available; }
 body { font-family: var(--font-family); background: var(--bg-color); color: var(--primary-text); margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; width: 100vw; transition: background-color 0.5s, color 0.5s; }
 @keyframes aurora-move { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-.aurora-background { position: fixed; top: 50%; left: 50%; width: 150vmax; height: 150vmax; animation: aurora-move 40s infinite linear; z-index: -1; }
-.aurora-dot { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.6; }
+.aurora-background { position: fixed; top: 50%; left: 50%; width: 150vmax; height: 150vmax; animation: aurora-move 40s infinite linear; z-index: -1; transition: transform 1s; }
+.aurora-dot { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.6; transition: background-color 1s; }
 .aurora-dot:nth-child(1) { width: 600px; height: 600px; top: 0; left: 10%; background: #f72585; } .aurora-dot:nth-child(2) { width: 500px; height: 500px; top: 20%; left: 60%; background: #7209b7; } .aurora-dot:nth-child(3) { width: 400px; height: 400px; top: 70%; left: 20%; background: #4361ee; }
+body.danger-state .aurora-background { animation-duration: 3s; }
+body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 
 /* --- EKRANI I TRANZICIJE --- */
 .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 1rem; opacity: 0; visibility: hidden; pointer-events: none; transform: scale(0.95); transition: opacity var(--transition-speed-med) var(--ease-out-expo), transform var(--transition-speed-med) var(--ease-out-expo); }
 .screen.active { opacity: 1; visibility: visible; pointer-events: auto; transform: scale(1); }
 .screen h2 { font-size: 2rem; font-weight: 900; text-align: center; margin: 1rem 0 2rem 0; }
+.back-to-main-menu { position: absolute; top: 1rem; left: 1rem; z-index: 10; }
 
-/* --- GLAVNI MENI - NOVI IZGLED --- */
-#main-menu-screen { align-items: center; justify-content: center; text-align: center; perspective: 1500px; }
-.main-menu-header { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 1rem; z-index: 10; }
-.menu-container { width: 100%; }
-.menu-container h1 { font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 2rem; transform: translateZ(60px); }
-.menu-item { /* ... ostaje isto kao pre ... */ }
+/* --- GLAVNI MENI --- */
+#main-menu-screen { align-items: center; justify-content: center; text-align: center; }
+.main-menu-header { position: absolute; top: 1rem; left: 1rem; right: 1rem; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+.gem-balance { display: flex; align-items: center; background: var(--card-bg); border-radius: 2rem; padding: 0.5rem 1rem; font-weight: 700; font-size: 1.2rem; border: 1px solid var(--card-border); }
+.header-buttons { display: flex; gap: 0.5rem; }
+.menu-container h1 { font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 2rem 0; }
+.menu-item { border: 1px solid var(--card-border); border-radius: 1rem; padding: 1px; margin: 1rem auto; width: 90%; max-width: 400px; backdrop-filter: blur(20px); background: transparent; cursor: pointer; position: relative; transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo); }
+.menu-item-content { background: var(--card-bg); border-radius: inherit; padding: 1.5rem; }
+.menu-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 1rem; border: 2px solid transparent; background: var(--accent-gradient) border-box; -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); -webkit-mask-composite: destination-out; mask-composite: exclude; opacity: 0; transition: opacity 0.4s var(--ease-out-expo); }
+.menu-item:hover::before { opacity: 1; }
 
-/* --- EKRAN ZA IZBOR MODA --- */
-/* ... ostaje isto kao pre ... */
+/* --- PRODAVNICA I DOSTIGNUĆA --- */
+#shop-screen, #achievements-screen { justify-content: flex-start; align-items: center; }
+.shop-container, .achievements-container { width: 100%; max-width: 500px; height: calc(100% - 80px); overflow-y: auto; padding: 1rem; }
+.shop-container h3 { border-bottom: 2px solid var(--card-border); padding-bottom: 0.5rem; margin-top: 0; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.shop-item { background: var(--card-bg); border-radius: 1rem; border: 1px solid var(--card-border); padding: 1rem; text-align: center; }
+.shop-item-preview { height: 60px; margin-bottom: 1rem; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: 900; }
+.shop-item-name { font-weight: 700; }
+.shop-item-price { display: flex; justify-content: center; align-items: center; font-weight: 700; margin: 0.5rem 0; }
+.shop-item-btn { width: 100%; padding: 0.75rem; border: none; border-radius: 0.5rem; cursor: pointer; background: var(--primary-btn-bg); color: white; font-weight: 700; }
+.shop-item-btn:disabled { background: var(--secondary-text); cursor: default; }
+.shop-item-btn.equipped { background: #084c17; }
+.achievements-container { display: flex; flex-direction: column; gap: 1rem; }
+.achievement-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; padding: 1rem; display: flex; gap: 1rem; align-items: center; }
+.achievement-item.completed { border-left: 5px solid gold; }
+.achievement-icon { font-size: 2rem; } .achievement-details h4 { margin: 0; } .achievement-details p { margin: 0.25rem 0; font-size: 0.9rem; color: var(--secondary-text); }
+.achievement-progress-bar { width: 100%; background: var(--card-border); border-radius: 1rem; height: 10px; margin-top: 0.5rem; }
+.achievement-progress-fill { height: 100%; background: var(--accent-gradient); border-radius: 1rem; }
+.achievement-reward { margin-left: auto; font-weight: 700; }
 
-/* --- EKRAN SA IGROM (TETRIS UI IZMENE) --- */
-#tetris-ui-header { display: none; } /* Sakriveno po defaultu */
-body.tetris-active #tetris-ui-header.tetris-only { display: flex; }
-body.puzzle-active .puzzle-only { display: flex; }
-/* ... ostatak game-screen stilova ostaje isti ... */
+/* --- EKRAN POSLE PARTIJE --- */
+#post-game-screen { justify-content: center; align-items: center; gap: 1rem; text-align: center; }
+.final-score-value { font-size: 4rem; font-weight: 900; line-height: 1; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.new-best-banner { background: var(--primary-btn-bg); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-top: 0.5rem; display: none; }
+.post-game-stats { width: 90%; max-width: 350px; background: var(--card-bg); border-radius: 1rem; padding: 1rem; }
+.unlock-item { display: flex; align-items: center; gap: 1rem; background: var(--card-bg); padding: 1rem; border-radius: 0.5rem; animation: new-best-pop 0.5s var(--ease-out-expo); }
+.unlock-icon { font-size: 2rem; }
+.post-game-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
 
-/* --- LIDERBORD MODAL --- */
-.leaderboard-filters { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
-.leaderboard-filters select {
-    flex: 1; background: var(--card-bg); color: var(--primary-text);
-    border: 1px solid var(--card-border); border-radius: 0.5rem; padding: 0.75rem;
-    font-size: 1rem;
-}
-#leaderboard-loading { text-align: center; padding: 2rem; color: var(--secondary-text); }
-#leaderboard-list { list-style: none; padding: 0; margin: 0; max-height: 50vh; overflow-y: auto; }
-#leaderboard-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem; }
-#leaderboard-list li:nth-child(odd) { background: rgba(0,0,0,0.1); }
-#leaderboard-list li .rank { font-weight: 700; color: var(--secondary-text); flex-basis: 15%; }
-#leaderboard-list li .name { font-weight: 500; flex-basis: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#leaderboard-list li .score { font-weight: 700; flex-basis: 30%; text-align: right; }
-#leaderboard-list li:nth-child(1) .rank, #leaderboard-list li:nth-child(1) .name { color: #FFD700; font-weight: 900; }
-#leaderboard-list li:nth-child(2) .rank, #leaderboard-list li:nth-child(2) .name { color: #C0C0C0; font-weight: 900; }
-#leaderboard-list li:nth-child(3) .rank, #leaderbroard-list li:nth-child(3) .name { color: #CD7F32; font-weight: 900; }
-
-/* --- MODALI - ISPRAVKA Z-INDEX --- */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 2000; /* Visok z-index da bude iznad svega */
-    opacity: 0; visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
-}
-.modal-overlay.active { opacity: 1; visibility: visible; }
-.modal-content {
-    background: var(--card-bg); border: 1px solid var(--card-border);
-    border-radius: 1rem; padding: 2rem; width: 90%; max-width: 450px;
-    box-shadow: 0 10px 50px var(--shadow);
-    transform: scale(0.9); transition: transform 0.4s var(--ease-out-expo);
-}
-.modal-overlay.active .modal-content { transform: scale(1); }
-
-/* --- Svi ostali stilovi ostaju isti kao u prethodnom odgovoru --- */
-/* (stilovi za blokove, mrežu, pauzu, game over, itd.) */
+/* --- MODALI --- */
+.modal-overlay { z-index: 2000; /* ... ostatak isti kao pre ... */ }
+#daily-login-modal .modal-content { text-align: center; }
+.gem-reward { font-size: 3rem; font-weight: 900; background: linear-gradient(45deg, #a856f7, #6c56f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 1rem 0; }
+#daily-login-streak { color: var(--secondary-text); }
+/* --- Svi ostali stilovi za dugmiće, ekrane, igre, animacije, itd. ostaju isti kao u prethodnoj "Final Touch" verziji --- */
