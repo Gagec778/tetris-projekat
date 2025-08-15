@@ -974,4 +974,4 @@ body.block-style-retro .game-block {
     border-radius: 0.5rem;
     box-shadow: var(--shadow);
     animation: new-item-pop 0.5s, fade-out 0.5s 3.5s forwards;
-  }
+}
