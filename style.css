@@ -55,6 +55,7 @@ body.silver-theme {
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: -webkit-fill-available; }
 body { font-family: var(--font-family); background: var(--bg-color); color: var(--primary-text); margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; width: 100vw; transition: background-color 0.5s, color 0.5s; }
+@keyframes aurora-move { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
 .aurora-background { position: fixed; top: 50%; left: 50%; width: 150vmax; height: 150vmax; animation: aurora-move 40s infinite linear; z-index: -1; transition: transform 1s; }
 .aurora-dot { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.6; transition: background-color 1s; }
 .aurora-dot:nth-child(1) { width: 600px; height: 600px; top: 0; left: 10%; background: #f72585; } .aurora-dot:nth-child(2) { width: 500px; height: 500px; top: 20%; left: 60%; background: #7209b7; } .aurora-dot:nth-child(3) { width: 400px; height: 400px; top: 70%; left: 20%; background: #4361ee; }
@@ -71,15 +72,23 @@ body.danger-state .aurora-dot { background-color: #9d0208 !important; }
 #main-menu-screen { align-items: center; justify-content: center; text-align: center; }
 .main-menu-header { position: absolute; top: 1rem; left: 1rem; right: 1rem; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
 .gem-balance { display: flex; align-items: center; background: var(--card-bg); border-radius: 2rem; padding: 0.5rem 1rem; font-weight: 700; font-size: 1.2rem; border: 1px solid var(--card-border); }
+.gem-icon { width: 24px; height: 24px; margin-left: 0.5rem; fill: var(--primary-text); stroke: none; }
 .header-buttons { display: flex; gap: 0.5rem; }
-.menu-container h1 { font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 2rem 0; }
+.menu-container h1 { font-size: clamp(3rem, 15vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 2rem; }
 .menu-item { border: 1px solid var(--card-border); border-radius: 1rem; padding: 1px; margin: 1rem auto; width: 90%; max-width: 400px; backdrop-filter: blur(20px); background: transparent; cursor: pointer; position: relative; transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo); }
 .menu-item-content { background: var(--card-bg); border-radius: inherit; padding: 1.5rem; }
 .menu-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 1rem; border: 2px solid transparent; background: var(--accent-gradient) border-box; -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); -webkit-mask-composite: destination-out; mask-composite: exclude; opacity: 0; transition: opacity 0.4s var(--ease-out-expo); }
 .menu-item:hover::before { opacity: 1; }
+.menu-item h2 { margin: 0; font-weight: 700; font-size: 1.5rem;}
+.header-icon svg { width: 32px; height: 32px; stroke: var(--primary-text); transition: all var(--transition-speed-fast); }
+.header-icon:hover svg { transform: scale(1.1) rotate(-15deg); filter: drop-shadow(0 0 5px var(--primary-text));}
+.light-theme .header-icon svg { stroke: var(--primary-text); }
+
 
 /* --- EKRAN POSLE PARTIJE --- */
 #post-game-screen { justify-content: center; align-items: center; gap: 1rem; text-align: center; }
+.post-game-summary { margin-bottom: 1rem; }
+.final-score-title { font-size: 1rem; color: var(--secondary-text); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;}
 .final-score-value { font-size: 4rem; font-weight: 900; line-height: 1; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .new-best-banner { background: var(--primary-btn-bg); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-top: 0.5rem; display: none; }
 .post-game-stats { width: 90%; max-width: 350px; background: var(--card-bg); border-radius: 1rem; padding: 1rem; }
