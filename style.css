@@ -11,7 +11,7 @@ body.dark-theme {
     --accent-gradient: linear-gradient(45deg, #f72585, #7209b7);
     --card-bg: rgba(30, 36, 46, 0.7); --card-border: rgba(137, 147, 163, 0.2);
     --shadow: rgba(0,0,0,0.4); --primary-btn-bg: #238636;
-    --game-board-bg: rgba(0,0,0,0.2); --game-board-frame: transparent;
+    --game-board-bg: rgba(0,0,0,0.3); --game-board-frame: transparent;
     --grid-line-color: rgba(60, 70, 90, 0.5); --accent-highlight-color: #ffc9e5;
 }
 body.light-theme {
@@ -41,6 +41,14 @@ body.gold-theme {
     --game-board-frame: linear-gradient(160deg, #b8860b, #ffd700, #b8860b);
     --grid-line-color: rgba(255, 215, 0, 0.2); --accent-highlight-color: #fff8e1;
 }
+body.silver-theme {
+    --bg-color: #e2e8f0; --primary-text: #2d3748; --secondary-text: #718096;
+    --accent-gradient: linear-gradient(45deg, #cbd5e0, #a0aec0);
+    --card-bg: rgba(255, 255, 255, 0.8); --card-border: rgba(0, 0, 0, 0.1);
+    --shadow: rgba(0,0,0,0.1); --primary-btn-bg: #4a5568;
+    --game-board-bg: rgba(0,0,0,0.05); --game-board-frame: transparent;
+    --grid-line-color: rgba(113, 128, 150, 0.2); --accent-highlight-color: #ffffff;
+}
 .neon-theme h1, .neon-theme h2, .gold-theme h1, .gold-theme h2 { text-shadow: 0 0 8px var(--shadow); }
 
 /* --- OSNOVNI STILOVI TELA I POZADINE --- */
@@ -50,9 +58,7 @@ body { font-family: var(--font-family); background: var(--bg-color); color: var(
 @keyframes aurora-move { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
 .aurora-background { position: fixed; top: 50%; left: 50%; width: 150vmax; height: 150vmax; animation: aurora-move 40s infinite linear; z-index: -1; }
 .aurora-dot { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.6; }
-.aurora-dot:nth-child(1) { width: 600px; height: 600px; top: 0; left: 10%; background: #f72585; }
-.aurora-dot:nth-child(2) { width: 500px; height: 500px; top: 20%; left: 60%; background: #7209b7; }
-.aurora-dot:nth-child(3) { width: 400px; height: 400px; top: 70%; left: 20%; background: #4361ee; }
+.aurora-dot:nth-child(1) { width: 600px; height: 600px; top: 0; left: 10%; background: #f72585; } .aurora-dot:nth-child(2) { width: 500px; height: 500px; top: 20%; left: 60%; background: #7209b7; } .aurora-dot:nth-child(3) { width: 400px; height: 400px; top: 70%; left: 20%; background: #4361ee; }
 
 /* --- EKRANI I TRANZICIJE --- */
 .screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 1rem; opacity: 0; visibility: hidden; pointer-events: none; transform: scale(0.95); transition: opacity var(--transition-speed-med) var(--ease-out-expo), transform var(--transition-speed-med) var(--ease-out-expo); }
@@ -76,8 +82,7 @@ body { font-family: var(--font-family); background: var(--bg-color); color: var(
 #mode-selection-container { display: flex; flex-direction: column; gap: 1rem; width: 90%; max-width: 400px; }
 .mode-btn { background: var(--card-bg); border: 1px solid var(--card-border); padding: 1.25rem; border-radius: 1rem; cursor: pointer; transition: transform 0.2s; text-align: left;}
 .mode-btn:hover { transform: scale(1.05); border-color: var(--primary-text); }
-.mode-btn h3 { margin: 0; font-size: 1.2rem; }
-.mode-description { margin: 0.5rem 0 0; color: var(--secondary-text); font-size: 0.9rem; }
+.mode-btn h3 { margin: 0; font-size: 1.2rem; } .mode-description { margin: 0.5rem 0 0; color: var(--secondary-text); font-size: 0.9rem; }
 .mode-details { display: flex; gap: 1rem; margin-top: 1rem; font-size: 0.8rem; color: var(--primary-text); }
 .mode-details span { font-weight: 700; }
 .difficulty-title { margin: 1rem 0 0.5rem; color: var(--secondary-text); font-weight: 400; }
@@ -94,10 +99,8 @@ body { font-family: var(--font-family); background: var(--bg-color); color: var(
 
 /* --- EKRAN SA IGROM --- */
 #game-screen { justify-content: flex-start; padding: 0; }
-.game-header-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 1rem; flex-shrink: 0; position: relative; z-index: 10; }
-.game-info-container { text-align: center; } .game-score { font-size: 1.5rem; font-weight: 700; transition: transform 0.2s; }
-.game-timer { font-size: 1rem; color: var(--secondary-text); min-height: 1.2rem; }
-.game-content-wrapper { flex-grow: 1; width: 100%; display: flex; justify-content: center; align-items: center; }
+.game-header-bar { display: none; width: 100%; justify-content: space-between; align-items: center; padding: 1rem; flex-shrink: 0; position: relative; z-index: 10; }
+.game-content-wrapper { flex-grow: 1; width: 100%; display: flex; justify-content: center; align-items: center; padding-bottom: 1rem; }
 .game-area { display: none; width: 100%; justify-content: center; align-items: center; gap: 1rem; }
 .game-area.active { display: flex; }
 
@@ -107,35 +110,46 @@ body { font-family: var(--font-family); background: var(--bg-color); color: var(
 .icon-btn.small { width: 40px; height: 40px; font-size: 1.4rem; }
 .back-to-main-menu { position: absolute; top: 1rem; left: 1rem; z-index: 10; }
 
+/* --- UI PRIKAZ U ZAVISNOSTI OD IGRE --- */
+body.tetris-active #tetris-ui-header.tetris-only { display: flex; }
+body.puzzle-active .puzzle-only { display: flex; }
+
+/* --- TETRIS NOVI UI --- */
+#tetris-ui-header { width: 100%; padding: 1rem; justify-content: center; align-items: flex-start; gap: 1rem; flex-shrink: 0;}
+.ui-frame { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; padding: 0.75rem; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-height: 100px;}
+.score-frame { flex: 1.5; }
+.frame-title { font-size: 0.7rem; color: var(--secondary-text); font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase; }
+.score-display, .level-display { font-size: 2rem; font-weight: 900; line-height: 1; }
+.best-score-container { margin-top: 0.5rem; color: var(--secondary-text); }
+.crown { font-size: 1rem; display: block; }
+.best-score-display { font-weight: 700; color: var(--primary-text); }
+#tetris-next-piece { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
+.game-controls { display: flex; justify-content: space-around; margin-top: 0.5rem; }
+
+/* --- PUZZLE STARI UI --- */
+.puzzle-only.game-header-bar { display: flex; }
+.game-info-container { text-align: center; } .game-score { font-size: 1.5rem; font-weight: 700; transition: transform 0.2s; } .game-timer { font-size: 1rem; color: var(--secondary-text); min-height: 1.2rem; }
+#puzzle-pieces-container-wrapper.puzzle-only { display: flex; }
+
 /* --- IGRE I TABLE --- */
 .game-board-frame { padding: 6px; border-radius: 12px; background: var(--game-board-frame); background-size: 300% 300%; animation: frame-flow 5s linear infinite; }
 @keyframes frame-flow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 #tetris-board-container, #puzzle-board-container { background-color: var(--grid-line-color); }
 #tetris-board, #puzzle-board { background-color: var(--game-board-bg); }
-#tetris-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); height: calc(100vh - 120px); max-height: 600px; width: calc((100vh - 120px) / 2); max-width: 300px; gap: 1px; }
+#tetris-game-area { flex-direction: column; align-items: center; }
+#tetris-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); width: min(70vw, 300px); height: min(140vw, 600px); gap: 1px; }
 #puzzle-board { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr); width: 90vw; height: 90vw; max-width: 400px; max-height: 400px; gap: 1px; }
-#puzzle-pieces-container-wrapper { padding: 1rem 0; width: 100%; flex-shrink: 0; }
 #puzzle-pieces-container { width: 100%; display: flex; justify-content: space-around; align-items: center; height: 80px; }
-.side-panel { text-align: center; } .side-panel h3 { margin: 0 0 10px 0; color: var(--secondary-text); font-weight: 400; }
-#tetris-next-container { width: 100px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: space-around; }
-.next-piece-display { display: grid; gap: 1px; }
 
 /* --- BLOKOVI - NOVI DIZAJN --- */
-.game-block {
-    border-radius: min(25%, 6px);
-    transition: transform 0.2s, background-color 0.2s;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: inset 0px 2px 2px rgba(255, 255, 255, 0.3), inset 0px -2px 2px rgba(0, 0, 0, 0.2);
-    background-image: linear-gradient(160deg, rgba(255,255,255,0.25), rgba(255,255,255,0) 50%);
-}
-.puzzle-piece { display: grid; touch-action: none; cursor: grab; transition: transform 0.2s; }
-.puzzle-piece:active { transform: scale(1.1); }
+.game-block { border-radius: min(25%, 6px); background-color: var(--color); background-image: linear-gradient(160deg, rgba(255,255,255,0.3), rgba(255,255,255,0) 50%); box-shadow: inset 0px 2px 1px rgba(255,255,255,0.4), inset 0px -2px 1px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); }
+.puzzle-piece { display: grid; touch-action: none; cursor: grab; transition: transform 0.2s; } .puzzle-piece:active { transform: scale(1.1); }
 .puzzle-piece-cell { width: 25px; height: 25px; }
 .puzzle-piece.dragging { position: absolute; z-index: 1000; pointer-events: none; opacity: 0.9; transform: scale(1.2) !important; }
 .tetris-cell { background-color: transparent; }
 .tetris-cell.ghost { background-color: rgba(255, 255, 255, 0.1); border-radius: 4px; }
 .puzzle-cell { background-color: transparent; border-radius: 2px; transition: all 0.2s; position: relative; }
-.puzzle-cell.ghost-path { background-color: var(--color) !important; opacity: 0.4; transform: scale(0.95); }
+.puzzle-cell.ghost-path { background-color: var(--color) !important; opacity: 0.5; border-radius: 4px;}
 .bomb-timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; font-weight: 900; color: white; text-shadow: 0 0 5px black; animation: bomb-pulse 1s infinite; }
 @keyframes bomb-pulse { 50% { transform: translate(-50%,-50%) scale(1.2); color: red; } }
 
@@ -144,10 +158,8 @@ body { font-family: var(--font-family); background: var(--bg-color); color: var(
 #countdown-overlay.active { opacity: 1; visibility: visible; }
 @keyframes countdown-pop { 0%{transform:scale(0.5);opacity:0;} 50%{transform:scale(1.2);opacity:1;} 100%{transform:scale(1);opacity:1;} }
 #countdown-text { animation: countdown-pop 1s infinite; animation-timing-function: var(--ease-out-expo); }
-@keyframes lock-in { 0% {transform: scale(1.1);} 100% {transform: scale(1);} } .lock-in { animation: lock-in 0.2s; }
-@keyframes line-clear-flash { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); background-color: var(--accent-highlight-color); } }
+@keyframes line-clear-flash { 0%, 100% {transform: scale(1);} 50% {transform: scale(1.05); background-color: var(--accent-highlight-color); box-shadow: 0 0 20px var(--accent-highlight-color);}}
 .line-clearing { animation: line-clear-flash 0.4s forwards; }
-.particle { position: absolute; border-radius: 50%; z-index: 100; pointer-events: none; }
 @keyframes screen-shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 50%{transform:translateX(4px);} 75%{transform:translateX(-4px);} }
 .screen-shake { animation: screen-shake 0.15s 1; }
 @keyframes score-pop { 50% { transform: scale(1.25); } }
@@ -169,16 +181,13 @@ body { font-family: var(--font-family); background: var(--bg-color); color: var(
 .settings-option:last-child { border-bottom: none; }
 input[type="range"] { -webkit-appearance: none; appearance: none; background: var(--card-border); height: 8px; border-radius: 5px; outline: none; flex-grow: 1; margin-left: 1rem; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--primary-text); cursor: pointer; }
+.toggle-btn { padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--secondary-text); cursor: pointer; font-weight: 700; }
+.toggle-btn.active { background: #238636; color: white; border-color: #238636;}
 #help-content-container, .final-score-container, .modal-content h2, .modal-content li, .modal-content p {text-shadow: none;}
 #help-content-container { text-align: left; } #help-content-container ul { padding-left: 1.5rem; } #help-content-container li { margin-bottom: 0.5rem; }
 .final-score-container { font-size: 1.5rem; margin: 1rem 0 2rem; }
-#first-time-help-overlay { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 1001; background:rgba(0,0,0,0.8); opacity:0; visibility:hidden; transition: all 0.5s;}
-#first-time-help-overlay.active { opacity: 1; visibility: visible; }
+#first-time-help-overlay { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 1001; background:rgba(0,0,0,0.8); opacity:0; visibility:hidden; transition: all 0.5s; pointer-events: none; }
+#first-time-help-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
 .help-bubble { position: absolute; background: var(--primary-text); color: var(--bg-color); padding: 1rem; border-radius: 0.5rem; max-width: 150px; text-align: center; font-weight: 700; box-shadow: 0 5px 15px var(--shadow);}
-.help-bubble::after { content:''; position: absolute; }
-#help-bubble-score { top: 80px; left: 50%; transform: translateX(-50%); }
-#help-bubble-score::after { top: 100%; left: 50%; transform: translateX(-50%); border-width: 10px; border-style: solid; border-color: var(--primary-text) transparent transparent transparent; }
-#help-bubble-board { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-#help-bubble-pieces { bottom: 100px; left: 50%; transform: translateX(-50%); }
-#help-bubble-pieces::after { bottom: 100%; left: 50%; transform: translateX(-50%); border-width: 10px; border-style: solid; border-color: transparent transparent var(--primary-text) transparent; }
+.help-bubble::after { content:''; position: absolute; width: 0; height: 0; border-style: solid;}
 #dismiss-help-btn { position: absolute; bottom: 3rem; left: 50%; transform: translateX(-50%); }
