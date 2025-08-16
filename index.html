@@ -19,24 +19,24 @@
         <header class="main-menu-header">
             <div id="gem-balance-display" class="gem-balance">
                 <span id="gem-balance">0</span>
-                <svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2.5L2.5 9.803l7.303 9.697h4.394l7.303-9.697L12 2.5zm0 1.902l7.697 5.76-6.197 8.24h-3L4.303 10.162 12 4.402z"/></svg>
+                <i class="gem-icon" data-feather="diamond"></i>
             </div>
             <div class="header-buttons">
-                <button id="shop-btn" class="icon-btn large header-icon" aria-label="Prodavnica"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg></button>
-                <button id="achievements-btn" class="icon-btn large header-icon" aria-label="Dostignuća"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg></button>
-                <button id="settings-btn" class="icon-btn large header-icon" aria-label="Podešavanja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                <button id="shop-btn" class="icon-btn large header-icon" aria-label="Prodavnica"><i data-feather="shopping-cart"></i></button>
+                <button id="achievements-btn" class="icon-btn large header-icon" aria-label="Dostignuća"><i data-feather="award"></i></button>
+                <button id="daily-reward-btn" class="icon-btn large header-icon" aria-label="Dnevne Nagrade"><i data-feather="gift"></i></button>
+                <button id="settings-btn" class="icon-btn large header-icon" aria-label="Podešavanja"><i data-feather="settings"></i></button>
             </div>
         </header>
         <main class="menu-container">
             <h1>Puzzle<br>Universe</h1>
-            <div class="menu-item" data-game="tetris"><div class="menu-item-content"><h2>Classic Blocks</h2></div></div>
-            <div class="menu-item" data-game="block-puzzle"><div class="menu-item-content"><h2>Puzzle Board</h2></div></div>
-            <div id="daily-challenge-container" class="daily-challenge"></div>
+            <div class="menu-item" data-game="tetris"><div class="menu-item-content"><h2>Block Cascade</h2></div></div>
+            <div class="menu-item" data-game="block-puzzle"><div class="menu-item-content"><h2>Block Puzzle</h2></div></div>
         </main>
     </div>
 
     <div id="game-mode-screen" class="screen">
-        <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+        <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni"><i data-feather="arrow-left"></i></button>
         <div id="mode-selection-container"></div>
         <div class="difficulty-selector">
             <button class="difficulty-btn" data-difficulty="easy">Lako</button>
@@ -46,7 +46,7 @@
     </div>
     
     <div id="shop-screen" class="screen">
-        <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
+        <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni"><i data-feather="arrow-left"></i></button>
         <h2>Prodavnica</h2>
         <div class="shop-tabs">
             <button class="shop-tab active" data-tab="themes">Teme</button>
@@ -57,42 +57,38 @@
             <div id="shop-blocks-container" class="shop-grid"></div>
         </div>
     </div>
-
     <div id="achievements-screen" class="screen">
-        <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></button>
-        <h2>Dostignuća</h2>
+        <button class="icon-btn small back-to-main-menu" aria-label="Back to Main Menu"><i data-feather="arrow-left"></i></button>
+        <h2>Achievements</h2>
         <div id="achievements-container" class="achievements-container"></div>
     </div>
 
     <div id="game-screen" class="screen">
         <div id="tetris-game-area" class="game-area">
             <div class="tetris-ui-left-sidebar">
-                <div class="ui-frame"><div class="frame-title">Zadržano</div><div id="tetris-hold-piece" class="piece-preview"></div></div>
-            </div>
+                </div>
             <div class="tetris-ui-main">
                 <div class="tetris-main-header">
-                    <div class="ui-frame"><div class="frame-title">Nivo</div><div id="tetris-level" class="level-display">1</div></div>
+                    <div class="ui-frame"><div class="frame-title">Level</div><div id="tetris-level" class="level-display">1</div></div>
                     <div class="ui-frame score-frame"><div id="tetris-score" class="score-display">0</div><div class="best-score-container"><div class="gold-line"></div><span>👑 <span id="tetris-best-score">0</span></span></div></div>
-                    <div class="ui-frame"><div class="frame-title">Linije</div><div id="tetris-lines" class="level-display">0</div></div>
+                    <div class="ui-frame"><div class="frame-title">Lines</div><div id="tetris-lines" class="level-display">0</div></div>
                 </div>
                 <div class="game-board-frame"><div id="tetris-board"></div></div>
             </div>
             <div class="tetris-ui-right-sidebar">
-                <div class="ui-frame"><div class="frame-title">Sledeći</div><div id="tetris-next-piece" class="piece-preview"></div></div>
+                <div class="ui-frame"><div class="frame-title">Next</div><div id="tetris-next-piece" class="piece-preview"></div></div>
                 <div class="game-controls">
-                    <button id="back-btn-tetris" class="icon-btn large" aria-label="Nazad na meni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
-                    <button id="pause-btn-tetris" class="icon-btn large" aria-label="Pauza"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></button>
+                    <button id="back-btn-tetris" class="icon-btn large"><i data-feather="home"></i></button>
+                    <button id="pause-btn-tetris" class="icon-btn large" aria-label="Pause"><i data-feather="pause"></i></button>
                 </div>
             </div>
         </div>
         <div id="puzzle-game-area" class="game-area">
             <div class="game-content-wrapper">
                 <div class="puzzle-only game-header-bar">
-                    <div class="ui-frame score-frame"><div class="frame-title">Skor</div><div id="puzzle-score" class="score-display game-score">0</div></div>
+                    <div class="ui-frame score-frame"><div class="frame-title">Score</div><div id="puzzle-score" class="score-display game-score">0</div></div>
                     <div class="ui-frame"><div id="game-timer" class="game-timer"></div></div>
-                    <div class="game-controls">
-                         <button id="pause-btn-puzzle" class="icon-btn small" aria-label="Pauza"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></button>
-                    </div>
+                    <div class="game-controls"><button id="pause-btn-puzzle" class="icon-btn small" aria-label="Pause"><i data-feather="pause"></i></button></div>
                 </div>
                 <div class="game-board-frame"><div id="puzzle-board"></div></div>
                 <div id="puzzle-pieces-container-wrapper"><div id="puzzle-pieces-container"></div></div>
@@ -101,31 +97,36 @@
     </div>
 
     <div id="post-game-screen" class="screen">
-        <h2 id="post-game-title">Kraj Igre</h2>
-        <div class="post-game-summary"><div class="final-score-title">Konačan Skor</div><div id="post-game-score" class="final-score-value">0</div><div id="post-game-new-best" class="new-best-banner">NOVI REKORD!</div></div>
+        <h2 id="post-game-title">Game Over</h2>
+        <div class="post-game-summary"><div class="final-score-title">Final Score</div><div id="post-game-score" class="final-score-value">0</div><div id="post-game-new-best" class="new-best-banner">NEW BEST!</div></div>
         <div id="post-game-stats" class="post-game-stats"></div>
-        <div class="post-game-progress"><div class="level-display-pogs"><span>Nivo <span id="pogs-level">1</span></span><span id="pogs-xp-text">0 / 100 XP</span></div><div class="xp-bar"><div id="pogs-xp-fill" class="xp-fill"></div></div><div id="pogs-level-up" class="level-up-banner">NOVI NIVO! +250 💎</div></div>
-        <div class="post-game-actions"><button id="restart-btn-pogs" class="primary-btn secondary">Igraj Ponovo</button><button id="back-to-menu-btn-pogs" class="primary-btn">Glavni Meni</button></div>
+        <div class="post-game-progress"><div class="level-display-pogs"><span>Level <span id="pogs-level">1</span></span><span id="pogs-xp-text">0 / 100 XP</span></div><div class="xp-bar"><div id="pogs-xp-fill" class="xp-fill"></div></div><div id="pogs-level-up" class="level-up-banner">LEVEL UP! +250 💎</div></div>
+        <div class="post-game-actions"><button id="restart-btn-pogs" class="primary-btn secondary">Play Again</button><button id="back-to-menu-btn-pogs" class="primary-btn">Main Menu</button></div>
     </div>
 
     <div id="countdown-overlay" class="overlay"><div id="countdown-text" class="countdown-text">3</div></div>
-    <div id="pause-overlay" class="overlay"><div class="pause-box"><h2>Pauzirano</h2><button id="resume-btn" class="primary-btn">Nastavi</button></div></div>
+    <div id="pause-overlay" class="overlay"><div class="pause-box"><h2>Paused</h2><button id="resume-btn" class="primary-btn">Resume</button></div></div>
     
-    <div id="daily-login-modal" class="modal-overlay">
-        <div class="modal-content"><span class="close-modal">&times;</span><h2 id="daily-login-title">Dobrodošli Nazad!</h2><p>Tvoja dnevna nagrada:</p><div id="daily-login-reward" class="gem-reward">100 💎</div><p id="daily-login-streak"></p></div>
+    <div id="daily-reward-center-modal" class="modal-overlay">
+        <div class="modal-content"><span class="close-modal">&times;</span><h2>Reward Center</h2><div id="daily-reward-streak-container" class="reward-streak-container"></div><div class="todays-reward-section"><h3>Today's Challenge:</h3><p id="daily-challenge-text">Clear 40 lines in Tetris.</p><div class="todays-reward-actions"><button id="claim-challenge-reward-btn" class="primary-btn" disabled>Claim Reward</button><button id="claim-ad-reward-btn" class="primary-btn secondary">Claim Now (Ad)</button></div></div></div>
     </div>
     <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content"><span class="close-modal">&times;</span><h2>Podešavanja</h2><div class="settings-option"><label>Tema</label><div id="theme-select-container"></div></div><div class="settings-option"><label for="music-volume">Muzika</label><input type="range" id="music-volume" min="0" max="1" step="0.05"></div><div class="settings-option"><label for="sfx-volume">Zvučni Efekti</label><input type="range" id="sfx-volume" min="0" max="1" step="0.05"></div><div class="settings-option"><label>Vibracija</label><button id="haptics-toggle-btn" class="toggle-btn">ON</button></div><div class="settings-option"><label>"Hold" Funkcija (Tetris)</label><button id="hold-toggle-btn" class="toggle-btn">ON</button></div></div>
-    </div>
-    <div id="help-modal" class="modal-overlay">
-         <div class="modal-content"><span class="close-modal">&times;</span><h2>Pomoć</h2><div id="help-content-container"></div></div>
+        <div class="modal-content">
+            <span class="close-modal">&times;</span><h2>Settings</h2>
+            <div class="settings-option"><label>Theme</label><div id="theme-select-container"></div></div>
+            <div class="settings-option"><label for="music-volume">Music</label><input type="range" id="music-volume" min="0" max="1" step="0.05"></div>
+            <div class="settings-option"><label for="sfx-volume">Sound Effects</label><input type="range" id="sfx-volume" min="0" max="1" step="0.05"></div>
+            <div class="settings-option"><label>Vibration</label><button id="haptics-toggle-btn" class="toggle-btn">ON</button></div>
+            </div>
     </div>
     <div id="confirm-modal" class="modal-overlay">
-        <div class="modal-content"><h2 id="confirm-title">Da li ste sigurni?</h2><p id="confirm-text">Napredak će biti izgubljen.</p><div class="confirm-actions"><button id="confirm-btn-no" class="primary-btn secondary">Ne</button><button id="confirm-btn-yes" class="primary-btn">Da</button></div></div>
+        <div class="modal-content"><h2 id="confirm-title">Are you sure?</h2><p id="confirm-text">Your progress will be lost.</p><div class="confirm-actions"><button id="confirm-btn-no" class="primary-btn secondary">No</button><button id="confirm-btn-yes" class="primary-btn">Yes</button></div></div>
     </div>
 
     <div id="notification-area"></div>
+    <div id="game-feedback-area"></div>
     
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="script.js"></script>
 </body>
-    </html>
+</html>
