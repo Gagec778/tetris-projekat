@@ -1,283 +1,60 @@
 <!DOCTYPE html>
 <html lang="sr">
 <head>
-  <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
-  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Puzzle Universe</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 </head>
+<body class="dark-theme">
 
-<body class="dark-theme block-style-default">
-  <!-- ================= SVG SPRITE (ikonice koje radimo lokalno, bez CDN-a) ================= -->
-  <svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
-    <defs>
-      <!-- Dijamant (za gem-ove) -->
-      <symbol id="ico-diamond" viewBox="0 0 24 24">
-        <path d="M5 3h14l4 6-11 12L1 9l4-6z" fill="currentColor"></path>
-      </symbol>
-      <!-- Shopping cart -->
-      <symbol id="ico-cart" viewBox="0 0 24 24">
-        <path d="M7 4h-2l-1 2H1v2h2l3.6 7.59-1.35 2.44A2 2 0 0 0 7 21h12v-2H7.42a.25.25 0 0 1-.22-.37L8 16h9a2 2 0 0 0 1.8-1.1l3.58-7.16A1 1 0 0 0 21.5 6H6.42l.93-2zM7 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm10 0a1 1 0 1 0 .001-2.001A1 1 0 0 0 17 22z" fill="currentColor"/>
-      </symbol>
-      <!-- Award -->
-      <symbol id="ico-award" viewBox="0 0 24 24">
-        <path d="M12 2a7 7 0 0 0-7 7c0 3.08 1.98 5.68 4.73 6.61L9 23l3-2 3 2-.73-7.39A7 7 0 0 0 19 9a7 7 0 0 0-7-7z" fill="currentColor"/>
-      </symbol>
-      <!-- Gift -->
-      <symbol id="ico-gift" viewBox="0 0 24 24">
-        <path d="M20 12v8a2 2 0 0 1-2 2h-5v-7h7v-3h-7V9h3a2 2 0 1 0-2-2h-2a2 2 0 1 0-2 2h3v3H4v3h7v7H6a2 2 0 0 1-2-2v-8h16z" fill="currentColor"/>
-      </symbol>
-      <!-- Settings -->
-      <symbol id="ico-settings" viewBox="0 0 24 24">
-        <path d="M19.14 12.94a7.964 7.964 0 0 0 .06-1 7.964 7.964 0 0 0-.06-1l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a8.12 8.12 0 0 0-1.73-1l-.36-2.54A.5.5 0 0 0 12.8 0h-3.6a.5.5 0 0 0-.49.42L8.35 2.96c-.61.24-1.19.56-1.73.94L4.23 3a.5.5 0 0 0-.62.2L1.7 6.52a.5.5 0 0 0 .12.64l2.03 1.58c-.04.33-.06.67-.06 1s.02.67.06 1L1.82 12.9a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.53.38 1.11.7 1.73.94l.36 2.54a.5.5 0 0 0 .49.42h3.6a.5.5 0 0 0 .49-.42l.36-2.54c.62-.24 1.2-.56 1.73-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM10 12a2 2 0 1 1 4 0a2 2 0 0 1-4 0z" fill="currentColor"/>
-      </symbol>
-      <!-- Back arrow -->
-      <symbol id="ico-back" viewBox="0 0 24 24">
-        <path d="M20 11H7.83l5.58-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
-      </symbol>
-      <!-- Pause -->
-      <symbol id="ico-pause" viewBox="0 0 24 24">
-        <path d="M6 4h4v16H6zM14 4h4v16h-4z" fill="currentColor"/>
-      </symbol>
-      <!-- Home -->
-      <symbol id="ico-home" viewBox="0 0 24 24">
-        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"/>
-      </symbol>
-    </defs>
-  </svg>
-
-  <!-- =============== GLOBAL AURORA BG =============== -->
+  <!-- Aurora background -->
   <div class="aurora-background">
-    <div class="aurora-dot"></div>
-    <div class="aurora-dot"></div>
-    <div class="aurora-dot"></div>
+    <div class="aurora-dot"></div><div class="aurora-dot"></div><div class="aurora-dot"></div>
   </div>
 
-  <!-- ================= MAIN MENU ================= -->
+  <!-- Main Menu -->
   <div id="main-menu-screen" class="screen active">
     <header class="main-menu-header">
-      <div id="gem-balance-display" class="gem-balance" title="Dijamanti">
-        <svg class="gem-icon" viewBox="0 0 24 24"><use href="#ico-diamond"/></svg>
+      <div id="gem-balance-display" class="gem-balance">
         <span id="gem-balance">100000</span>
+        <i class="gem-icon" data-feather="diamond"></i>
       </div>
       <div class="header-buttons">
-        <button id="shop-btn" class="icon-btn large header-icon" aria-label="Prodavnica">
-          <svg class="feather" viewBox="0 0 24 24"><use href="#ico-cart"/></svg>
-        </button>
-        <button id="achievements-btn" class="icon-btn large header-icon" aria-label="Dostignuća">
-          <svg class="feather" viewBox="0 0 24 24"><use href="#ico-award"/></svg>
-        </button>
-        <button id="daily-reward-btn" class="icon-btn large header-icon" aria-label="Dnevne nagrade">
-          <svg class="feather" viewBox="0 0 24 24"><use href="#ico-gift"/></svg>
-        </button>
-        <button id="settings-btn" class="icon-btn large header-icon" aria-label="Podešavanja">
-          <svg class="feather" viewBox="0 0 24 24"><use href="#ico-settings"/></svg>
-        </button>
+        <button id="shop-btn" class="icon-btn large header-icon" aria-label="Shop"><i data-feather="shopping-cart"></i></button>
+        <button id="achievements-btn" class="icon-btn large header-icon" aria-label="Dostignuća"><i data-feather="award"></i></button>
+        <button id="daily-reward-btn" class="icon-btn large header-icon" aria-label="Nagrade"><i data-feather="gift"></i></button>
+        <button id="settings-btn" class="icon-btn large header-icon" aria-label="Podešavanja"><i data-feather="settings"></i></button>
       </div>
     </header>
 
     <main class="menu-container">
-      <h1>Puzzle<br/>Universe</h1>
-
-      <div class="menu-item" data-game="tetris">
-        <div class="menu-item-content">
-          <h2>Block Cascade</h2>
-          <p class="subtitle">Klasični Tetris sa modernim osećajem</p>
-        </div>
-      </div>
-
-      <div class="menu-item" data-game="block-puzzle">
-        <div class="menu-item-content">
-          <h2>Block Puzzle</h2>
-          <p class="subtitle">10×10 slagalica – opusti mozak</p>
-        </div>
-      </div>
+      <h1>Puzzle<br>Universe</h1>
+      <div class="menu-item"><div class="menu-item-content"><h2>Block Cascade</h2></div></div>
+      <div class="menu-item"><div class="menu-item-content"><h2>Block Puzzle</h2></div></div>
     </main>
   </div>
 
-  <!-- ================= MODE SELECT (koristi se za Tetris/Block Puzzle) ================= -->
-  <div id="game-mode-screen" class="screen">
-    <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni">
-      <svg class="feather" viewBox="0 0 24 24"><use href="#ico-back"/></svg>
-    </button>
-
-    <div id="mode-selection-container"></div>
-
-    <div class="difficulty-selector">
-      <button class="difficulty-btn" data-difficulty="easy">Lako</button>
-      <button class="difficulty-btn active" data-difficulty="normal">Normalno</button>
-      <button class="difficulty-btn" data-difficulty="hard">Teško</button>
-    </div>
-  </div>
-
-  <!-- ================= SHOP ================= -->
+  <!-- Shop -->
   <div id="shop-screen" class="screen">
-    <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni">
-      <svg class="feather" viewBox="0 0 24 24"><use href="#ico-back"/></svg>
-    </button>
-
+    <button class="icon-btn small back-to-main-menu"><i data-feather="arrow-left"></i></button>
     <h2>Prodavnica</h2>
-
     <div class="shop-tabs">
       <button class="shop-tab active" data-tab="themes">Teme</button>
-      <button class="shop-tab" data-tab="blocks">Stilovi Blokova</button>
+      <button class="shop-tab" data-tab="blocks">Blokovi</button>
     </div>
-
     <div class="shop-container">
       <div id="shop-themes-container" class="shop-grid active"></div>
       <div id="shop-blocks-container" class="shop-grid"></div>
     </div>
   </div>
 
-  <!-- ================= ACHIEVEMENTS ================= -->
+  <!-- Achievements -->
   <div id="achievements-screen" class="screen">
-    <button class="icon-btn small back-to-main-menu" aria-label="Nazad na glavni meni">
-      <svg class="feather" viewBox="0 0 24 24"><use href="#ico-back"/></svg>
-    </button>
+    <button class="icon-btn small back-to-main-menu"><i data-feather="arrow-left"></i></button>
     <h2>Dostignuća</h2>
     <div id="achievements-container" class="achievements-container"></div>
-  </div>
-
-  <!-- ================= GAME SCREEN ================= -->
-  <div id="game-screen" class="screen">
-    <!-- Tetris -->
-    <div id="tetris-game-area" class="game-area">
-      <div class="tetris-ui-left-sidebar"></div>
-
-      <div class="tetris-ui-main">
-        <div class="tetris-main-header">
-          <div class="ui-frame">
-            <div class="frame-title">Level</div>
-            <div id="tetris-level" class="level-display">1</div>
-          </div>
-          <div class="ui-frame score-frame">
-            <div id="tetris-score" class="score-display">0</div>
-            <div class="best-score-container">
-              <div class="gold-line"></div>
-              <span>👑 <span id="tetris-best-score">0</span></span>
-            </div>
-          </div>
-          <div class="ui-frame">
-            <div class="frame-title">Linije</div>
-            <div id="tetris-lines" class="level-display">0</div>
-          </div>
-        </div>
-
-        <div class="game-board-frame">
-          <div id="tetris-board"></div>
-        </div>
-      </div>
-
-      <div class="tetris-ui-right-sidebar">
-        <div class="ui-frame">
-          <div class="frame-title">Sledeći</div>
-          <div id="tetris-next-piece" class="piece-preview"></div>
-        </div>
-        <div class="game-controls">
-          <button id="back-btn-tetris" class="icon-btn large" aria-label="Meni">
-            <svg class="feather" viewBox="0 0 24 24"><use href="#ico-home"/></svg>
-          </button>
-          <button id="pause-btn-tetris" class="icon-btn large" aria-label="Pauza">
-            <svg class="feather" viewBox="0 0 24 24"><use href="#ico-pause"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Block Puzzle -->
-    <div id="puzzle-game-area" class="game-area">
-      <div class="game-content-wrapper">
-        <div class="puzzle-only game-header-bar">
-          <div class="ui-frame score-frame">
-            <div class="frame-title">Poeni</div>
-            <div id="puzzle-score" class="score-display game-score">0</div>
-          </div>
-          <div class="ui-frame">
-            <div id="game-timer" class="game-timer"></div>
-          </div>
-          <div class="game-controls">
-            <button id="pause-btn-puzzle" class="icon-btn small" aria-label="Pauza">
-              <svg class="feather" viewBox="0 0 24 24"><use href="#ico-pause"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="game-board-frame">
-          <div id="puzzle-board"></div>
-        </div>
-
-        <div id="puzzle-pieces-container-wrapper">
-          <div id="puzzle-pieces-container"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= POST GAME ================= -->
-  <div id="post-game-screen" class="screen">
-    <h2 id="post-game-title">Game Over</h2>
-
-    <div class="post-game-summary">
-      <div class="final-score-title">Final Score</div>
-      <div id="post-game-score" class="final-score-value">0</div>
-      <div id="post-game-new-best" class="new-best-banner">NEW BEST!</div>
-    </div>
-
-    <div id="post-game-stats" class="post-game-stats"></div>
-
-    <div class="post-game-progress">
-      <div class="level-display-pogs">
-        <span>Max Score <span id="pogs-level">0</span></span>
-        <span id="pogs-xp-text">0 / 100 XP</span>
-      </div>
-      <div class="xp-bar"><div id="pogs-xp-fill" class="xp-fill"></div></div>
-      <div id="pogs-level-up" class="level-up-banner">LEVEL UP! +250 💎</div>
-    </div>
-
-    <div class="post-game-actions">
-      <button id="restart-btn-pogs" class="primary-btn secondary">Igraj ponovo</button>
-      <button id="back-to-menu-btn-pogs" class="primary-btn">Glavni meni</button>
-    </div>
-  </div>
-
-  <!-- ================= OVERLAYS & MODALS ================= -->
-  <div id="countdown-overlay" class="overlay">
-    <div id="countdown-text" class="countdown-text">3</div>
-  </div>
-
-  <div id="pause-overlay" class="overlay">
-    <div class="pause-box">
-      <h2>Pauzirano</h2>
-      <button id="resume-btn" class="primary-btn">Nastavi</button>
-    </div>
-  </div>
-
-  <!-- Daily reward center -->
-  <div id="daily-reward-center-modal" class="modal-overlay">
-    <div class="modal-content">
-      <span class="close-modal">&times;</span>
-      <h2>Reward Center</h2>
-
-      <div id="daily-reward-streak-container" class="reward-streak-container"></div>
-
-      <div class="todays-reward-section">
-        <h3>Današnji izazov:</h3>
-        <p id="daily-challenge-text">Odgledaj 5 reklama (ukupno).</p>
-        <div class="todays-reward-actions">
-          <button id="claim-challenge-reward-btn" class="primary-btn" disabled>Preuzmi nagradu</button>
-          <button id="claim-ad-reward-btn" class="primary-btn secondary">Preuzmi odmah (Ad)</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Settings -->
@@ -285,46 +62,27 @@
     <div class="modal-content">
       <span class="close-modal">&times;</span>
       <h2>Podešavanja</h2>
-
-      <div class="settings-option">
-        <label>Tema</label>
-        <div id="theme-select-container"></div>
-      </div>
-
-      <div class="settings-option">
-        <label for="music-volume">Muzika</label>
-        <input type="range" id="music-volume" min="0" max="1" step="0.05" />
-      </div>
-
-      <div class="settings-option">
-        <label for="sfx-volume">SFX</label>
-        <input type="range" id="sfx-volume" min="0" max="1" step="0.05" />
-      </div>
-
-      <div class="settings-option">
-        <label>Vibracija</label>
-        <button id="haptics-toggle-btn" class="toggle-btn">ON</button>
-      </div>
+      <div class="settings-option"><label>Tema</label><div id="theme-select-container"></div></div>
+      <div class="settings-option"><label for="music-volume">Muzika</label><input type="range" id="music-volume" min="0" max="1" step="0.05"></div>
+      <div class="settings-option"><label for="sfx-volume">Zvukovi</label><input type="range" id="sfx-volume" min="0" max="1" step="0.05"></div>
+      <div class="settings-option"><label>Vibracija</label><button id="haptics-toggle-btn" class="toggle-btn">ON</button></div>
     </div>
   </div>
 
-  <!-- Confirm -->
-  <div id="confirm-modal" class="modal-overlay">
+  <!-- Daily reward -->
+  <div id="daily-reward-center-modal" class="modal-overlay">
     <div class="modal-content">
-      <h2 id="confirm-title">Da li si siguran?</h2>
-      <p id="confirm-text">Napredak će biti izgubljen.</p>
-      <div class="confirm-actions">
-        <button id="confirm-btn-no" class="primary-btn secondary">Ne</button>
-        <button id="confirm-btn-yes" class="primary-btn">Da</button>
-      </div>
+      <span class="close-modal">&times;</span>
+      <h2>Dnevna Nagrada</h2>
+      <p id="daily-challenge-text">Odgledaj 5 reklama i osvoji nagradu!</p>
+      <button id="claim-challenge-reward-btn" class="primary-btn">Preuzmi</button>
     </div>
   </div>
 
-  <!-- Notifications -->
+  <!-- Notification -->
   <div id="notification-area"></div>
-  <div id="game-feedback-area"></div>
 
-  <!-- App JS -->
   <script src="script.js"></script>
+  <script>feather.replace();</script>
 </body>
 </html>
