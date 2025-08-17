@@ -1,282 +1,257 @@
-/* ================== RESET ================== */
+/* Reset i osnove */
 * {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
-html, body {
-  height: 100%;
+  box-sizing: border-box;
   font-family: 'Inter', sans-serif;
-  background: #111;
+}
+
+body {
+  background: #0d0d0f;
   color: #fff;
-  overflow: hidden;
+  overflow-x: hidden;
 }
+
+h1, h2 {
+  text-align: center;
+  font-weight: 900;
+}
+
 button {
-  background: none;
   border: none;
+  outline: none;
   cursor: pointer;
-  font: inherit;
 }
+
+/* Aurora background */
+.aurora-background {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at 20% 20%, #3a0ca3, transparent 50%),
+              radial-gradient(circle at 80% 30%, #4361ee, transparent 50%),
+              radial-gradient(circle at 50% 80%, #f72585, transparent 50%);
+  z-index: -1;
+}
+
+/* Screens */
 .screen {
   display: none;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0; left: 0;
-  overflow: hidden;
+  padding: 20px;
 }
 .screen.active {
   display: block;
 }
 
-/* ================== GLOBAL BG ================== */
-.aurora-background {
-  position: fixed;
-  top:0; left:0; right:0; bottom:0;
-  z-index: -1;
-  background: radial-gradient(circle at top left, #222, #000);
-}
-.aurora-dot {
-  position: absolute;
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(0,255,200,0.3), transparent);
-  border-radius: 50%;
-  filter: blur(120px);
-}
-.aurora-dot:nth-child(1){ top:10%; left:15%;}
-.aurora-dot:nth-child(2){ bottom:20%; right:20%;}
-.aurora-dot:nth-child(3){ top:40%; right:10%;}
-
-/* ================== HEADER ================== */
+/* Header */
 .main-menu-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 15px;
+  margin-bottom: 20px;
 }
+
 .gem-balance {
   display: flex;
   align-items: center;
+  gap: 8px;
+  font-size: 20px;
   font-weight: bold;
-  font-size: 18px;
+  background: rgba(255,255,255,0.1);
+  padding: 8px 12px;
+  border-radius: 10px;
 }
-.gem-icon {
-  width: 20px;
-  height: 20px;
-  margin-right: 6px;
-  fill: #0ff;
-}
+
 .header-buttons {
   display: flex;
   gap: 10px;
 }
+
 .icon-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+  padding: 8px;
+  color: #fff;
 }
-.icon-btn.large { width: 48px; height: 48px; }
-.icon-btn.small { width: 32px; height: 32px; }
-.icon-btn svg {
-  width: 60%; height: 60%;
-  fill: #fff;
+.icon-btn.large {
+  width: 44px;
+  height: 44px;
+}
+.icon-btn.small {
+  width: 32px;
+  height: 32px;
 }
 
-/* ================== MAIN MENU ================== */
+/* Menu items */
 .menu-container {
+  margin-top: 40px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin-top: 60px;
   gap: 20px;
+  align-items: center;
 }
-.menu-container h1 {
-  font-size: 42px;
-  font-weight: 900;
-  text-align: center;
-  margin-bottom: 20px;
-}
-.menu-item {
-  width: 250px;
-  padding: 20px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.05);
-  text-align: center;
-  transition: background 0.3s;
-}
-.menu-item:hover { background: rgba(255,255,255,0.15); }
-.menu-item h2 { font-size: 24px; margin-bottom: 5px; }
 
-/* ================== SHOP ================== */
-#shop-screen h2 {
-  text-align: center;
-  margin: 15px 0;
+.menu-item {
+  width: 260px;
+  height: 100px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform .2s;
 }
+.menu-item:hover {
+  transform: scale(1.05);
+}
+.menu-item-content h2 {
+  font-weight: 700;
+  font-size: 22px;
+}
+
+/* Shop */
 .shop-tabs {
   display: flex;
   justify-content: center;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin: 15px 0;
 }
 .shop-tab {
-  padding: 10px 20px;
+  padding: 8px 16px;
+  border-radius: 10px;
   background: rgba(255,255,255,0.1);
-  border-radius: 6px;
-  margin: 0 5px;
+  color: #fff;
 }
-.shop-tab.active { background: #0ff; color: #000; }
+.shop-tab.active {
+  background: #f72585;
+}
+
 .shop-container {
-  padding: 10px;
-  height: calc(100% - 120px);
-  overflow-y: auto;
+  margin-top: 20px;
 }
 .shop-grid {
   display: none;
-  grid-template-columns: repeat(auto-fill, 50px);
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 15px;
-  justify-content: center;
 }
-.shop-grid.active { display: grid; }
+.shop-grid.active {
+  display: grid;
+}
 .shop-item {
-  width: 50px;
-  height: 50px;
-  border: 2px solid #fff;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+  background: rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+  transition: transform .2s;
+}
+.shop-item:hover {
+  transform: translateY(-5px);
 }
 .shop-item img {
   width: 100%;
-  height: 100%;
-  border-radius: 6px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.shop-item h3 {
+  margin-top: 8px;
+  font-size: 16px;
 }
 .shop-item .price {
-  position: absolute;
-  bottom: -18px;
-  font-size: 12px;
-  color: #0ff;
-}
-.shop-item.premium { border: 2px solid gold; }
-
-/* ================== GAME ================== */
-.game-area {
-  width: 100%;
-  height: 100%;
-  display: none;
-}
-.game-area.active { display: flex; }
-
-#tetris-board {
-  display: grid;
-  grid-template-columns: repeat(10, 30px);
-  grid-template-rows: repeat(20, 30px);
-  gap: 1px;
-  background: #222;
-  margin: auto;
-}
-.tetris-cell {
-  width: 30px;
-  height: 30px;
-  background: #333;
-}
-.tetris-cell.filled {
-  background: #0ff;
+  margin-top: 4px;
+  font-size: 14px;
+  color: #f0f0f0;
 }
 
-#puzzle-board {
-  display: grid;
-  grid-template-columns: repeat(10, 35px);
-  grid-template-rows: repeat(10, 35px);
-  gap: 1px;
-  background: #222;
-  margin: auto;
-}
-.puzzle-cell {
-  width: 35px;
-  height: 35px;
-  background: #333;
-}
-.puzzle-cell.filled {
-  background: #f0f;
-}
-
-/* Puzzle pieces container */
-#puzzle-pieces-container {
+/* Achievements */
+.achievements-container {
   display: flex;
-  justify-content: center;
-  margin-top: 15px;
-  gap: 10px;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
 }
-.puzzle-piece {
-  display: grid;
-  gap: 1px;
+.achievement {
+  background: rgba(255,255,255,0.08);
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-.puzzle-piece-cell {
-  width: 25px; height: 25px;
-  background: #666;
+.achievement.locked {
+  opacity: 0.5;
 }
-.puzzle-piece-cell.filled { background: #0ff; }
 
-/* ================== MODALS & OVERLAYS ================== */
+/* Modals */
 .modal-overlay {
-  display: none;
   position: fixed;
-  top:0;left:0;right:0;bottom:0;
-  background: rgba(0,0,0,0.7);
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: none;
   justify-content: center;
   align-items: center;
 }
-.modal-overlay.active { display: flex; }
+.modal-overlay.active {
+  display: flex;
+}
 .modal-content {
-  background: #222;
+  background: #1a1a1d;
   padding: 20px;
-  border-radius: 10px;
+  border-radius: 16px;
   width: 90%;
   max-width: 400px;
 }
 .close-modal {
-  position: absolute;
-  top: 10px; right: 20px;
+  float: right;
   cursor: pointer;
-  font-size: 22px;
+  font-size: 20px;
 }
 
-/* ================== ACHIEVEMENTS ================== */
-.achievements-container {
-  padding: 10px;
+/* Settings */
+.settings-option {
+  margin-top: 15px;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.achievement-item {
-  background: rgba(255,255,255,0.05);
-  padding: 10px;
-  border-radius: 8px;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* ================== NOTIFICATIONS ================== */
+/* Buttons */
+.primary-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background: #3a0ca3;
+  color: #fff;
+  font-weight: bold;
+  margin-top: 10px;
+}
+.primary-btn.secondary {
+  background: #f72585;
+}
+.toggle-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #f72585;
+  color: #fff;
+}
+
+/* Notifications */
 #notification-area {
   position: fixed;
-  top: 20px; right: 20px;
+  bottom: 20px; right: 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .notification {
-  background: #0ff;
-  color: #000;
-  padding: 10px 15px;
-  border-radius: 6px;
-  animation: fadeInOut 3s forwards;
+  background: #3a0ca3;
+  padding: 10px 16px;
+  border-radius: 10px;
+  animation: fadeIn .3s ease;
 }
-@keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(-10px);}
-  10% { opacity: 1; transform: translateY(0);}
-  90% { opacity: 1;}
-  100% { opacity: 0; transform: translateY(-10px);}
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(20px);}
+  to {opacity: 1; transform: translateY(0);}
 }
