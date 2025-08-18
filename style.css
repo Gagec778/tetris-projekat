@@ -39,31 +39,49 @@ body{background:var(--bg);color:var(--text)}
   width: 100%;
   max-width: 900px;
   margin: 0 auto 1rem;
+  padding: 0 1rem;
 }
-.menu-header h1 {
+.gem-balance-top {
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .4rem .8rem;
+  font-weight: 800;
+  gap: .5rem;
+}
+.top-icons-right {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+}
+.main-title {
   font-size: clamp(2.8rem, 12vw, 5rem);
   font-weight: 900;
   letter-spacing: -0.04em;
-  margin: 0;
+  margin: 1rem 0;
   background: linear-gradient(45deg, #f72585, #7209b7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 0.95;
   text-align: center;
-  flex-grow: 1;
-}
-.right-icons {
+  width: 100%;
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .game-tabs {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin: 1rem 0;
+  flex-direction: column;
+  align-items: center;
+  gap: .8rem;
+  margin: 1.5rem 0;
+  width: 100%;
 }
 .game-tab {
-  padding: 0.8rem 1.5rem;
+  padding: .8rem 1.5rem;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -71,6 +89,8 @@ body{background:var(--bg);color:var(--text)}
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
+  width: min(300px, 90%);
+  text-align: center;
 }
 .game-tab:hover {
   background: rgba(255, 255, 255, 0.1);
