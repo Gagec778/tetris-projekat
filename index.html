@@ -6,7 +6,8 @@
   <title>Puzzle Universe — Final (Test Gems + Ads Stub)</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="dark-theme block-style-default">
+<!-- ONEMOGUĆEN KONTEKSTNI MENI -->
+<body class="dark-theme block-style-default" oncontextmenu="return false;">
   <div class="aurora-background">
     <div class="aurora-dot"></div><div class="aurora-dot"></div><div class="aurora-dot"></div>
   </div>
@@ -42,7 +43,7 @@
 
       <!-- DIJAGONALNO IME IGRE PREKO CELOG EKRANA -->
       <div class="diagonal-title-wrapper">
-        <h1 class="diagonal-title">Puzzle<br/>Universe</h1>
+        <h1 class="diagonal-title" contextmenu="return false">Puzzle<br/>Universe</h1>
       </div>
 
       <!-- TABOVI ZA IGRE MALO VISE KA GORE -->
@@ -132,5 +133,10 @@
   </div>
 
   <script src="script.js"></script>
+
+  <!-- ONEMOGUĆI DESNI KLIK GLOBALNO -->
+  <script>
+    document.addEventListener("contextmenu", e => e.preventDefault());
+  </script>
 </body>
 </html>
