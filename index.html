@@ -1,99 +1,148 @@
 <!DOCTYPE html>
 <html lang="sr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Puzzle Universe</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/feather-icons"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Puzzle Universe — Final (Test Gems + Ads Stub)</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <!-- Aurora pozadina -->
-  <div class="aurora-background"></div>
+<body class="dark-theme block-style-default">
+  <div class="aurora-background">
+    <div class="aurora-dot"></div><div class="aurora-dot"></div><div class="aurora-dot"></div>
+  </div>
 
-  <!-- Glavni meni -->
+  <!-- MAIN MENU -->
   <div id="main-menu-screen" class="screen active">
     <header class="main-menu-header">
-      <!-- Levo dijamanti -->
       <div id="gem-balance-display" class="gem-balance">
-        <img src="assets/ui/diamond.svg" alt="💎" class="gem-icon">
-        <span id="gem-balance">100000</span>
+        <svg class="gem-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M6 24L20 6h24l14 18-26 32zM20 6L6 24h26zM44 6L58 24H32z" /></svg>
+        <span id="gem-balance">0</span>
       </div>
-
-      <!-- Desno ikonice -->
       <div class="header-buttons">
-        <button id="daily-reward-btn" class="icon-btn large" aria-label="Dnevna nagrada">
-          <i data-feather="gift"></i>
+        <button id="shop-btn" class="icon-btn large header-icon" aria-label="Prodavnica">
+          <span class="icon">🛒</span>
         </button>
-        <button id="shop-btn" class="icon-btn large" aria-label="Prodavnica">
-          <i data-feather="shopping-cart"></i>
+        <button id="achievements-btn" class="icon-btn large header-icon" aria-label="Dostignuća">
+          <span class="icon">🏆</span>
+          <span id="ach-pulse" class="pulse-dot" hidden></span>
         </button>
-        <button id="achievements-btn" class="icon-btn large" aria-label="Dostignuća">
-          <i data-feather="award"></i>
-        </button>
-        <button id="settings-btn" class="icon-btn large" aria-label="Podešavanja">
-          <i data-feather="settings"></i>
+        <button id="settings-btn" class="icon-btn large header-icon" aria-label="Podešavanja">
+          <span class="icon">⚙️</span>
         </button>
       </div>
     </header>
 
-    <!-- Centralni deo -->
     <main class="menu-container">
-      <h1>Puzzle<br>Universe</h1>
-      <div class="menu-tabs">
-        <div class="menu-item" data-game="tetris">
-          <div class="menu-item-content"><h2>Block Cascade</h2></div>
+      <h1>Puzzle<br/>Universe</h1>
+
+      <div class="menu-grid">
+        <div class="menu-card playable" data-game="block-puzzle">
+          <div class="card-media"><img src="assets/blocks/glass.svg" alt="" /></div>
+          <div class="card-body">
+            <h2>Block Puzzle</h2>
+            <p>Popunjavaj redove i kolone. Opusti se i skupljaj poene.</p>
+            <button class="primary-btn" id="start-puzzle">Start</button>
+          </div>
         </div>
-        <div class="menu-item" data-game="block-puzzle">
-          <div class="menu-item-content"><h2>Block Puzzle</h2></div>
+
+        <div class="menu-card disabled">
+          <div class="card-media"><img src="assets/themes/retrowave.svg" alt="" /></div>
+          <div class="card-body">
+            <h2>Block Cascade (Tetris)</h2>
+            <p>Soon: Moderan look & osećaj, touch kontrole, fer bodovanje.</p>
+            <button class="primary-btn secondary" disabled>Uskoro</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="preview-strip">
+        <div class="preview-pod">
+          <div class="frame-title">Aktivna Tema</div>
+          <div id="theme-preview" class="theme-preview"></div>
+        </div>
+        <div class="preview-pod">
+          <div class="frame-title">Stil Blokova</div>
+          <div id="block-preview" class="block-preview">
+            <div class="game-block"></div><div class="game-block"></div><div class="game-block"></div>
+          </div>
         </div>
       </div>
     </main>
   </div>
 
-  <!-- SHOP ekran -->
+  <!-- SHOP -->
   <div id="shop-screen" class="screen">
-    <h2>Shop</h2>
+    <button class="icon-btn small back-to-main-menu" id="back-from-shop" aria-label="Nazad">⟵</button>
+    <h2>Prodavnica</h2>
     <div class="shop-tabs">
       <button class="shop-tab active" data-tab="themes">Teme</button>
-      <button class="shop-tab" data-tab="blocks">Blokovi</button>
+      <button class="shop-tab" data-tab="blocks">Stilovi Blokova</button>
     </div>
-    <div class="shop-grid active" id="shop-themes-container"></div>
-    <div class="shop-grid" id="shop-blocks-container"></div>
-    <button class="primary-btn back-to-main-menu">Nazad</button>
+    <div class="shop-container">
+      <div id="shop-themes-container" class="shop-grid active"></div>
+      <div id="shop-blocks-container" class="shop-grid"></div>
+    </div>
   </div>
 
-  <!-- Achievements ekran -->
+  <!-- ACHIEVEMENTS -->
   <div id="achievements-screen" class="screen">
+    <button class="icon-btn small back-to-main-menu" id="back-from-ach" aria-label="Nazad">⟵</button>
     <h2>Dostignuća</h2>
-    <div id="achievements-container"></div>
-    <button class="primary-btn back-to-main-menu">Nazad</button>
+    <div id="achievements-container" class="achievements-container"></div>
   </div>
 
-  <!-- SETTINGS modal -->
-  <div id="settings-modal" class="modal-overlay">
-    <div class="modal">
-      <h2>Podešavanja</h2>
-      <p>Ovde idu opcije podešavanja...</p>
-      <button class="close-modal">Zatvori</button>
+  <!-- SETTINGS -->
+  <div id="settings-screen" class="screen">
+    <button class="icon-btn small back-to-main-menu" id="back-from-settings" aria-label="Nazad">⟵</button>
+    <h2>Podešavanja</h2>
+    <div class="settings-grid">
+      <div class="settings-item">
+        <label>Tema</label>
+        <select id="theme-select"></select>
+      </div>
+      <div class="settings-item">
+        <label>Vibracija</label>
+        <button id="haptics-toggle-btn" class="toggle-btn">ON</button>
+      </div>
+      <div class="settings-item">
+        <label>Resetuj sve (test)</label>
+        <button id="reset-btn" class="primary-btn secondary">Reset</button>
+      </div>
     </div>
   </div>
 
-  <!-- Daily Reward modal -->
-  <div id="daily-reward-center-modal" class="modal-overlay">
-    <div class="modal">
-      <h2>Dnevne nagrade</h2>
-      <p>Uzmi svoju nagradu!</p>
-      <button class="close-modal">Zatvori</button>
+  <!-- BLOCK PUZZLE GAME -->
+  <div id="game-screen" class="screen">
+    <button class="icon-btn small back-to-main-menu" id="back-from-game" aria-label="Nazad">⟵</button>
+    <div id="puzzle-game-area" class="game-area active">
+      <div class="game-content-wrapper">
+        <div class="puzzle-only game-header-bar">
+          <div class="ui-frame score-frame">
+            <div class="frame-title">Score</div>
+            <div id="puzzle-score" class="score-display game-score">0</div>
+          </div>
+          <div class="game-controls">
+            <button id="pause-btn-puzzle" class="icon-btn small" aria-label="Pause">⏸</button>
+          </div>
+        </div>
+        <div class="game-board-frame"><div id="puzzle-board"></div></div>
+        <div id="puzzle-pieces-container-wrapper"><div id="puzzle-pieces-container"></div></div>
+      </div>
     </div>
   </div>
 
-  <!-- Notifikacije -->
+  <!-- MODALS / TOASTS -->
   <div id="notification-area"></div>
 
+  <div id="ad-modal" class="modal-overlay">
+    <div class="modal-content">
+      <span class="close-modal" id="close-ad-modal">&times;</span>
+      <h3>Gledanje reklame (stub)</h3>
+      <p>Ovo je lažna reklama za testiranje. Završava se za 3 sekunde…</p>
+      <div class="progress"><div id="ad-progress"></div></div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
-  <script>
-    feather.replace();
-  </script>
 </body>
 </html>
