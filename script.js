@@ -1,4 +1,3 @@
-
 /** Puzzle Universe — Final single-file JS (Test gems + Ads stub) **/
 
 const Storage = {
@@ -11,7 +10,7 @@ const Storage = {
 // --------- ECONOMY & SHOP DATA ---------
 const ECONOMY = {
   TEST_GEMS: 100000,                 // test balans
-  DAILY_REWARD_AMOUNT: 50,           // produkcija bi bila niže, ali ovo je test
+  DAILY_REWARD_AMOUNT: 50,           // produkcija bi bila niža, ali ovo je test
   PREMIUM_ADS_REQUIRED: 50,          // premium item zahteva 50 gledanja reklama
 };
 
@@ -29,8 +28,7 @@ const BLOCKS = [
   { id:"default", name:"Default", price:0, type:"normal", img:"assets/blocks/default.svg", className:"block-style-default" },
   { id:"glass",   name:"Glass",   price:1500, type:"normal", img:"assets/blocks/glass.svg", className:"block-style-glass" },
   { id:"wood",    name:"Wood",    price:4000, type:"normal", img:"assets/blocks/wood.svg", className:"block-style-wood" },
-  { id:"retro",   name:"Retro",   price:5000, type:"normal", img:"assets/blocks/retro.svg", className:"block-style-retro" },
-  { id:"obsidian",name:"Obsidian (Premium)", type:"premium", adsRequired: ECONOMY.PREMIUM_ADS_REQUIRED, img:"assets/blocks/obsidian-premium.svg", className:"block-style-glass" }
+  { { id:"obsidian",name:"Obsidian (Premium)", type:"premium", adsRequired: ECONOMY.PREMIUM_ADS_REQUIRED, img:"assets/blocks/obsidian-premium.svg", className:"block-style-glass" }
 ];
 
 // --------- RUNTIME STATE ---------
@@ -171,8 +169,7 @@ function makeShopCard(item, kind){
 
   card.querySelector(".thumb").addEventListener("click", ()=>{
     // quick preview on main
-    if (kind==="themes") { applyTheme(item.id); }
-    else { applyBlocks(item.id); }
+    if (kind==="themes") { applyTheme(item.id); } else { applyBlocks(item.id); }
     renderMainPreviews(); save();
     toast("Pregled primenjen na glavnom ekranu (nije sačuvano ako nije kupljeno).");
   });
@@ -346,7 +343,7 @@ const puzzleUI = {
 
 const COLORS = ["#22c55e","#3b82f6","#a855f7","#ef4444","#eab308","#06b6d4","#f97316"];
 const SHAPES = [
-  [[1]], [[1,1]], [[1,1,1]], [[1,1,1,1]], [[1,1,1,1,1]],
+  [[1]], [[1]][[1]], [[1]][[1]][[1]], [[1]][[1]][[1]][[1]], [[1]][[1]][[1]][[1]][[1]],
   [[1],[1]], [[1],[1],[1]],
   [[1,1],[1,1]],
   [[0,1,0],[1,1,1],[0,1,0]],
@@ -356,178 +353,285 @@ const SHAPES = [
 ];
 
 const Puzzle = {
-  board: [], size:10, score:0, currentPieces:[],
-  init(){
-    this.board = Array.from({length:this.size},()=>Array(this.size).fill(0));
+  board: [], size: 10, score: 0, currentPieces: [], lastPlaced: null, hammerActive: false,
+
+  init() {
+    this.board = this.createEmptyGrid();
     this.score = 0;
     puzzleUI.score.textContent = "0";
     this.renderBoard();
     this.spawnPieces();
-  },
-  renderBoard(){
-    puzzleUI.board.innerHTML = "";
-    this.board.forEach(row=>row.forEach(cell=>{
-      const d = document.createElement("div");
-      d.className = "puzzle-cell";
-      if (cell){
-        const b = document.createElement("div");
-        b.className = "game-block";
-        b.style.background = cell.color;
-        d.appendChild(b);
+
+    // Poveži pomoći
+    document.getElementById("undo-btn").disabled = true;
+    document.getElementById("hammer-btn").disabled = false;
+    document.getElementById("bomb-btn").disabled = false;
+
+    document.getElementById("undo-btn").onclick = () => {
+      if (this.lastPlaced) {
+        this.undoLastMove();
+        document.getElementById("undo-btn").disabled = true;
       }
-      puzzleUI.board.appendChild(d);
-    }));
+    };
+
+    document.getElementById("bomb-btn").onclick = () => {
+      if (confirm("Obriši celu tablu? (-100 poena)")) {
+        this.clearBoard();
+        document.getElementById("bomb-btn").disabled = true;
+      }
+    };
+
+    document.getElementById("hammer-btn").onclick = () => {
+      this.hammerActive = true;
+      document.getElementById("hammer-btn").disabled = true;
+      toast("Klikni na tablu da obrišeš red i kolonu", 3000);
+    };
+
+    // Klik na tablu za čekić
+    puzzleUI.board.onclick = (e) => {
+      if (this.hammerActive) {
+        const boardRect = puzzleUI.board.getBoundingClientRect();
+        const cellSize = boardRect.width / this.size;
+        const col = Math.floor((e.clientX - boardRect.left) / cellSize);
+        const row = Math.floor((e.clientY - boardRect.top) / cellSize);
+        if (row >= 0 && row < this.size && col >= 0 && col < this.size) {
+          this.clearRowAndCol(row, col);
+          this.hammerActive = false;
+        }
+      }
+    };
   },
-  spawnPieces(){
-    puzzleUI.piecesWrap.innerHTML = "";
+
+  createEmptyGrid() {
+    return Array.from({ length: this.size }, () => Array(this.size).fill(0));
+  },
+
+  renderBoard() {
+    puzzleUI.board.innerHTML = "";
+    this.board.forEach(row => {
+      row.forEach(cell => {
+        const d = document.createElement("div");
+        d.className = "puzzle-cell";
+        if (cell) {
+          const b = document.createElement("div");
+          b.className = "game-block";
+          b.style.background = cell.color;
+          d.appendChild(b);
+        }
+        puzzleUI.board.appendChild(d);
+      });
+    });
+  },
+
+  spawnPieces() {
+    const piecesContainer = document.getElementById("puzzle-pieces-container");
+    piecesContainer.innerHTML = "";
     this.currentPieces = [];
-    for (let i=0;i<3;i++){
-      const shape = JSON.parse(JSON.stringify(SHAPES[Math.floor(Math.random()*SHAPES.length)]));
-      const col = COLORS[Math.floor(Math.random()*COLORS.length)];
+    for (let i = 0; i < 3; i++) {
+      const shape = JSON.parse(JSON.stringify(SHAPES[Math.floor(Math.random() * SHAPES.length)]));
+      const col = COLORS[Math.floor(Math.random() * COLORS.length)];
       const id = `p-${Date.now()}-${i}`;
-      const data = {id, shape, color:col};
+      const data = { id, shape, color: col };
       this.currentPieces.push(data);
       const el = this.renderPieceEl(data);
-      puzzleUI.piecesWrap.appendChild(el);
+      piecesContainer.appendChild(el);
     }
   },
-  renderPieceEl(piece){
+
+  renderPieceEl(piece) {
     const el = document.createElement("div");
     el.className = "puzzle-piece";
-    const w = Math.max(...piece.shape.map(r=>r.length));
+    const w = Math.max(...piece.shape.map(r => r.length));
     el.style.gridTemplateColumns = `repeat(${w}, 1fr)`;
-    piece.shape.forEach(row=>{
-      for(let i=0;i<w;i++){
-        const v = row[i]||0;
+    piece.shape.forEach(row => {
+      for (let i = 0; i < w; i++) {
+        const v = row[i] || 0;
         const cell = document.createElement("div");
-        if (v){
+        if (v) {
           cell.className = "game-block";
-          cell.style.width = "26px"; cell.style.height="26px";
+          cell.style.width = "28px";
+          cell.style.height = "28px";
           cell.style.background = piece.color;
         } else {
-          cell.style.width = "26px"; cell.style.height="26px";
+          cell.style.width = "28px";
+          cell.style.height = "28px";
         }
         el.appendChild(cell);
       }
     });
     el.dataset.id = piece.id;
-    // drag
-    el.addEventListener("touchstart", (e)=>this.onDragStart(e, piece, el), {passive:false});
-    el.addEventListener("mousedown", (e)=>this.onDragStart(e, piece, el));
+    el.addEventListener("touchstart", (e) => this.onDragStart(e, piece, el), { passive: false });
+    el.addEventListener("mousedown", (e) => this.onDragStart(e, piece, el));
     return el;
   },
-  onDragStart(e, piece, el){
+
+  onDragStart(e, piece, el) {
     e.preventDefault();
     const ghost = el.cloneNode(true);
     ghost.classList.add("dragging");
     document.body.appendChild(ghost);
     const rect = el.getBoundingClientRect();
-    const pt = e.touches? e.touches[0] : e;
+    const pt = e.touches ? e.touches[0] : e;
     const offX = pt.clientX - rect.left;
     const offY = pt.clientY - rect.top;
     el.style.opacity = ".25";
 
-    const move = (ev)=>{
-      const m = ev.touches? ev.touches[0] : ev;
-      ghost.style.left = (m.clientX - offX) +"px";
-      ghost.style.top  = (m.clientY - offY) +"px";
+    const move = (ev) => {
+      const m = ev.touches ? ev.touches[0] : ev;
+      ghost.style.left = (m.clientX - offX) + "px";
+      ghost.style.top = (m.clientY - offY) + "px";
       this.renderGhost(piece, ghost);
     };
-    const end = ()=>{
+
+    const end = () => {
       window.removeEventListener("mousemove", move);
       window.removeEventListener("touchmove", move);
       window.removeEventListener("mouseup", end);
       window.removeEventListener("touchend", end);
       ghost.remove();
-      puzzleUI.board.querySelectorAll(".ghost-path").forEach(c=>c.classList.remove("ghost-path"));
+      puzzleUI.board.querySelectorAll(".ghost-path").forEach(c => c.classList.remove("ghost-path"));
       const drop = this.getDropCoord(piece, ghost);
-      if (drop && this.canPlace(piece, drop.r, drop.c)){
+      if (drop && this.canPlace(piece, drop.r, drop.c)) {
         this.placePiece(piece, drop.r, drop.c);
         el.remove();
-        this.currentPieces = this.currentPieces.filter(p=>p.id!==piece.id);
-        if (this.currentPieces.length===0) this.spawnPieces();
+        this.currentPieces = this.currentPieces.filter(p => p.id !== piece.id);
+        if (this.currentPieces.length === 0) {
+          this.spawnPieces();
+        }
+        document.getElementById("undo-btn").disabled = false;
       } else {
         el.style.opacity = "1";
         el.classList.add("bad-move");
-        setTimeout(()=>el.classList.remove("bad-move"),200);
+        setTimeout(() => el.classList.remove("bad-move"), 200);
       }
     };
+
     window.addEventListener("mousemove", move);
-    window.addEventListener("touchmove", move, {passive:false});
+    window.addEventListener("touchmove", move, { passive: false });
     window.addEventListener("mouseup", end);
     window.addEventListener("touchend", end);
   },
-  getDropCoord(piece, ghost){
-    const b = puzzleUI.board.getBoundingClientRect();
-    const g = ghost.getBoundingClientRect();
-    const cell = b.width/this.size;
-    const col = Math.round((g.left - b.left)/cell);
-    const row = Math.round((g.top - b.top)/cell);
-    return {r:row, c:col};
+
+  getDropCoord(piece, ghost) {
+    const boardRect = puzzleUI.board.getBoundingClientRect();
+    const ghostRect = ghost.getBoundingClientRect();
+    const cellSize = boardRect.width / this.size;
+    const col = Math.floor((ghostRect.left - boardRect.left) / cellSize);
+    const row = Math.floor((ghostRect.top - boardRect.top) / cellSize);
+    return { r: row, c: col };
   },
-  renderGhost(piece, ghost){
-    puzzleUI.board.querySelectorAll(".ghost-path").forEach(c=>c.classList.remove("ghost-path"));
-    const b = puzzleUI.board.getBoundingClientRect();
-    const g = ghost.getBoundingClientRect();
-    const cell = b.width/this.size;
-    const baseC = Math.round((g.left - b.left)/cell);
-    const baseR = Math.round((g.top - b.top)/cell);
-    for(let r=0;r<piece.shape.length;r++){
-      for(let c=0;c<piece.shape[r].length;c++){
+
+  renderGhost(piece, ghost) {
+    puzzleUI.board.querySelectorAll(".ghost-path").forEach(c => c.classList.remove("ghost-path"));
+    const boardRect = puzzleUI.board.getBoundingClientRect();
+    const ghostRect = ghost.getBoundingClientRect();
+    const cellSize = boardRect.width / this.size;
+    const baseCol = Math.floor((ghostRect.left - boardRect.left) / cellSize);
+    const baseRow = Math.floor((ghostRect.top - boardRect.top) / cellSize);
+
+    for (let r = 0; r < piece.shape.length; r++) {
+      for (let c = 0; c < piece.shape[r].length; c++) {
         if (!piece.shape[r][c]) continue;
-        const R = baseR+r, C = baseC+c;
-        if (R>=0 && R<this.size && C>=0 && C<this.size){
-          const idx = R*this.size + C;
+        const row = baseRow + r;
+        const col = baseCol + c;
+        if (row >= 0 && row < this.size && col >= 0 && col < this.size) {
+          const idx = row * this.size + col;
           const cellEl = puzzleUI.board.children[idx];
-          if (cellEl && !this.board[R][C]) cellEl.classList.add("ghost-path");
+          if (cellEl && !this.board[row][col]) {
+            cellEl.classList.add("ghost-path");
+          }
         }
       }
     }
   },
-  canPlace(piece, r0, c0){
-    for(let r=0;r<piece.shape.length;r++){
-      for(let c=0;c<piece.shape[r].length;c++){
+
+  canPlace(piece, r0, c0) {
+    for (let r = 0; r < piece.shape.length; r++) {
+      for (let c = 0; c < piece.shape[r].length; c++) {
         if (!piece.shape[r][c]) continue;
-        const R=r0+r,C=c0+c;
-        if (R<0||C<0||R>=this.size||C>=this.size) return false;
+        const R = r0 + r, C = c0 + c;
+        if (R < 0 || C < 0 || R >= this.size || C >= this.size) return false;
         if (this.board[R][C]) return false;
       }
     }
     return true;
   },
-  placePiece(piece, r0, c0){
-    piece.shape.forEach((row, r)=> row.forEach((v, c)=>{
-      if (v) this.board[r0+r][c0+c] = {color: piece.color};
-    }));
-    this.score += piece.shape.flat().reduce((a,b)=>a+b,0);
+
+  placePiece(piece, r0, c0) {
+    piece.shape.forEach((row, r) => {
+      row.forEach((v, c) => {
+        if (v) this.board[r0 + r][c0 + c] = { color: piece.color };
+      });
+    });
+    this.score += piece.shape.flat().reduce((a, b) => a + b, 0);
     puzzleUI.score.textContent = this.score;
     this.clearLines();
     this.renderBoard();
-    // achievements score tracking
+    this.lastPlaced = { piece, r0, c0 };
+
+    // achievements
     const st = getAchState("score_500");
-    if (this.score > st.progress) setAchState("score_500",{progress: Math.min(500, this.score)});
+    if (this.score > st.progress) setAchState("score_500", { progress: Math.min(500, this.score) });
     renderAchievements();
   },
-  clearLines(){
+
+  clearLines() {
     let rowsToClear = [];
-    for(let r=0;r<this.size;r++){
-      if (this.board[r].every(x=>x)) rowsToClear.push(r);
+    for (let r = 0; r < this.size; r++) {
+      if (this.board[r].every(x => x)) rowsToClear.push(r);
     }
     let colsToClear = [];
-    for(let c=0;c<this.size;c++){
+    for (let c = 0; c < this.size; c++) {
       let full = true;
-      for(let r=0;r<this.size;r++){ if (!this.board[r][c]) {full=false;break;} }
+      for (let r = 0; r < this.size; r++) { if (!this.board[r][c]) { full = false; break; } }
       if (full) colsToClear.push(c);
     }
-    rowsToClear.forEach(r=> this.board[r] = Array(this.size).fill(0));
-    colsToClear.forEach(c=>{
-      for(let r=0;r<this.size;r++) this.board[r][c]=0;
+    rowsToClear.forEach(r => this.board[r] = Array(this.size).fill(0));
+    colsToClear.forEach(c => {
+      for (let r = 0; r < this.size; r++) this.board[r][c] = 0;
     });
     const cleared = rowsToClear.length + colsToClear.length;
-    if (cleared>0){
-      this.score += cleared*cleared*10;
+    if (cleared > 0) {
+      this.score += cleared * cleared * 10;
       puzzleUI.score.textContent = this.score;
     }
+  },
+
+  undoLastMove() {
+    if (!this.lastPlaced) return;
+    const { piece, r0, c0 } = this.lastPlaced;
+    for (let r = 0; r < piece.shape.length; r++) {
+      for (let c = 0; c < piece.shape[r].length; c++) {
+        if (piece.shape[r][c]) {
+          this.board[r0 + r][c0 + c] = 0;
+        }
+      }
+    }
+    this.score = Math.max(0, this.score - piece.shape.flat().reduce((a, b) => a + b, 0));
+    puzzleUI.score.textContent = this.score;
+    this.renderBoard();
+    this.currentPieces.push(piece);
+    const piecesContainer = document.getElementById("puzzle-pieces-container");
+    const pieceEl = this.renderPieceEl(piece);
+    piecesContainer.appendChild(pieceEl);
+    this.lastPlaced = null;
+  },
+
+  clearBoard() {
+    this.board = this.createEmptyGrid();
+    this.score = Math.max(0, this.score - 100);
+    puzzleUI.score.textContent = this.score;
+    this.renderBoard();
+  },
+
+  clearRowAndCol(r, c) {
+    for (let i = 0; i < this.size; i++) {
+      this.board[r][i] = 0;
+      this.board[i][c] = 0;
+    }
+    this.score = Math.max(0, this.score - 50);
+    puzzleUI.score.textContent = this.score;
+    this.renderBoard();
   }
 };
 
