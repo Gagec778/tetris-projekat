@@ -9,9 +9,9 @@ const Storage = {
 
 // --------- ECONOMY & SHOP DATA ---------
 const ECONOMY = {
-  TEST_GEMS: 100000,                 // test balans
-  DAILY_REWARD_AMOUNT: 50,           // produkcija bi bila niža, ali ovo je test
-  PREMIUM_ADS_REQUIRED: 50,          // premium item zahteva 50 gledanja reklama
+  TEST_GEMS: 100000,
+  DAILY_REWARD_AMOUNT: 50,
+  PREMIUM_ADS_REQUIRED: 50,
 };
 
 // Tematske klase mapirane na CSS varijante tela
@@ -28,7 +28,8 @@ const BLOCKS = [
   { id:"default", name:"Default", price:0, type:"normal", img:"assets/blocks/default.svg", className:"block-style-default" },
   { id:"glass",   name:"Glass",   price:1500, type:"normal", img:"assets/blocks/glass.svg", className:"block-style-glass" },
   { id:"wood",    name:"Wood",    price:4000, type:"normal", img:"assets/blocks/wood.svg", className:"block-style-wood" },
-  { { id:"obsidian",name:"Obsidian (Premium)", type:"premium", adsRequired: ECONOMY.PREMIUM_ADS_REQUIRED, img:"assets/blocks/obsidian-premium.svg", className:"block-style-glass" }
+  { id:"retro",   name:"Retro",   price:5000, type:"normal", img:"assets/blocks/retro.svg", className:"block-style-retro" },
+  { id:"obsidian",name:"Obsidian (Premium)", type:"premium", adsRequired: ECONOMY.PREMIUM_ADS_REQUIRED, img:"assets/blocks/obsidian-premium.svg", className:"block-style-glass" }
 ];
 
 // --------- RUNTIME STATE ---------
@@ -36,8 +37,8 @@ const state = Storage.load("PU_state", {
   gems: ECONOMY.TEST_GEMS,
   ownedThemes: { dark:true }, activeTheme:"dark",
   ownedBlocks: { default:true }, activeBlocks:"default",
-  premiumProgress: {}, // by id: watched count
-  achievements: {},    // by id: {progress, claimed}
+  premiumProgress: {},
+  achievements: {},
   haptics: true
 });
 
@@ -168,7 +169,6 @@ function makeShopCard(item, kind){
   `;
 
   card.querySelector(".thumb").addEventListener("click", ()=>{
-    // quick preview on main
     if (kind==="themes") { applyTheme(item.id); } else { applyBlocks(item.id); }
     renderMainPreviews(); save();
     toast("Pregled primenjen na glavnom ekranu (nije sačuvano ako nije kupljeno).");
@@ -299,7 +299,6 @@ $("#achievements-container").addEventListener("click",(e)=>{
     if (!def) return;
     const st = getAchState(id);
     if (st.claimed || st.progress<def.target) return;
-    // require 2 ads
     watchAd().then(()=> watchAd().then(()=>{
       state.gems += def.reward * 2;
       setAchState(id, {claimed:true});
@@ -310,7 +309,6 @@ $("#achievements-container").addEventListener("click",(e)=>{
 });
 renderAchievements();
 
-// track opening shop
 $("#shop-btn").addEventListener("click", ()=> updateAchievementsProgress("open_shop",1));
 
 // ---------- ADS STUB ----------
@@ -334,35 +332,22 @@ function watchAd(){
   });
 }
 
-// ---------- SIMPLE BLOCK PUZZLE (10x10) ----------
-const puzzleUI = {
-  board: $("#puzzle-board"),
-  piecesWrap: $("#puzzle-pieces-container"),
-  score: $("#puzzle-score")
-};
-
-const COLORS = ["#22c55e","#3b82f6","#a855f7","#ef4444","#eab308","#06b6d4","#f97316"];
-const SHAPES = [
-  [[1]], [[1]][[1]], [[1]][[1]][[1]], [[1]][[1]][[1]][[1]], [[1]][[1]][[1]][[1]][[1]],
-  [[1],[1]], [[1],[1],[1]],
-  [[1,1],[1,1]],
-  [[0,1,0],[1,1,1],[0,1,0]],
-  [[1,1,0],[0,1,1]],
-  [[0,1,1],[1,1,0]],
-  [[1,1,1],[1,0,1]]
-];
-
-const Puzzle = {
+// ========== BLOCK PUZZLE GAME ==========
+let Puzzle = {
   board: [], size: 10, score: 0, currentPieces: [], lastPlaced: null, hammerActive: false,
 
   init() {
     this.board = this.createEmptyGrid();
     this.score = 0;
-    puzzleUI.score.textContent = "0";
+
+    this.boardEl = document.getElementById("puzzle-board");
+    this.piecesContainer = document.getElementById("puzzle-pieces-container");
+    this.scoreEl = document.getElementById("puzzle-score");
+
+    this.scoreEl.textContent = "0";
     this.renderBoard();
     this.spawnPieces();
 
-    // Poveži pomoći
     document.getElementById("undo-btn").disabled = true;
     document.getElementById("hammer-btn").disabled = false;
     document.getElementById("bomb-btn").disabled = false;
@@ -387,10 +372,9 @@ const Puzzle = {
       toast("Klikni na tablu da obrišeš red i kolonu", 3000);
     };
 
-    // Klik na tablu za čekić
-    puzzleUI.board.onclick = (e) => {
+    this.boardEl.onclick = (e) => {
       if (this.hammerActive) {
-        const boardRect = puzzleUI.board.getBoundingClientRect();
+        const boardRect = this.boardEl.getBoundingClientRect();
         const cellSize = boardRect.width / this.size;
         const col = Math.floor((e.clientX - boardRect.left) / cellSize);
         const row = Math.floor((e.clientY - boardRect.top) / cellSize);
@@ -407,7 +391,7 @@ const Puzzle = {
   },
 
   renderBoard() {
-    puzzleUI.board.innerHTML = "";
+    this.boardEl.innerHTML = "";
     this.board.forEach(row => {
       row.forEach(cell => {
         const d = document.createElement("div");
@@ -418,14 +402,13 @@ const Puzzle = {
           b.style.background = cell.color;
           d.appendChild(b);
         }
-        puzzleUI.board.appendChild(d);
+        this.boardEl.appendChild(d);
       });
     });
   },
 
   spawnPieces() {
-    const piecesContainer = document.getElementById("puzzle-pieces-container");
-    piecesContainer.innerHTML = "";
+    this.piecesContainer.innerHTML = "";
     this.currentPieces = [];
     for (let i = 0; i < 3; i++) {
       const shape = JSON.parse(JSON.stringify(SHAPES[Math.floor(Math.random() * SHAPES.length)]));
@@ -434,7 +417,7 @@ const Puzzle = {
       const data = { id, shape, color: col };
       this.currentPieces.push(data);
       const el = this.renderPieceEl(data);
-      piecesContainer.appendChild(el);
+      this.piecesContainer.appendChild(el);
     }
   },
 
@@ -489,7 +472,7 @@ const Puzzle = {
       window.removeEventListener("mouseup", end);
       window.removeEventListener("touchend", end);
       ghost.remove();
-      puzzleUI.board.querySelectorAll(".ghost-path").forEach(c => c.classList.remove("ghost-path"));
+      this.boardEl.querySelectorAll(".ghost-path").forEach(c => c.classList.remove("ghost-path"));
       const drop = this.getDropCoord(piece, ghost);
       if (drop && this.canPlace(piece, drop.r, drop.c)) {
         this.placePiece(piece, drop.r, drop.c);
@@ -513,7 +496,7 @@ const Puzzle = {
   },
 
   getDropCoord(piece, ghost) {
-    const boardRect = puzzleUI.board.getBoundingClientRect();
+    const boardRect = this.boardEl.getBoundingClientRect();
     const ghostRect = ghost.getBoundingClientRect();
     const cellSize = boardRect.width / this.size;
     const col = Math.floor((ghostRect.left - boardRect.left) / cellSize);
@@ -522,8 +505,8 @@ const Puzzle = {
   },
 
   renderGhost(piece, ghost) {
-    puzzleUI.board.querySelectorAll(".ghost-path").forEach(c => c.classList.remove("ghost-path"));
-    const boardRect = puzzleUI.board.getBoundingClientRect();
+    this.boardEl.querySelectorAll(".ghost-path").forEach(c => c.classList.remove("ghost-path"));
+    const boardRect = this.boardEl.getBoundingClientRect();
     const ghostRect = ghost.getBoundingClientRect();
     const cellSize = boardRect.width / this.size;
     const baseCol = Math.floor((ghostRect.left - boardRect.left) / cellSize);
@@ -536,7 +519,7 @@ const Puzzle = {
         const col = baseCol + c;
         if (row >= 0 && row < this.size && col >= 0 && col < this.size) {
           const idx = row * this.size + col;
-          const cellEl = puzzleUI.board.children[idx];
+          const cellEl = this.boardEl.children[idx];
           if (cellEl && !this.board[row][col]) {
             cellEl.classList.add("ghost-path");
           }
@@ -564,12 +547,11 @@ const Puzzle = {
       });
     });
     this.score += piece.shape.flat().reduce((a, b) => a + b, 0);
-    puzzleUI.score.textContent = this.score;
+    this.scoreEl.textContent = this.score;
     this.clearLines();
     this.renderBoard();
     this.lastPlaced = { piece, r0, c0 };
 
-    // achievements
     const st = getAchState("score_500");
     if (this.score > st.progress) setAchState("score_500", { progress: Math.min(500, this.score) });
     renderAchievements();
@@ -593,7 +575,7 @@ const Puzzle = {
     const cleared = rowsToClear.length + colsToClear.length;
     if (cleared > 0) {
       this.score += cleared * cleared * 10;
-      puzzleUI.score.textContent = this.score;
+      this.scoreEl.textContent = this.score;
     }
   },
 
@@ -608,19 +590,18 @@ const Puzzle = {
       }
     }
     this.score = Math.max(0, this.score - piece.shape.flat().reduce((a, b) => a + b, 0));
-    puzzleUI.score.textContent = this.score;
+    this.scoreEl.textContent = this.score;
     this.renderBoard();
     this.currentPieces.push(piece);
-    const piecesContainer = document.getElementById("puzzle-pieces-container");
     const pieceEl = this.renderPieceEl(piece);
-    piecesContainer.appendChild(pieceEl);
+    this.piecesContainer.appendChild(pieceEl);
     this.lastPlaced = null;
   },
 
   clearBoard() {
     this.board = this.createEmptyGrid();
     this.score = Math.max(0, this.score - 100);
-    puzzleUI.score.textContent = this.score;
+    this.scoreEl.textContent = this.score;
     this.renderBoard();
   },
 
@@ -630,15 +611,15 @@ const Puzzle = {
       this.board[i][c] = 0;
     }
     this.score = Math.max(0, this.score - 50);
-    puzzleUI.score.textContent = this.score;
+    this.scoreEl.textContent = this.score;
     this.renderBoard();
   }
 };
 
 // Start Puzzle from menu
-$("#start-puzzle").addEventListener("click", ()=>{
+$("#start-puzzle").addEventListener("click", () => {
   Screens.show("#game-screen");
-  Puzzle.init();
+  setTimeout(() => Puzzle.init(), 100);
 });
 
 // Initial apply owned selections
@@ -648,3 +629,15 @@ renderGemBalance();
 renderShop();
 renderAchievements();
 renderMainPreviews();
+
+// ========== COLORS & SHAPES FOR PUZZLE ==========
+const COLORS = ["#22c55e","#3b82f6","#a855f7","#ef4444","#eab308","#06b6d4","#f97316"];
+const SHAPES = [
+  [[1]], [[1]][[1]], [[1]][[1]][[1]], [[1]][[1]][[1]][[1]], [[1]][[1]][[1]][[1]][[1]],
+  [[1],[1]], [[1],[1],[1]],
+  [[1,1],[1,1]],
+  [[0,1,0],[1,1,1],[0,1,0]],
+  [[1,1,0],[0,1,1]],
+  [[0,1,1],[1,1,0]],
+  [[1,1,1],[1,0,1]]
+];
