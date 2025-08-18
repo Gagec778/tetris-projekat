@@ -33,26 +33,38 @@
     </header>
 
     <main class="menu-container">
-      <h1>Puzzle<br/>Universe</h1>
-
-      <div class="menu-grid">
-        <div class="menu-card playable" data-game="block-puzzle">
-          <div class="card-media"><img src="assets/blocks/glass.svg" alt="" /></div>
-          <div class="card-body">
-            <h2>Block Puzzle</h2>
-            <p>Popunjavaj redove i kolone. Opusti se i skupljaj poene.</p>
-            <button class="primary-btn" id="start-puzzle">Start</button>
-          </div>
+      <div class="menu-header">
+        <!-- LEVA STRANA - DIJAMANTI -->
+        <div class="gem-balance">
+          <svg class="gem-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M6 24L20 6h24l14 18-26 32zM20 6L6 24h26zM44 6L58 24H32z" /></svg>
+          <span id="gem-balance-display-top">0</span>
         </div>
 
-        <div class="menu-card disabled">
-          <div class="card-media"><img src="assets/themes/retrowave.svg" alt="" /></div>
-          <div class="card-body">
-            <h2>Block Cascade (Tetris)</h2>
-            <p>Soon: Moderan look & osećaj, touch kontrole, fer bodovanje.</p>
-            <button class="primary-btn secondary" disabled>Uskoro</button>
-          </div>
+        <!-- NASLOV U CENTRU -->
+        <h1>Puzzle<br/>Universe</h1>
+
+        <!-- DESNA STRANA - IKONICE -->
+        <div class="right-icons">
+          <button id="daily-btn" class="icon-btn large header-icon" aria-label="Dnevni poklon">
+            <span class="icon">🎁</span>
+          </button>
+          <button id="shop-btn-top" class="icon-btn large header-icon" aria-label="Prodavnica">
+            <span class="icon">🛒</span>
+          </button>
+          <button id="achievements-btn-top" class="icon-btn large header-icon" aria-label="Dostignuća">
+            <span class="icon">🏆</span>
+            <span id="ach-pulse-top" class="pulse-dot" hidden></span>
+          </button>
+          <button id="settings-btn-top" class="icon-btn large header-icon" aria-label="Podešavanja">
+            <span class="icon">⚙️</span>
+          </button>
         </div>
+      </div>
+
+      <!-- TABOVI ZA IGRE -->
+      <div class="game-tabs">
+        <button class="game-tab" data-game="tetris">Block Cascade</button>
+        <button class="game-tab active" data-game="puzzle">Block Puzzle</button>
       </div>
 
       <div class="preview-strip">
@@ -115,6 +127,11 @@
   <div id="game-screen" class="screen">
     <button class="icon-btn small back-to-main-menu" id="back-from-game" aria-label="Nazad">⟵</button>
     <div id="puzzle-game-area" class="game-area active">
+      <div class="power-ups">
+        <button class="power-btn" id="undo-btn" title="Potez unazad">↩️</button>
+        <button class="power-btn" id="hammer-btn" title="Čekić (obriši red i kolonu)">🪓</button>
+        <button class="power-btn" id="bomb-btn" title="Bomba (obriši celu tablu)">💣</button>
+      </div>
       <div class="game-content-wrapper">
         <div class="puzzle-only game-header-bar">
           <div class="ui-frame score-frame">
