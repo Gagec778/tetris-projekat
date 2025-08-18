@@ -13,71 +13,41 @@
 
   <!-- MAIN MENU -->
   <div id="main-menu-screen" class="screen active">
-    <header class="main-menu-header">
-      <div id="gem-balance-display" class="gem-balance">
-        <svg class="gem-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M6 24L20 6h24l14 18-26 32zM20 6L6 24h26zM44 6L58 24H32z" /></svg>
-        <span id="gem-balance">0</span>
-      </div>
-      <div class="header-buttons">
-        <button id="shop-btn" class="icon-btn large header-icon" aria-label="Prodavnica">
-          <span class="icon">🛒</span>
-        </button>
-        <button id="achievements-btn" class="icon-btn large header-icon" aria-label="Dostignuća">
-          <span class="icon">🏆</span>
-          <span id="ach-pulse" class="pulse-dot" hidden></span>
-        </button>
-        <button id="settings-btn" class="icon-btn large header-icon" aria-label="Podešavanja">
-          <span class="icon">⚙️</span>
-        </button>
-      </div>
-    </header>
-
     <main class="menu-container">
       <div class="menu-header">
-        <!-- LEVA STRANA - DIJAMANTI -->
-        <div class="gem-balance">
-          <svg class="gem-svg" viewBox="0 0 64 64" aria-hidden="true"><path d="M6 24L20 6h24l14 18-26 32zM20 6L6 24h26zM44 6L58 24H32z" /></svg>
-          <span id="gem-balance-display-top">0</span>
+        <!-- DIJAMANTI LEVO -->
+        <div class="gem-balance-top">
+          <svg class="gem-svg" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M6 24L20 6h24l14 18-26 32zM20 6L6 24h26zM44 6L58 24H32z"/>
+          </svg>
+          <span id="gem-balance">0</span>
         </div>
 
-        <!-- NASLOV U CENTRU -->
-        <h1>Puzzle<br/>Universe</h1>
-
-        <!-- DESNA STRANA - IKONICE -->
-        <div class="right-icons">
+        <!-- IKONICE DESNO U JEDNOM REDU (POKLOJ PRVI) -->
+        <div class="top-icons-right">
           <button id="daily-btn" class="icon-btn large header-icon" aria-label="Dnevni poklon">
             <span class="icon">🎁</span>
           </button>
-          <button id="shop-btn-top" class="icon-btn large header-icon" aria-label="Prodavnica">
+          <button id="shop-btn" class="icon-btn large header-icon" aria-label="Prodavnica">
             <span class="icon">🛒</span>
           </button>
-          <button id="achievements-btn-top" class="icon-btn large header-icon" aria-label="Dostignuća">
+          <button id="achievements-btn" class="icon-btn large header-icon" aria-label="Dostignuća">
             <span class="icon">🏆</span>
-            <span id="ach-pulse-top" class="pulse-dot" hidden></span>
+            <span id="ach-pulse" class="pulse-dot" hidden></span>
           </button>
-          <button id="settings-btn-top" class="icon-btn large header-icon" aria-label="Podešavanja">
+          <button id="settings-btn" class="icon-btn large header-icon" aria-label="Podešavanja">
             <span class="icon">⚙️</span>
           </button>
         </div>
       </div>
 
-      <!-- TABOVI ZA IGRE -->
-      <div class="game-tabs">
-        <button class="game-tab" data-game="tetris">Block Cascade</button>
-        <button class="game-tab active" data-game="puzzle">Block Puzzle</button>
-      </div>
+      <!-- NAZIV IGRE CENTRIRAN -->
+      <h1 class="main-title">Puzzle<br/>Universe</h1>
 
-      <div class="preview-strip">
-        <div class="preview-pod">
-          <div class="frame-title">Aktivna Tema</div>
-          <div id="theme-preview" class="theme-preview"></div>
-        </div>
-        <div class="preview-pod">
-          <div class="frame-title">Stil Blokova</div>
-          <div id="block-preview" class="block-preview">
-            <div class="game-block"></div><div class="game-block"></div><div class="game-block"></div>
-          </div>
-        </div>
+      <!-- TABOVI ZA IGRE CENTRIRANI -->
+      <div class="game-tabs">
+        <button class="game-tab" data-game="tetris" id="tab-tetris">Block Cascade</button>
+        <button class="game-tab active" data-game="puzzle" id="tab-puzzle">Block Puzzle</button>
       </div>
     </main>
   </div>
