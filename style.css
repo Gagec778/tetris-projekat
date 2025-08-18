@@ -64,7 +64,7 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding-top: 3.5rem;
+  padding-top: 2rem;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -87,22 +87,23 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: .4rem .8rem;
+  padding: .6rem 1rem;
   font-weight: 800;
-  gap: .5rem;
+  gap: .7rem;
+  font-size: 1.2rem;
 }
 
 .top-icons-right {
   display: flex;
-  gap: .5rem;
+  gap: .7rem;
   align-items: center;
 }
 
 .main-title {
-  font-size: clamp(2.8rem, 12vw, 5rem);
+  font-size: clamp(3.5rem, 15vw, 6rem);
   font-weight: 900;
   letter-spacing: -0.04em;
-  margin: 1rem 0;
+  margin: 1.5rem 0 2rem 0;
   background: linear-gradient(45deg, #f72585, #7209b7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -120,22 +121,23 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .8rem;
-  margin: 1.5rem 0;
+  gap: 1.2rem;
+  margin: 1rem 0 2rem 0;
   width: 100%;
   flex-shrink: 0;
 }
 
 .game-tab {
-  padding: .8rem 1.5rem;
+  padding: 1.2rem 2rem;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   color: var(--text);
   font-weight: 800;
+  font-size: 1.3rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  width: min(300px, 90%);
+  width: min(350px, 90%);
   text-align: center;
 }
 
@@ -153,27 +155,30 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
 .icon-btn {
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: .6rem .8rem;
+  border-radius: 14px;
+  padding: .8rem 1rem;
   color: var(--text);
   cursor: pointer;
   flex-shrink: 0;
+  font-size: 1.4rem;
 }
 
 .icon-btn.small {
-  font-size: 18px;
+  font-size: 1.2rem;
+  padding: .6rem .8rem;
 }
 
 .icon-btn.large {
-  font-size: 20px;
+  font-size: 1.6rem;
+  padding: .8rem 1rem;
 }
 
 .pulse-dot {
   position: absolute;
-  margin-left: -8px;
-  margin-top: -6px;
-  width: 12px;
-  height: 12px;
+  margin-left: -10px;
+  margin-top: -8px;
+  width: 16px;
+  height: 16px;
   background: #ff4769;
   border-radius: 50%;
   box-shadow: 0 0 0 0 rgba(255,71,105,.7);
@@ -182,16 +187,16 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
 
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 rgba(255,71,105,.7); }
-  70% { box-shadow: 0 0 0 12px rgba(255,71,105,0); }
+  70% { box-shadow: 0 0 0 16px rgba(255,71,105,0); }
   100% { box-shadow: 0 0 0 0 rgba(255,71,105,0); }
 }
 
 /* gem balance */
 .gem-svg {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   fill: #31d0ff;
-  filter: drop-shadow(0 0 6px rgba(49,208,255,.7));
+  filter: drop-shadow(0 0 8px rgba(49,208,255,.7));
 }
 
 /* shop */
@@ -727,4 +732,4 @@ body.block-style-retro .game-block {
 
 .menu-card.disabled {
   opacity: .6;
-}
+    }
