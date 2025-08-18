@@ -622,6 +622,22 @@ $("#start-puzzle").addEventListener("click", () => {
   setTimeout(() => Puzzle.init(), 100);
 });
 
+// ========== GAME TABS SWITCHING ==========
+document.querySelectorAll(".game-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".game-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    const game = tab.dataset.game;
+
+    if (game === "puzzle") {
+      // Već postoji dugme #start-puzzle
+    } else if (game === "tetris") {
+      toast("Block Cascade (Tetris) uskoro dostupan!", 2000);
+      // Kasnije ćemo ovde pokrenuti Tetris
+    }
+  });
+});
+
 // Initial apply owned selections
 applyTheme(state.activeTheme);
 applyBlocks(state.activeBlocks);
