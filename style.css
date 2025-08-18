@@ -49,6 +49,7 @@ body.dark-theme{--bg:#0d1117;--card:rgba(30,36,46,.85);--border:rgba(137,147,163
 body.light-theme{--bg:#f0f2f5;--card:#fff;--border:rgba(0,0,0,.1);--text:#1c1e21;--muted:#606770;--primary:#007bff;--grid:rgba(0,0,0,.2)}
 body.neon-theme{--bg:#000;--card:rgba(15,15,15,.9);--border:rgba(0,255,222,.3);--text:#00ffde;--muted:#8d8d8d;--primary:#ff00ff;--grid:rgba(0,255,222,.3)}
 body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.25);--text:#f5e8c7;--muted:#a89a7f;--primary:#b8860b;--grid:rgba(255,215,0,.3)}
+body.retrowave-theme{--bg:linear-gradient(135deg,#1a053b,#0d021f);--card:rgba(30,10,60,.85);--border:rgba(255,0,255,.3);--text:#ff00ff;--muted:#a020f0;--primary:#00ffff;--grid:rgba(255,0,255,.3)}
 
 /* aurora */
 .aurora-background{position:fixed;top:50%;left:50%;width:150vmax;height:150vmax;transform:translate(-50%,-50%);pointer-events:none;z-index:-1;animation:spin 40s linear infinite}
@@ -58,7 +59,7 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
 .aurora-dot:nth-child(3){width:400px;height:400px;top:70%;left:20%;background:#4361ee}
 @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 
-/* ========== NOVI IZGLED MENIJA ========== */
+/* ========== KONACNI IZGLED MENIJA ========== */
 .menu-top-bar {
   position: absolute;
   top: 1rem;
@@ -84,15 +85,18 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
   padding: .7rem 1.2rem;
   font-weight: 800;
   gap: .8rem;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   box-shadow: 0 4px 12px rgba(0,0,0,.3);
 }
 
-.gem-svg {
-  width: 36px;
-  height: 36px;
-  fill: #31d0ff;
-  filter: drop-shadow(0 0 8px rgba(49,208,255,.7));
+.gem-icon {
+  font-size: 1.6rem;
+  animation: gemGlow 2s infinite alternate;
+}
+
+@keyframes gemGlow {
+  0% { text-shadow: 0 0 4px rgba(49, 208, 255, 0.5); }
+  100% { text-shadow: 0 0 12px rgba(49, 208, 255, 0.9), 0 0 20px rgba(49, 208, 255, 0.6); }
 }
 
 .vertical-icons {
@@ -113,24 +117,30 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 5rem 1rem;
+  padding: 3rem 1rem;
   overflow: hidden;
 }
 
 .diagonal-title {
-  font-size: clamp(4rem, 18vw, 8rem);
+  font-size: clamp(4.5rem, 20vw, 9rem);
   font-weight: 900;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   background: linear-gradient(45deg, #f72585, #7209b7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 0.85;
   text-align: center;
-  transform: rotate(-15deg);
-  text-shadow: 4px 4px 12px rgba(0,0,0,.5);
-  opacity: 0.9;
+  transform: rotate(-12deg);
+  text-shadow: 6px 6px 15px rgba(0,0,0,.4);
+  opacity: 0.95;
   margin: 0;
   padding: 0;
+  animation: titleFloat 4s ease-in-out infinite;
+}
+
+@keyframes titleFloat {
+  0%, 100% { transform: rotate(-12deg) translateY(0px); }
+  50% { transform: rotate(-12deg) translateY(-10px); }
 }
 
 .menu-container {
@@ -149,7 +159,7 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
-  margin: 1rem 0 2rem 0;
+  margin: 0rem 0 1.5rem 0; /* Podignuto ka gore */
   width: 100%;
   flex-shrink: 0;
   z-index: 5;
@@ -173,13 +183,41 @@ body.gold-theme{--bg:#1a160d;--card:rgba(40,32,20,.9);--border:rgba(255,215,0,.2
 
 .game-tab:hover {
   background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,.4);
 }
 
-.game-tab.active {
+/* Dugmad u boji teme */
+body.dark-theme .game-tab.active {
   background: var(--primary);
   color: white;
   border-color: var(--primary);
+}
+
+body.neon-theme .game-tab.active {
+  background: #ff00ff;
+  color: #00ffde;
+  border-color: #00ffde;
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+}
+
+body.gold-theme .game-tab.active {
+  background: linear-gradient(45deg, #b8860b, #ffd700);
+  color: #1a160d;
+  border-color: #ffd700;
+}
+
+body.light-theme .game-tab.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+body.retrowave-theme .game-tab.active {
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  color: #000;
+  border-color: #ff00ff;
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
 }
 
 /* header buttons */
@@ -755,4 +793,4 @@ body.block-style-retro .game-block {
 
 .menu-card.disabled {
   opacity: .6;
-}
+  }
