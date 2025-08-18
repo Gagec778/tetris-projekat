@@ -2,26 +2,29 @@
 <html lang="sr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Puzzle Universe</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/feather-icons"></script>
 </head>
-<body class="dark-theme">
-
+<body>
   <!-- Aurora pozadina -->
   <div class="aurora-background"></div>
 
   <!-- Glavni meni -->
   <div id="main-menu-screen" class="screen active">
     <header class="main-menu-header">
+      <!-- Levo dijamanti -->
       <div id="gem-balance-display" class="gem-balance">
         <img src="assets/ui/diamond.svg" alt="💎" class="gem-icon">
         <span id="gem-balance">100000</span>
       </div>
+
+      <!-- Desno ikonice -->
       <div class="header-buttons">
+        <button id="daily-reward-btn" class="icon-btn large" aria-label="Dnevna nagrada">
+          <i data-feather="gift"></i>
+        </button>
         <button id="shop-btn" class="icon-btn large" aria-label="Prodavnica">
           <i data-feather="shopping-cart"></i>
         </button>
@@ -34,94 +37,63 @@
       </div>
     </header>
 
+    <!-- Centralni deo -->
     <main class="menu-container">
       <h1>Puzzle<br>Universe</h1>
-      <div class="menu-item" data-game="tetris">
-        <div class="menu-item-content"><h2>Block Cascade</h2></div>
-      </div>
-      <div class="menu-item" data-game="block-puzzle">
-        <div class="menu-item-content"><h2>Block Puzzle</h2></div>
+      <div class="menu-tabs">
+        <div class="menu-item" data-game="tetris">
+          <div class="menu-item-content"><h2>Block Cascade</h2></div>
+        </div>
+        <div class="menu-item" data-game="block-puzzle">
+          <div class="menu-item-content"><h2>Block Puzzle</h2></div>
+        </div>
       </div>
     </main>
   </div>
 
-  <!-- Shop ekran -->
+  <!-- SHOP ekran -->
   <div id="shop-screen" class="screen">
-    <button class="icon-btn small back-to-main-menu" aria-label="Nazad">
-      <i data-feather="arrow-left"></i>
-    </button>
-    <h2>Prodavnica</h2>
+    <h2>Shop</h2>
     <div class="shop-tabs">
       <button class="shop-tab active" data-tab="themes">Teme</button>
       <button class="shop-tab" data-tab="blocks">Blokovi</button>
     </div>
-    <div class="shop-container">
-      <div id="shop-themes-container" class="shop-grid active"></div>
-      <div id="shop-blocks-container" class="shop-grid"></div>
-    </div>
+    <div class="shop-grid active" id="shop-themes-container"></div>
+    <div class="shop-grid" id="shop-blocks-container"></div>
+    <button class="primary-btn back-to-main-menu">Nazad</button>
   </div>
+
   <!-- Achievements ekran -->
   <div id="achievements-screen" class="screen">
-    <button class="icon-btn small back-to-main-menu" aria-label="Nazad">
-      <i data-feather="arrow-left"></i>
-    </button>
     <h2>Dostignuća</h2>
-    <div id="achievements-container" class="achievements-container"></div>
+    <div id="achievements-container"></div>
+    <button class="primary-btn back-to-main-menu">Nazad</button>
   </div>
 
-  <!-- Settings modal -->
+  <!-- SETTINGS modal -->
   <div id="settings-modal" class="modal-overlay">
-    <div class="modal-content">
-      <span class="close-modal">&times;</span>
+    <div class="modal">
       <h2>Podešavanja</h2>
-
-      <div class="settings-option">
-        <label>Tema</label>
-        <div id="theme-select-container" class="theme-select-inline">
-          <!-- Popunjava script.js na osnovu shop kataloga -->
-        </div>
-      </div>
-
-      <div class="settings-option">
-        <label for="music-volume">Muzika</label>
-        <input type="range" id="music-volume" min="0" max="1" step="0.05">
-      </div>
-
-      <div class="settings-option">
-        <label for="sfx-volume">SFX</label>
-        <input type="range" id="sfx-volume" min="0" max="1" step="0.05">
-      </div>
-
-      <div class="settings-option">
-        <label>Vibracija</label>
-        <button id="haptics-toggle-btn" class="toggle-btn">ON</button>
-      </div>
+      <p>Ovde idu opcije podešavanja...</p>
+      <button class="close-modal">Zatvori</button>
     </div>
   </div>
 
-  <!-- Generic confirm modal -->
-  <div id="confirm-modal" class="modal-overlay">
-    <div class="modal-content">
-      <h2 id="confirm-title">Da li si siguran?</h2>
-      <p id="confirm-text">Ova radnja je trajna.</p>
-      <div class="confirm-actions">
-        <button id="confirm-btn-no" class="primary-btn secondary">Ne</button>
-        <button id="confirm-btn-yes" class="primary-btn">Da</button>
-      </div>
+  <!-- Daily Reward modal -->
+  <div id="daily-reward-center-modal" class="modal-overlay">
+    <div class="modal">
+      <h2>Dnevne nagrade</h2>
+      <p>Uzmi svoju nagradu!</p>
+      <button class="close-modal">Zatvori</button>
     </div>
   </div>
 
   <!-- Notifikacije -->
   <div id="notification-area"></div>
 
-  <!-- Ikone + glavna skripta -->
-  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-  <script>
-    // Inicijalizuj Feather ikonice odmah po učitavanju HTML-a
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.feather && feather.replace) feather.replace();
-    });
-  </script>
   <script src="script.js"></script>
+  <script>
+    feather.replace();
+  </script>
 </body>
 </html>
