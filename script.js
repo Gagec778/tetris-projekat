@@ -617,7 +617,7 @@ let Puzzle = {
 };
 
 // Start Puzzle from menu
-$("#start-puzzle").addEventListener("click", () => {
+document.getElementById("tab-puzzle").addEventListener("click", () => {
   Screens.show("#game-screen");
   setTimeout(() => Puzzle.init(), 100);
 });
@@ -633,7 +633,6 @@ document.querySelectorAll(".game-tab").forEach(tab => {
       // Već postoji dugme #start-puzzle
     } else if (game === "tetris") {
       toast("Block Cascade (Tetris) uskoro dostupan!", 2000);
-      // Kasnije ćemo ovde pokrenuti Tetris
     }
   });
 });
