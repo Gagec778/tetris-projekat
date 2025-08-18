@@ -1,4 +1,3 @@
-
 :root{
   --font-family:'Inter',system-ui,Segoe UI,Roboto,Arial;
   --transition-speed-fast:.2s;
@@ -33,7 +32,54 @@ body{background:var(--bg);color:var(--text)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,71,105,.7)}70%{box-shadow:0 0 0 12px rgba(255,71,105,0)}100%{box-shadow:0 0 0 0 rgba(255,71,105,0)}}
 /* menu */
 .menu-container{display:flex;flex-direction:column;align-items:center;gap:1rem;padding-top:3.5rem}
-.menu-container h1{font-size:clamp(2.8rem,12vw,5rem);font-weight:900;letter-spacing:-.04em;margin:.5rem 0;background:linear-gradient(45deg,#f72585,#7209b7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:0.95}
+.menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 1rem;
+}
+.menu-header h1 {
+  font-size: clamp(2.8rem, 12vw, 5rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin: 0;
+  background: linear-gradient(45deg, #f72585, #7209b7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 0.95;
+  text-align: center;
+  flex-grow: 1;
+}
+.right-icons {
+  display: flex;
+  gap: 0.5rem;
+}
+.game-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.game-tab {
+  padding: 0.8rem 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.game-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.game-tab.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
 .menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;width:min(900px,100%);}
 .menu-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;gap:1rem}
 .menu-card .card-media{width:120px;display:grid;place-items:center;background:rgba(255,255,255,.03)}
@@ -91,6 +137,33 @@ body.block-style-retro .game-block{border:2px solid var(--text);background:repea
 .puzzle-piece.bad-move{animation:shake .2s}
 @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
 .ghost-path{outline:2px dashed rgba(255,255,255,.35);outline-offset:-2px}
+.power-ups {
+  display: flex;
+  gap: 0.8rem;
+  align-self: flex-start;
+  margin-left: 2rem;
+  margin-bottom: -1rem;
+}
+.power-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.2s;
+}
+.power-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+.power-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
 /* modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .3s;z-index:50}
 .modal-overlay.active{opacity:1;visibility:visible}
