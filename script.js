@@ -337,12 +337,19 @@ let Puzzle = {
   board: [], size: 10, score: 0, currentPieces: [], lastPlaced: null, hammerActive: false,
 
   init() {
+    console.log("Puzzle.init() pozvan");
     this.board = this.createEmptyGrid();
     this.score = 0;
 
     this.boardEl = document.getElementById("puzzle-board");
     this.piecesContainer = document.getElementById("puzzle-pieces-container");
     this.scoreEl = document.getElementById("puzzle-score");
+
+    if (!this.boardEl || !this.piecesContainer || !this.scoreEl) {
+      console.error("Nisu pronađeni elementi za igru!");
+      toast("Greška u učitavanju igre!", 3000);
+      return;
+    }
 
     this.scoreEl.textContent = "0";
     this.renderBoard();
@@ -616,10 +623,19 @@ let Puzzle = {
   }
 };
 
-// Start Puzzle from menu
+// ========== START PUZZLE FROM MENU ==========
 document.getElementById("tab-puzzle").addEventListener("click", () => {
+  console.log("Kliknuto na Block Puzzle tab");
   Screens.show("#game-screen");
-  setTimeout(() => Puzzle.init(), 100);
+  setTimeout(() => {
+    console.log("Pokrećem Puzzle.init()");
+    try {
+      Puzzle.init();
+    } catch (error) {
+      console.error("Greška u Puzzle.init():", error);
+      toast("Greška pri pokretanju igre!", 3000);
+    }
+  }, 100);
 });
 
 // ========== GAME TABS SWITCHING ==========
@@ -630,7 +646,7 @@ document.querySelectorAll(".game-tab").forEach(tab => {
     const game = tab.dataset.game;
 
     if (game === "puzzle") {
-      // Već postoji dugme #start-puzzle
+      // Već se pokreće gore
     } else if (game === "tetris") {
       toast("Block Cascade (Tetris) uskoro dostupan!", 2000);
     }
