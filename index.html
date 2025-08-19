@@ -6,8 +6,7 @@
   <title>Puzzle Universe — Final (Test Gems + Ads Stub)</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<!-- ONEMOGUĆEN KONTEKSTNI MENI -->
-<body class="dark-theme block-style-default" oncontextmenu="return false;">
+<body class="dark-theme block-style-default">
   <div class="aurora-background">
     <div class="aurora-dot"></div><div class="aurora-dot"></div><div class="aurora-dot"></div>
   </div>
@@ -15,38 +14,37 @@
   <!-- MAIN MENU -->
   <div id="main-menu-screen" class="screen active">
     <main class="menu-container">
-      <!-- GORNJI DEO - DIJAMANT I IKONICE -->
-      <div class="menu-top-bar">
-        <!-- DIJAMANT SKROZ U LEVOM COSKU -->
+      <div class="menu-header">
+        <!-- DIJAMANTI LEVO -->
         <div class="gem-balance-top">
-          <span class="gem-icon">💎</span>
+          <svg class="gem-svg" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M6 24L20 6h24l14 18-26 32zM20 6L6 24h26zM44 6L58 24H32z"/>
+          </svg>
           <span id="gem-balance">0</span>
         </div>
 
-        <!-- IKONICE JEDNA ISPIT DRUGE U DESNOM COSKU -->
-        <div class="vertical-icons">
-          <button id="settings-btn" class="icon-btn large header-icon" aria-label="Podešavanja">
-            <span class="icon">⚙️</span>
+        <!-- IKONICE DESNO U JEDNOM REDU (POKLOJ PRVI) -->
+        <div class="top-icons-right">
+          <button id="daily-btn" class="icon-btn large header-icon" aria-label="Dnevni poklon">
+            <span class="icon">🎁</span>
+          </button>
+          <button id="shop-btn" class="icon-btn large header-icon" aria-label="Prodavnica">
+            <span class="icon">🛒</span>
           </button>
           <button id="achievements-btn" class="icon-btn large header-icon" aria-label="Dostignuća">
             <span class="icon">🏆</span>
             <span id="ach-pulse" class="pulse-dot" hidden></span>
           </button>
-          <button id="shop-btn" class="icon-btn large header-icon" aria-label="Prodavnica">
-            <span class="icon">🛒</span>
-          </button>
-          <button id="daily-btn" class="icon-btn large header-icon" aria-label="Dnevni poklon">
-            <span class="icon">🎁</span>
+          <button id="settings-btn" class="icon-btn large header-icon" aria-label="Podešavanja">
+            <span class="icon">⚙️</span>
           </button>
         </div>
       </div>
 
-      <!-- DIJAGONALNO IME IGRE PREKO CELOG EKRANA -->
-      <div class="diagonal-title-wrapper">
-        <h1 class="diagonal-title" contextmenu="return false">Puzzle<br/>Universe</h1>
-      </div>
+      <!-- NAZIV IGRE CENTRIRAN -->
+      <h1 class="main-title">Puzzle<br/>Universe</h1>
 
-      <!-- TABOVI ZA IGRE MALO VISE KA GORE -->
+      <!-- TABOVI ZA IGRE CENTRIRANI -->
       <div class="game-tabs">
         <button class="game-tab" data-game="tetris" id="tab-tetris">Block Cascade</button>
         <button class="game-tab active" data-game="puzzle" id="tab-puzzle">Block Puzzle</button>
@@ -110,6 +108,9 @@
             <div class="frame-title">Score</div>
             <div id="puzzle-score" class="score-display game-score">0</div>
           </div>
+          <div class="game-controls">
+            <button id="pause-btn-puzzle" class="icon-btn small" aria-label="Pause">⏸</button>
+          </div>
         </div>
         <div class="game-board-frame"><div id="puzzle-board"></div></div>
         <div id="puzzle-pieces-container-wrapper"><div id="puzzle-pieces-container"></div></div>
@@ -130,10 +131,5 @@
   </div>
 
   <script src="script.js"></script>
-
-  <!-- ONEMOGUĆI DESNI KLIK GLOBALNO -->
-  <script>
-    document.addEventListener("contextmenu", e => e.preventDefault());
-  </script>
 </body>
 </html>
