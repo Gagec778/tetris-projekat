@@ -29,6 +29,7 @@ const BLOCKS = [
   { id:"glass",   name:"Glass",   price:1500, type:"normal", img:"assets/blocks/glass.svg", className:"block-style-glass" },
   { id:"wood",    name:"Wood",    price:4000, type:"normal", img:"assets/blocks/wood.svg", className:"block-style-wood" },
   { id:"retro",   name:"Retro",   price:5000, type:"normal", img:"assets/blocks/retro.svg", className:"block-style-retro" },
+  // Napomena: vizuelno koristi glass klasu po originalu (ne menjamo izgled)
   { id:"obsidian",name:"Obsidian (Premium)", type:"premium", adsRequired: ECONOMY.PREMIUM_ADS_REQUIRED, img:"assets/blocks/obsidian-premium.svg", className:"block-style-glass" }
 ];
 
@@ -47,6 +48,7 @@ function $(sel){ return document.querySelector(sel);}
 function $all(sel){ return [...document.querySelectorAll(sel)];}
 function toast(msg, ms=2500){
   const area = $("#notification-area");
+  if (!area) return;
   const n = document.createElement("div");
   n.className = "notification";
   n.textContent = msg;
@@ -63,27 +65,29 @@ function save(){ Storage.save("PU_state", state); }
 
 // ---------- ECONOMY UI ----------
 const gemBalanceEl = $("#gem-balance");
-function renderGemBalance(){ gemBalanceEl.textContent = state.gems.toLocaleString("sr-RS"); }
+function renderGemBalance(){ if (gemBalanceEl) gemBalanceEl.textContent = state.gems.toLocaleString("sr-RS"); }
 renderGemBalance();
 
 // ---------- NAV ----------
 const Screens = {
   show(id){
     $all(".screen").forEach(s => s.classList.remove("active"));
-    $(id).classList.add("active");
+    const el = $(id);
+    if (el) el.classList.add("active");
   }
 };
-$("#shop-btn").addEventListener("click", ()=>{ Screens.show("#shop-screen"); });
-$("#achievements-btn").addEventListener("click", ()=>{ Screens.show("#achievements-screen"); });
-$("#settings-btn").addEventListener("click", ()=>{ Screens.show("#settings-screen"); });
-$("#back-from-shop").addEventListener("click", ()=>Screens.show("#main-menu-screen"));
-$("#back-from-ach").addEventListener("click", ()=>Screens.show("#main-menu-screen"));
-$("#back-from-settings").addEventListener("click", ()=>Screens.show("#main-menu-screen"));
-$("#back-from-game").addEventListener("click", ()=>Screens.show("#main-menu-screen"));
+$("#shop-btn")?.addEventListener("click", ()=>{ Screens.show("#shop-screen"); updateAchievementsProgress("open_shop",1); });
+$("#achievements-btn")?.addEventListener("click", ()=>{ Screens.show("#achievements-screen"); });
+$("#settings-btn")?.addEventListener("click", ()=>{ Screens.show("#settings-screen"); });
+$("#back-from-shop")?.addEventListener("click", ()=>Screens.show("#main-menu-screen"));
+$("#back-from-ach")?.addEventListener("click", ()=>Screens.show("#main-menu-screen"));
+$("#back-from-settings")?.addEventListener("click", ()=>Screens.show("#main-menu-screen"));
+$("#back-from-game")?.addEventListener("click", ()=>Screens.show("#main-menu-screen"));
 
 // ---------- THEMES SELECT IN SETTINGS ----------
 const themeSelect = $("#theme-select");
 function rebuildThemeSelect(){
+  if (!themeSelect) return;
   themeSelect.innerHTML = "";
   THEMES.forEach(t=>{
     const opt = document.createElement("option");
@@ -93,19 +97,19 @@ function rebuildThemeSelect(){
     themeSelect.appendChild(opt);
   });
 }
-themeSelect.addEventListener("change", (e)=>{
+themeSelect?.addEventListener("change", (e)=>{
   const id = e.target.value;
   if (!state.ownedThemes[id]){ toast("Nije kupljeno."); rebuildThemeSelect(); return; }
   applyTheme(id);
   save(); renderMainPreviews();
 });
-$("#reset-btn").addEventListener("click", ()=>{
+$("#reset-btn")?.addEventListener("click", ()=>{
   localStorage.removeItem("PU_state");
   location.reload();
 });
 const hapticsBtn = $("#haptics-toggle-btn");
-function renderHaptics(){ hapticsBtn.classList.toggle("active", state.haptics); hapticsBtn.textContent = state.haptics? "ON":"OFF"; }
-hapticsBtn.addEventListener("click", ()=>{ state.haptics = !state.haptics; save(); renderHaptics(); });
+function renderHaptics(){ if (!hapticsBtn) return; hapticsBtn.classList.toggle("active", state.haptics); hapticsBtn.textContent = state.haptics? "ON":"OFF"; }
+hapticsBtn?.addEventListener("click", ()=>{ state.haptics = !state.haptics; save(); renderHaptics(); });
 renderHaptics();
 
 // ---------- APPLY THEME / BLOCKS ----------
@@ -127,21 +131,25 @@ rebuildThemeSelect();
 
 // ---------- MAIN PREVIEWS ----------
 function renderMainPreviews(){
-  // Theme swatch
+  // Theme swatch (opciono, ako postoji u HTML-u)
   const p = $("#theme-preview");
-  p.innerHTML = "";
-  const img = new Image();
-  const actT = THEMES.find(t=>t.id===state.activeTheme);
-  img.src = actT.img;
-  img.alt = actT.name;
-  img.style.height = "52px";
-  p.appendChild(img);
+  if (p){
+    p.innerHTML = "";
+    const img = new Image();
+    const actT = THEMES.find(t=>t.id===state.activeTheme);
+    img.src = actT.img;
+    img.alt = actT.name;
+    img.style.height = "52px";
+    p.appendChild(img);
+  }
 
-  // Block 3 preview
+  // Block 3 preview (opciono, ako postoji u HTML-u)
   const bprev = $("#block-preview");
-  bprev.querySelectorAll(".game-block").forEach((el, i)=>{
-    el.style.opacity = 1 - i*0.15;
-  });
+  if (bprev){
+    bprev.querySelectorAll(".game-block").forEach((el, i)=>{
+      el.style.opacity = String(1 - i*0.15);
+    });
+  }
 }
 renderMainPreviews();
 
@@ -156,19 +164,18 @@ function makeShopCard(item, kind){
     ${item.type==="premium" ? `<div class="progressbar"><span style="width:${getProgress(item.id)}%"></span></div>` : ""}
     <div class="price">
       ${item.type==="premium"
-        ? `<small>Reklame: ${getWatched(item.id)}/${item.adsRequired}</small>`
+        ? `<small>Reklame: ${getWatched(item.id)}/${item.adsRequired || ECONOMY.PREMIUM_ADS_REQUIRED}</small>`
         : `<span class="diamond"></span><span>${item.price.toLocaleString("sr-RS")}</span>`}
     </div>
     <div class="actions">
       ${owned ? `<button data-act="apply" class="primary-btn">Primeni</button>`
               : (item.type==="premium"
                   ? `<button data-act="watch" class="primary-btn">Gledaj (x1)</button>`
-                  : `<button data-act="buy" class="primary-btn">Kupi</button>`)
-      }
+                  : `<button data-act="buy" class="primary-btn">Kupi</button>`)}
     </div>
   `;
 
-  card.querySelector(".thumb").addEventListener("click", ()=>{
+  card.querySelector(".thumb")?.addEventListener("click", ()=>{
     if (kind==="themes") { applyTheme(item.id); } else { applyBlocks(item.id); }
     renderMainPreviews(); save();
     toast("Pregled primenjen na glavnom ekranu (nije sačuvano ako nije kupljeno).");
@@ -192,12 +199,13 @@ function makeShopCard(item, kind){
       watchAd().then(()=>{
         const w = (state.premiumProgress[item.id] || 0) + 1;
         state.premiumProgress[item.id] = w;
-        if (w >= (item.adsRequired||ECONOMY.PREMIUM_ADS_REQUIRED)){
+        const need = item.adsRequired || ECONOMY.PREMIUM_ADS_REQUIRED;
+        if (w >= need){
           if (kind==="themes") state.ownedThemes[item.id]=true; else state.ownedBlocks[item.id]=true;
           toast(`Otključano: ${item.name}`);
           updateAchievementsProgress("watch_ads",1);
         } else {
-          toast(`Odgledano. Preostalo: ${item.adsRequired - w}`);
+          toast(`Odgledano. Preostalo: ${need - w}`);
         }
         save(); renderShop();
       });
@@ -215,8 +223,9 @@ function getProgress(id){
 function renderShop(){
   const tWrap = $("#shop-themes-container");
   const bWrap = $("#shop-blocks-container");
-  tWrap.innerHTML = ""; bWrap.innerHTML = "";
+  if (!tWrap || !bWrap) return;
 
+  tWrap.innerHTML = ""; bWrap.innerHTML = "";
   THEMES.forEach(t => tWrap.appendChild( makeShopCard(t,"themes") ));
   BLOCKS.forEach(b => bWrap.appendChild( makeShopCard(b,"blocks") ));
 }
@@ -227,8 +236,8 @@ $all(".shop-tab").forEach(btn=>{
     btn.classList.add("active");
     const tab = btn.dataset.tab;
     $all(".shop-grid").forEach(g=>g.classList.remove("active"));
-    if (tab==="themes") $("#shop-themes-container").classList.add("active");
-    else $("#shop-blocks-container").classList.add("active");
+    if (tab==="themes") $("#shop-themes-container")?.classList.add("active");
+    else $("#shop-blocks-container")?.classList.add("active");
   });
 });
 
@@ -255,10 +264,12 @@ function updateAchievementsProgress(id, amount){
 }
 function maybePulseAch(){
   const anyClaim = ACH_DEF.some(def=>isAchClaimable(def));
-  $("#ach-pulse").hidden = !anyClaim;
+  const pulse = $("#ach-pulse");
+  if (pulse) pulse.hidden = !anyClaim;
 }
 function renderAchievements(){
   const wrap = $("#achievements-container");
+  if (!wrap) return;
   wrap.innerHTML = "";
   ACH_DEF.forEach(def=>{
     const st = getAchState(def.id);
@@ -280,7 +291,7 @@ function renderAchievements(){
   });
   maybePulseAch();
 }
-$("#achievements-container").addEventListener("click",(e)=>{
+$("#achievements-container")?.addEventListener("click",(e)=>{
   const bC = e.target.closest("button[data-claim]");
   const bD = e.target.closest("button[data-double]");
   if (bC){
@@ -309,13 +320,12 @@ $("#achievements-container").addEventListener("click",(e)=>{
 });
 renderAchievements();
 
-$("#shop-btn").addEventListener("click", ()=> updateAchievementsProgress("open_shop",1));
-
 // ---------- ADS STUB ----------
 function watchAd(){
   return new Promise((resolve)=>{
     const modal = $("#ad-modal");
     const bar = $("#ad-progress");
+    if (!modal || !bar) return resolve();
     modal.classList.add("active");
     bar.style.width = "0%";
     let t = 0;
@@ -334,15 +344,32 @@ function watchAd(){
 
 // ========== BLOCK PUZZLE GAME ==========
 let Puzzle = {
-  board: [], size: 10, score: 0, currentPieces: [], lastPlaced: null, hammerActive: false,
+  board: [], size: 10, score: 0, currentPieces: [], lastPlaced: null, hammerActive: false, initialized:false,
 
   init() {
+    if (this.initialized) {
+      // Ako je već inicijalizovan, resetuj stanje igre (čista tabla i nove figure)
+      this.clearBoard(true); // true = bez penalizacije
+      this.piecesContainer.innerHTML = "";
+      this.spawnPieces();
+      this.lastPlaced = null;
+      document.getElementById("undo-btn").disabled = true;
+      document.getElementById("hammer-btn").disabled = false;
+      document.getElementById("bomb-btn").disabled = false;
+      return;
+    }
+
     this.board = this.createEmptyGrid();
     this.score = 0;
 
     this.boardEl = document.getElementById("puzzle-board");
     this.piecesContainer = document.getElementById("puzzle-pieces-container");
     this.scoreEl = document.getElementById("puzzle-score");
+
+    if (!this.boardEl || !this.piecesContainer || !this.scoreEl){
+      console.warn("Puzzle elementi nisu pronađeni u DOM-u.");
+      return;
+    }
 
     this.scoreEl.textContent = "0";
     this.renderBoard();
@@ -384,6 +411,8 @@ let Puzzle = {
         }
       }
     };
+
+    this.initialized = true;
   },
 
   createEmptyGrid() {
@@ -391,6 +420,7 @@ let Puzzle = {
   },
 
   renderBoard() {
+    if (!this.boardEl) return;
     this.boardEl.innerHTML = "";
     this.board.forEach(row => {
       row.forEach(cell => {
@@ -408,12 +438,13 @@ let Puzzle = {
   },
 
   spawnPieces() {
+    if (!this.piecesContainer) return;
     this.piecesContainer.innerHTML = "";
     this.currentPieces = [];
     for (let i = 0; i < 3; i++) {
       const shape = JSON.parse(JSON.stringify(SHAPES[Math.floor(Math.random() * SHAPES.length)]));
       const col = COLORS[Math.floor(Math.random() * COLORS.length)];
-      const id = `p-${Date.now()}-${i}`;
+      const id = `p-${Date.now()}-${i}-${Math.floor(Math.random()*1000)}`;
       const data = { id, shape, color: col };
       this.currentPieces.push(data);
       const el = this.renderPieceEl(data);
@@ -471,9 +502,9 @@ let Puzzle = {
       window.removeEventListener("touchmove", move);
       window.removeEventListener("mouseup", end);
       window.removeEventListener("touchend", end);
-      ghost.remove();
-      this.boardEl.querySelectorAll(".ghost-path").forEach(c => c.classList.remove("ghost-path"));
       const drop = this.getDropCoord(piece, ghost);
+      ghost.remove();
+      this.boardEl?.querySelectorAll(".ghost-path").forEach(c => c.classList.remove("ghost-path"));
       if (drop && this.canPlace(piece, drop.r, drop.c)) {
         this.placePiece(piece, drop.r, drop.c);
         el.remove();
@@ -496,15 +527,19 @@ let Puzzle = {
   },
 
   getDropCoord(piece, ghost) {
+    if (!this.boardEl) return null;
     const boardRect = this.boardEl.getBoundingClientRect();
     const ghostRect = ghost.getBoundingClientRect();
     const cellSize = boardRect.width / this.size;
+
+    // Poravnaj prema gornjem levom uglu "ghost" figure
     const col = Math.floor((ghostRect.left - boardRect.left) / cellSize);
     const row = Math.floor((ghostRect.top - boardRect.top) / cellSize);
     return { r: row, c: col };
   },
 
   renderGhost(piece, ghost) {
+    if (!this.boardEl) return;
     this.boardEl.querySelectorAll(".ghost-path").forEach(c => c.classList.remove("ghost-path"));
     const boardRect = this.boardEl.getBoundingClientRect();
     const ghostRect = ghost.getBoundingClientRect();
@@ -598,10 +633,10 @@ let Puzzle = {
     this.lastPlaced = null;
   },
 
-  clearBoard() {
+  clearBoard(noPenalty = false) {
     this.board = this.createEmptyGrid();
-    this.score = Math.max(0, this.score - 100);
-    this.scoreEl.textContent = this.score;
+    if (!noPenalty) this.score = Math.max(0, this.score - 100);
+    this.scoreEl && (this.scoreEl.textContent = this.score);
     this.renderBoard();
   },
 
@@ -616,10 +651,11 @@ let Puzzle = {
   }
 };
 
-// Start Puzzle from menu
-document.getElementById("tab-puzzle").addEventListener("click", () => {
+// Start Puzzle iz menija (zadržavamo originalni UX)
+document.getElementById("tab-puzzle")?.addEventListener("click", () => {
   Screens.show("#game-screen");
-  setTimeout(() => Puzzle.init(), 100);
+  // kratko odloženo da se ekran prikaže pre inicijalizacije
+  setTimeout(() => Puzzle.init(), 50);
 });
 
 // ========== GAME TABS SWITCHING ==========
@@ -630,7 +666,7 @@ document.querySelectorAll(".game-tab").forEach(tab => {
     const game = tab.dataset.game;
 
     if (game === "puzzle") {
-      // Već postoji dugme #start-puzzle
+      // već imamo handler gore koji otvara igru i poziva init
     } else if (game === "tetris") {
       toast("Block Cascade (Tetris) uskoro dostupan!", 2000);
     }
@@ -645,14 +681,39 @@ renderShop();
 renderAchievements();
 renderMainPreviews();
 
-// ========== COLORS & SHAPES FOR PUZZLE ==========
+/* ========== COLORS & SHAPES FOR PUZZLE ========== */
 const COLORS = ["#22c55e","#3b82f6","#a855f7","#ef4444","#eab308","#06b6d4","#f97316"];
+
+/* VALIDNE MATRICE (ispravka kritične greške) */
 const SHAPES = [
-  [[1]], [[1]][[1]], [[1]][[1]][[1]], [[1]][[1]][[1]][[1]], [[1]][[1]][[1]][[1]][[1]],
-  [[1],[1]], [[1],[1],[1]],
+  // 1 blok
+  [[1]],
+  // vertikalne linije
+  [[1],[1]],
+  [[1],[1],[1]],
+  [[1],[1],[1],[1]],
+  [[1],[1],[1],[1],[1]],
+  // horizontalne linije
+  [[1,1]],
+  [[1,1,1]],
+  [[1,1,1,1]],
+  [[1,1,1,1,1]],
+  // kvadrat 2x2
   [[1,1],[1,1]],
+  // T
+  [[1,1,1],[0,1,0]],
+  // plus (krst) 3x3
   [[0,1,0],[1,1,1],[0,1,0]],
-  [[1,1,0],[0,1,1]],
+  // S i Z
   [[0,1,1],[1,1,0]],
-  [[1,1,1],[1,0,1]]
+  [[1,1,0],[0,1,1]],
+  // L i J (razne dužine)
+  [[1,0],[1,0],[1,1]],
+  [[0,1],[0,1],[1,1]],
+  [[1,0,0],[1,1,1]],
+  [[0,0,1],[1,1,1]],
+  // U šablon
+  [[1,0,1],[1,1,1]],
+  // šuplji 3x2 (rupica u sredini gornjeg reda)
+  [[1,0,1],[1,1,1]]
 ];
