@@ -9,18 +9,15 @@
 <body>
   <!-- START SCREEN -->
   <div id="startScreen">
-    <!-- nova ambijentalna pozadina -->
     <canvas id="bg"></canvas>
-    <canvas id="bg2"></canvas>
-
-    <button id="settingsBtn">⚙️ Podesavanja</button>
+    <button id="settingsBtn" class="btn">⚙️ Podesavanja</button>
     <div class="ss-inner">
       <h1>BLOCK • 10×10</h1>
       <div class="sub">Jednostavno & minimalistički. Klasičan 10×10 + modovi.</div>
-      <div class="ghost-board" id="ghost"></div>
+
       <div class="cta">
-        <button id="startClassic">▶ Classic Mode</button>
-        <button id="startDaily">🌟 Daily Challenge</button>
+        <button id="startClassic" class="btn lg">▶ Classic</button>
+        <button id="startDaily" class="btn lg">🌟 Daily</button>
       </div>
     </div>
   </div>
@@ -34,12 +31,13 @@
         <div class="pill">Best: <span id="best">0</span></div>
       </div>
       <div class="toolbar">
-        <button id="backBtn" title="Nazad na meni">🏠</button>
+        <button id="backBtn" title="Nazad na meni" class="btn">🏠</button>
         <button id="reset" class="btn" title="Nova igra">Reset</button>
       </div>
     </header>
 
     <div class="board-area">
+      <div class="board-backdrop"></div>
       <canvas id="game" width="360" height="360" aria-label="10x10 tabla"></canvas>
       <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
     </div>
@@ -47,7 +45,7 @@
     <!-- TRAY -->
     <div class="tray" id="tray"></div>
 
-    <!-- ACTION BAR: Power-ups & Rotate (ostaju kao ranije) -->
+    <!-- ACTION BAR: Power-ups & Rotate -->
     <div class="actionbar">
       <button id="btnRotate" class="btn sm" title="Rotiraj selektovani komad">⤿ Rotate</button>
       <div class="spacer"></div>
@@ -56,35 +54,26 @@
       <button id="btnBomb" class="btn sm warn" title="Očisti ceo grid (efekat!)">💣 Bomb <span class="cnt" id="cntBomb">1</span></button>
     </div>
 
-    <div class="footer">Modovi: Classic • Daily • Obstacles • Time • Arcade • Survival • Zen • Puzzle Pack</div>
+    <div class="footer">Modovi: Classic • Daily • Obstacles • Time • Arcade • Survival • Zen • Puzzle</div>
   </div>
 
-  <!-- SETTINGS (sa tabovima: Podešavanja / Dostignuća) -->
+  <!-- SETTINGS -->
   <div id="settingsModal">
     <div class="backdrop"></div>
     <div class="panel">
-      <div class="tabs">
-        <button class="tab active" data-tab="settings">Podešavanja</button>
-        <button class="tab" data-tab="achievements">Dostignuća</button>
-      </div>
+      <h3>Podešavanja</h3>
+      <div class="row"><span>Tema</span><button id="setTheme" class="btn">Prebaci temu</button></div>
+      <div class="row"><span>Zvuk</span><button id="setSound" class="btn">🔈 On</button></div>
+      <div class="row"><span>Mod</span><button id="setMode" class="btn">Classic</button></div>
+      <div class="row"><span>Resetuj Best</span><button id="resetBest" class="btn">Obriši</button></div>
+      <div class="row"><span>Testovi</span><button id="runTests" class="btn">Pokreni testove</button></div>
 
-      <div class="tabpage" id="tab-settings">
-        <div class="row"><span>Tema</span><button id="setTheme" class="btn">Prebaci temu</button></div>
-        <div class="row"><span>Zvuk</span><button id="setSound" class="btn">🔈 On</button></div>
-        <div class="row"><span>Mod</span><button id="setMode" class="btn">Classic</button></div>
-        <div class="row"><span>Resetuj Best</span><button id="resetBest" class="btn">Obriši</button></div>
-        <div class="row"><span>Testovi</span><button id="runTests" class="btn">Pokreni testove</button></div>
-        <div style="text-align:right; margin-top:8px"><button id="closeSettings" class="btn">Zatvori</button></div>
-      </div>
+      <!-- NOVO: Dostignuća (umesto "Dnevne misije") -->
+      <div class="divider"></div>
+      <h4 style="margin:6px 0 6px">🏆 Dostignuća</h4>
+      <ul id="achievementsList" class="ach-list"></ul>
 
-      <div class="tabpage hidden" id="tab-achievements">
-        <div class="ach-header">
-          <div class="ach-title">🏆 Dostignuća</div>
-          <div class="ach-sub">Trajna, nezavisna od moda. Otključaj ih tokom igranja!</div>
-        </div>
-        <ul id="achList" class="ach-list"></ul>
-        <div style="text-align:right; margin-top:8px"><button id="closeSettings2" class="btn">Zatvori</button></div>
-      </div>
+      <div style="text-align:right; margin-top:10px"><button id="closeSettings" class="btn">Zatvori</button></div>
     </div>
   </div>
 
@@ -97,6 +86,7 @@
         <li>Prevuci blok iz trake na tablu.</li>
         <li>Popuni ceo red ili kolonu da ih očistiš.</li>
         <li>3 potrošena bloka → dobijaš nova 3 (refill).</li>
+        <li>Power-ups: čekić (razbij), shuffle (zameni), bomba (očisti sve).</li>
       </ol>
       <div style="margin-top:10px; display:flex; gap:8px; justify-content:center">
         <button id="skipOnb" class="btn">Preskoči</button>
