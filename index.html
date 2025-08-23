@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="sr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Puzzle Universe — Final (Test Gems + Ads Stub)</title>
+  <title>Puzzle Universe</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="dark-theme block-style-default">
@@ -44,6 +43,22 @@
 
       <!-- NAZIV IGRE CENTRIRAN -->
       <h1 class="main-title">Puzzle<br/>Universe</h1>
+
+      <!-- PREVIEWI TEMA I BLOKOVA (zbog JS) -->
+      <div class="previews-row">
+        <div class="preview-card">
+          <div class="label">Tema</div>
+          <div id="theme-preview" class="theme-preview"></div>
+        </div>
+        <div class="preview-card">
+          <div class="label">Blokovi</div>
+          <div id="block-preview" class="block-preview">
+            <div class="game-block"></div>
+            <div class="game-block"></div>
+            <div class="game-block"></div>
+          </div>
+        </div>
+      </div>
 
       <!-- TABOVI ZA IGRE CENTRIRANI -->
       <div class="game-tabs">
@@ -124,7 +139,7 @@
 
   <div id="ad-modal" class="modal-overlay">
     <div class="modal-content">
-      <span class="close-modal" id="close-ad-modal">&times;</span>
+      <button class="close-modal" id="close-ad-modal" aria-label="Zatvori">&times;</button>
       <h3>Gledanje reklame (stub)</h3>
       <p>Ovo je lažna reklama za testiranje. Završava se za 3 sekunde…</p>
       <div class="progress"><div id="ad-progress"></div></div>
