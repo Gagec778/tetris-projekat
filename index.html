@@ -1,359 +1,123 @@
-<!DOCTYPE html><html lang="sr">
+<!DOCTYPE html>
+<html lang="sr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Block Puzzle 10×10 — Minimal</title>
-  <style>
-    :root { --bg:#0e0f12; --grid:#1b1e24; --cell:#242833; --accent:#5b8cff; --good:#7ad37a; --bad:#d37a7a; --text:#e8ecf1; }
-    html, body { height:100%; margin:0; background:var(--bg); color:var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; }
-    .wrap { display:flex; flex-direction:column; height:100%; max-width:720px; margin:0 auto; }
-    header { padding:12px 16px; display:flex; align-items:center; justify-content:space-between; }
-    .brand { font-weight:700; letter-spacing:0.3px; opacity:.9 }
-    .btn { background:transparent; border:1px solid #2b2f3a; color:var(--text); padding:8px 12px; border-radius:14px; font-weight:600; cursor:pointer; }
-    .btn:active { transform: translateY(1px); }.hud { display:flex; gap:12px; align-items:center; }
-.pill { background:#161922; padding:6px 10px; border-radius:12px; font-weight:600; opacity:.9 }
-
-.board-area { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 8px 0; }
-canvas { touch-action:none; }
-
-.tray { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; padding:12px 16px 18px; }
-.slot { background:#141720; border:1px dashed #2b2f3a; border-radius:16px; min-height:96px; display:flex; align-items:center; justify-content:center; position:relative; }
-.slot.used { opacity:.3 }
-.footer { text-align:center; opacity:.6; font-size:12px; padding-bottom:10px }
-
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="wrap">
+  <!-- START SCREEN -->
+  <div id="startScreen">
+    <!-- nova ambijentalna pozadina -->
+    <canvas id="bg"></canvas>
+    <canvas id="bg2"></canvas>
+
+    <button id="settingsBtn">⚙️ Podesavanja</button>
+    <div class="ss-inner">
+      <h1>BLOCK • 10×10</h1>
+      <div class="sub">Jednostavno & minimalistički. Klasičan 10×10 + modovi.</div>
+      <div class="ghost-board" id="ghost"></div>
+      <div class="cta">
+        <button id="startClassic">▶ Classic Mode</button>
+        <button id="startDaily">🌟 Daily Challenge</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div class="wrap" id="app" style="display:none">
     <header>
       <div class="brand">BLOCK • 10×10</div>
       <div class="hud">
         <div class="pill">Score: <span id="score">0</span></div>
         <div class="pill">Best: <span id="best">0</span></div>
+      </div>
+      <div class="toolbar">
+        <button id="backBtn" title="Nazad na meni">🏠</button>
         <button id="reset" class="btn" title="Nova igra">Reset</button>
       </div>
-    </header><div class="board-area">
-  <canvas id="game" width="360" height="360" aria-label="10x10 tabla"></canvas>
-</div>
+    </header>
 
-<div class="tray" id="tray"></div>
-<div class="footer">Minimalan prototip • dodajemo modove kasnije</div>
+    <div class="board-area">
+      <canvas id="game" width="360" height="360" aria-label="10x10 tabla"></canvas>
+      <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
+    </div>
 
-  </div><script>
-(function(){
-  // ====== Responsive sizing ======
-  const DPR = Math.min(window.devicePixelRatio || 1, 2);
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const trayEl = document.getElementById('tray');
-  const scoreEl = document.getElementById('score');
-  const bestEl = document.getElementById('best');
-  const resetBtn = document.getElementById('reset');
+    <!-- TRAY -->
+    <div class="tray" id="tray"></div>
 
-  const BOARD_SIZE = 10; // 10x10
-  const COLORS = [
-    '#5b8cff','#7ad37a','#ffb86b','#f17fb5','#6ee7f0','#c9a6ff','#ffd166','#8ecae6'
-  ];
+    <!-- ACTION BAR: Power-ups & Rotate (ostaju kao ranije) -->
+    <div class="actionbar">
+      <button id="btnRotate" class="btn sm" title="Rotiraj selektovani komad">⤿ Rotate</button>
+      <div class="spacer"></div>
+      <button id="btnHammer" class="btn sm" title="Razbij jednu ćeliju (tapni na tabli)">🔨 Hammer <span class="cnt" id="cntHammer">1</span></button>
+      <button id="btnShuffle" class="btn sm" title="Zameni 3 bloka u ruci">🔄 Shuffle <span class="cnt" id="cntShuffle">1</span></button>
+      <button id="btnBomb" class="btn sm warn" title="Očisti ceo grid (efekat!)">💣 Bomb <span class="cnt" id="cntBomb">1</span></button>
+    </div>
 
-  let state = {
-    grid: createGrid(),
-    cell: 32, // will be resized
-    margin: 6,
-    score: 0,
-    best: Number(localStorage.getItem('bp10.best') || 0),
-    bag: [],
-    hand: [],
-    dragging: null,
-    hoverValid: false
-  };
-  bestEl.textContent = state.best;
+    <div class="footer">Modovi: Classic • Daily • Obstacles • Time • Arcade • Survival • Zen • Puzzle Pack</div>
+  </div>
 
-  function sizeToScreen(){
-    const W = Math.min(window.innerWidth, 720) - 32; // padding
-    const H = Math.max(320, window.innerHeight * 0.42);
-    const side = Math.min(W, H);
-    const cell = Math.floor(side / BOARD_SIZE);
-    const px = cell * BOARD_SIZE;
-    canvas.style.width = px + 'px';
-    canvas.style.height = px + 'px';
-    canvas.width = Math.floor(px * DPR);
-    canvas.height = Math.floor(px * DPR);
-    state.cell = Math.floor(px / BOARD_SIZE);
-    draw();
-  }
+  <!-- SETTINGS (sa tabovima: Podešavanja / Dostignuća) -->
+  <div id="settingsModal">
+    <div class="backdrop"></div>
+    <div class="panel">
+      <div class="tabs">
+        <button class="tab active" data-tab="settings">Podešavanja</button>
+        <button class="tab" data-tab="achievements">Dostignuća</button>
+      </div>
 
-  window.addEventListener('resize', sizeToScreen, {passive:true});
-  sizeToScreen();
+      <div class="tabpage" id="tab-settings">
+        <div class="row"><span>Tema</span><button id="setTheme" class="btn">Prebaci temu</button></div>
+        <div class="row"><span>Zvuk</span><button id="setSound" class="btn">🔈 On</button></div>
+        <div class="row"><span>Mod</span><button id="setMode" class="btn">Classic</button></div>
+        <div class="row"><span>Resetuj Best</span><button id="resetBest" class="btn">Obriši</button></div>
+        <div class="row"><span>Testovi</span><button id="runTests" class="btn">Pokreni testove</button></div>
+        <div style="text-align:right; margin-top:8px"><button id="closeSettings" class="btn">Zatvori</button></div>
+      </div>
 
-  // ====== Grid Helpers ======
-  function createGrid(){ return Array.from({length:BOARD_SIZE}, ()=> Array(BOARD_SIZE).fill(0)); }
-  function cloneGrid(g){ return g.map(r=>r.slice()); }
+      <div class="tabpage hidden" id="tab-achievements">
+        <div class="ach-header">
+          <div class="ach-title">🏆 Dostignuća</div>
+          <div class="ach-sub">Trajna, nezavisna od moda. Otključaj ih tokom igranja!</div>
+        </div>
+        <ul id="achList" class="ach-list"></ul>
+        <div style="text-align:right; margin-top:8px"><button id="closeSettings2" class="btn">Zatvori</button></div>
+      </div>
+    </div>
+  </div>
 
-  // ====== Pieces (1010-style minimal set) ======
-  // Shapes encoded as array of [x,y] block offsets with origin at (0,0)
-  const SHAPES = [
-    [[0,0]], // 1
-    [[0,0],[1,0]], // 2
-    [[0,0],[1,0],[2,0]], // 3 line
-    [[0,0],[1,0],[2,0],[3,0]], // 4 line
-    [[0,0],[1,0],[2,0],[3,0],[4,0]], // 5 line
-    [[0,0],[0,1]], // 2 vertical
-    [[0,0],[0,1],[0,2]],
-    [[0,0],[0,1],[0,2],[0,3]],
-    [[0,0],[0,1],[0,2],[0,3],[0,4]],
-    [[0,0],[1,0],[0,1],[1,1]], // 2x2 square
-    [[0,0],[1,0],[0,1],[1,1],[2,1]], // step
-    [[0,0],[1,0],[2,0],[0,1]], // L3
-    [[0,0],[1,0],[2,0],[0,1],[0,2]], // L5 tall
-    [[0,0],[1,0],[2,0],[1,1]], // T small
-  ];
+  <!-- ONBOARDING -->
+  <div id="onboarding" class="overlay">
+    <div class="backdrop"></div>
+    <div class="panel">
+      <h2>Kako se igra</h2>
+      <ol style="text-align:left; line-height:1.5; padding-left:18px">
+        <li>Prevuci blok iz trake na tablu.</li>
+        <li>Popuni ceo red ili kolonu da ih očistiš.</li>
+        <li>3 potrošena bloka → dobijaš nova 3 (refill).</li>
+      </ol>
+      <div style="margin-top:10px; display:flex; gap:8px; justify-content:center">
+        <button id="skipOnb" class="btn">Preskoči</button>
+        <button id="startOnb" class="btn">Kreni!</button>
+      </div>
+    </div>
+  </div>
 
-  function newPiece(){
-    const shape = SHAPES[Math.floor(Math.random()*SHAPES.length)];
-    const color = COLORS[Math.floor(Math.random()*COLORS.length)];
-    // Normalize to top-left origin
-    const minx = Math.min(...shape.map(b=>b[0]));
-    const miny = Math.min(...shape.map(b=>b[1]));
-    const blocks = shape.map(([x,y])=>[x-minx, y-miny]);
-    const w = Math.max(...blocks.map(b=>b[0]))+1;
-    const h = Math.max(...blocks.map(b=>b[1]))+1;
-    return { blocks, w, h, color, placed:false, id: Math.random().toString(36).slice(2) };
-  }
+  <!-- GAME OVER -->
+  <div id="gameOver" class="overlay">
+    <div class="backdrop"></div>
+    <div class="panel">
+      <h2>Kraj igre</h2>
+      <div id="goStats" style="margin:6px 0 12px 0">Score: 0 • Best: 0</div>
+      <div style="display:flex; gap:8px; justify-content:center">
+        <button id="playAgain" class="btn">Igraj ponovo</button>
+        <button id="goMenu" class="btn">Meni</button>
+      </div>
+    </div>
+  </div>
 
-  function refillHand(){
-    state.hand = [newPiece(), newPiece(), newPiece()];
-    renderTray();
-  }
-
-  function anyFits(){
-    return state.hand.some(p => canFitAnywhere(p));
-  }
-
-  function canFitAnywhere(piece){
-    for(let y=0; y<=BOARD_SIZE-piece.h; y++){
-      for(let x=0; x<=BOARD_SIZE-piece.w; x++){
-        if(canPlace(piece, x, y)) return true;
-      }
-    }
-    return false;
-  }
-
-  function canPlace(piece, gx, gy){
-    for(const [dx,dy] of piece.blocks){
-      const x = gx+dx, y = gy+dy;
-      if(x<0||y<0||x>=BOARD_SIZE||y>=BOARD_SIZE) return false;
-      if(state.grid[y][x]!==0) return false;
-    }
-    return true;
-  }
-
-  function place(piece, gx, gy){
-    for(const [dx,dy] of piece.blocks){
-      state.grid[gy+dy][gx+dx] = 1;
-    }
-    piece.placed = true;
-    state.score += piece.blocks.length; // base points
-
-    // Clear rows and cols
-    const fullRows = [];
-    const fullCols = [];
-    for(let y=0;y<BOARD_SIZE;y++) if(state.grid[y].every(v=>v===1)) fullRows.push(y);
-    for(let x=0;x<BOARD_SIZE;x++){
-      let ok=true; for(let y=0;y<BOARD_SIZE;y++){ if(state.grid[y][x]!==1){ ok=false; break; } }
-      if(ok) fullCols.push(x);
-    }
-    const cleared = fullRows.length + fullCols.length;
-    if(cleared>0){
-      for(const r of fullRows) state.grid[r] = Array(BOARD_SIZE).fill(0);
-      for(const c of fullCols) for(let y=0;y<BOARD_SIZE;y++) state.grid[y][c]=0;
-      state.score += cleared * 10 + (cleared>1? (cleared-1)*5 : 0); // simple bonus
-    }
-
-    // Remove used piece from hand
-    state.hand = state.hand.map(p => p.id===piece.id ? {...p, used:true} : p);
-    renderTray();
-
-    // If all used, refill
-    if(state.hand.every(p=>p.used)) refillHand();
-
-    // Update score/best
-    scoreEl.textContent = state.score;
-    if(state.score>state.best){ state.best = state.score; localStorage.setItem('bp10.best', String(state.best)); bestEl.textContent = state.best; }
-
-    // Check game over
-    if(!anyFits()){
-      showToast('Nema poteza — Kraj igre');
-    }
-  }
-
-  // ====== Rendering ======
-  function draw(){
-    const s = state.cell; const m = state.margin; const d = DPR;
-    ctx.save();
-    ctx.scale(d,d);
-    // background
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // board bg
-    roundRect(ctx, 0, 0, s*BOARD_SIZE, s*BOARD_SIZE, 16);
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid');
-    ctx.fill();
-
-    // grid cells
-    for(let y=0;y<BOARD_SIZE;y++){
-      for(let x=0;x<BOARD_SIZE;x++){
-        const px = x*s, py = y*s;
-        roundRect(ctx, px+1, py+1, s-2, s-2, 8);
-        ctx.fillStyle = state.grid[y][x]? '#2f3442' : getComputedStyle(document.documentElement).getPropertyValue('--cell');
-        ctx.fill();
-      }
-    }
-
-    // if dragging, draw ghost projection
-    if(state.dragging){
-      const {piece, gx, gy, valid} = state.dragging;
-      if(gx!=null && gy!=null){
-        ctx.globalAlpha = valid ? 0.9 : 0.5;
-        for(const [dx,dy] of piece.blocks){
-          const x = (gx+dx)*s, y = (gy+dy)*s;
-          roundRect(ctx, x+2, y+2, s-4, s-4, 7);
-          ctx.fillStyle = valid ? piece.color : '#7a2c2c';
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      }
-    }
-    ctx.restore();
-  }
-
-  function roundRect(ctx,x,y,w,h,r){
-    ctx.beginPath();
-    r = Math.min(r, w/2, h/2);
-    ctx.moveTo(x+r,y);
-    ctx.arcTo(x+w,y,x+w,y+h,r);
-    ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r);
-    ctx.arcTo(x,y,x+w,y,r);
-    ctx.closePath();
-  }
-
-  // ====== Input (touch + mouse) ======
-  const POINTER = {
-    x:0,y:0,active:false, offsetX:0, offsetY:0, fromSlotIndex:null
-  };
-
-  function canvasPos(e){
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.touches? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = (e.touches? e.touches[0].clientY : e.clientY) - rect.top;
-    return { x, y };
-  }
-
-  function startDrag(e){
-    const target = e.currentTarget.closest('.slot');
-    const idx = Number(target.dataset.index);
-    const piece = state.hand[idx];
-    if(!piece || piece.used) return;
-    POINTER.active = true; POINTER.fromSlotIndex = idx;
-    state.dragging = { piece, gx:null, gy:null, valid:false };
-    target.classList.add('used');
-  }
-
-  function moveDrag(e){
-    if(!POINTER.active || !state.dragging) return;
-    const {x,y} = canvasPos(e);
-    POINTER.x=x; POINTER.y=y;
-    const s = state.cell;
-    const gx = Math.floor(x / s);
-    const gy = Math.floor(y / s);
-    // center under pointer by offset 0,0 of piece (simple)
-    if(gx>=0 && gy>=0 && gx<=BOARD_SIZE - state.dragging.piece.w && gy<=BOARD_SIZE - state.dragging.piece.h){
-      const valid = canPlace(state.dragging.piece, gx, gy);
-      state.dragging.gx=gx; state.dragging.gy=gy; state.dragging.valid=valid;
-    } else {
-      state.dragging.gx=null; state.dragging.gy=null; state.dragging.valid=false;
-    }
-    draw();
-  }
-
-  function endDrag(e){
-    if(!POINTER.active || !state.dragging) return;
-    const d = state.dragging;
-    POINTER.active=false;
-    const slot = trayEl.querySelector(`.slot[data-index="${POINTER.fromSlotIndex}"]`);
-    if(d.valid && d.gx!=null && d.gy!=null){
-      place(d.piece, d.gx, d.gy);
-      draw();
-    } else {
-      // revert slot appearance
-      slot && slot.classList.remove('used');
-    }
-    state.dragging = null;
-  }
-
-  canvas.addEventListener('touchmove', moveDrag, {passive:false});
-  canvas.addEventListener('mousemove', moveDrag);
-  window.addEventListener('touchend', endDrag);
-  window.addEventListener('mouseup', endDrag);
-
-  // ====== Tray rendering ======
-  function renderTray(){
-    trayEl.innerHTML = '';
-    state.hand.forEach((p, i)=>{
-      const div = document.createElement('div');
-      div.className = 'slot' + (p.used? ' used' : '');
-      div.dataset.index = String(i);
-      const mini = pieceToCanvas(p);
-      div.appendChild(mini);
-      if(!p.used){
-        div.addEventListener('touchstart', (e)=>{ startDrag(e); e.preventDefault(); }, {passive:false});
-        div.addEventListener('mousedown', startDrag);
-      }
-      trayEl.appendChild(div);
-    });
-  }
-
-  function pieceToCanvas(piece){
-    // create a tiny canvas preview
-    const scale = 18; const pad=6;
-    const w = piece.w*scale + pad*2; const h = piece.h*scale + pad*2;
-    const c = document.createElement('canvas');
-    c.width = w * DPR; c.height = h * DPR; c.style.width = w+'px'; c.style.height = h+'px';
-    const cctx = c.getContext('2d');
-    cctx.scale(DPR,DPR);
-    cctx.fillStyle = '#10131b';
-    roundRect(cctx, 0,0,w,h,12); cctx.fill();
-    for(const [dx,dy] of piece.blocks){
-      const x = pad + dx*scale; const y = pad + dy*scale;
-      roundRect(cctx, x+1, y+1, scale-2, scale-2, 6);
-      cctx.fillStyle = piece.color; cctx.fill();
-    }
-    return c;
-  }
-
-  // ====== Simple toast ======
-  let toastTimer=null;
-  function showToast(msg){
-    let t = document.getElementById('toast');
-    if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
-      Object.assign(t.style, { position:'fixed', left:'50%', bottom:'24px', transform:'translateX(-50%)', background:'#10131b', color:'#e8ecf1', padding:'10px 14px', borderRadius:'12px', boxShadow:'0 10px 30px rgba(0,0,0,.3)', zIndex:99, transition:'opacity .25s', opacity:'0'});
-    }
-    t.textContent = msg; t.style.opacity='1';
-    clearTimeout(toastTimer);
-    toastTimer=setTimeout(()=>{ t.style.opacity='0'; }, 1600);
-  }
-
-  // ====== Reset / New Game ======
-  function newGame(){
-    state.grid = createGrid();
-    state.score = 0; scoreEl.textContent = 0;
-    state.hand = []; refillHand();
-    draw();
-  }
-  resetBtn.addEventListener('click', newGame);
-
-  // ====== Init ======
-  newGame();
-})();
-</script></body>
+  <script src="script.js"></script>
+</body>
 </html>
