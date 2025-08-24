@@ -3,15 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Block Puzzle 10×10 — Minimal</title>
+  <title>Block Puzzle 10×10 — LUX</title>
   <link rel="stylesheet" href="style.css" />
   <script src="script.js" defer></script>
 </head>
 <body>
   <!-- START SCREEN -->
   <div id="startScreen">
-    <button id="settingsBtn">⚙️ Podesavanja</button>
-    <button id="achBtn" title="Dostignuća">🏆 Dostignuća</button>
+    <!-- SAMO IKONE (bez teksta/okvira), fiksno gore desno -->
+    <button id="settingsBtn" title="Podešavanja">⚙️</button>
+    <button id="achBtn" title="Dostignuća">🏆</button>
+
     <div class="ss-inner">
       <h1>BLOCK • 10×10</h1>
       <div class="ghost-board" id="ghost"></div>
@@ -21,7 +23,7 @@
     </div>
   </div>
 
-  <!-- APP WRAPPER -->
+  <!-- APP -->
   <div class="wrap" id="app" style="display:none">
     <header>
       <div class="brand">BLOCK • 10×10</div>
@@ -30,18 +32,18 @@
         <div class="pill">Best: <span id="best">0</span></div>
       </div>
       <div class="toolbar">
-        <button id="backBtn" title="Nazad na meni">🏠</button>
+        <button id="backBtn" class="btn" title="Nazad na meni">🏠</button>
         <button id="reset" class="btn" title="Nova igra">Reset</button>
       </div>
     </header>
 
     <div class="board-area">
       <canvas id="game" width="360" height="360" aria-label="10x10 tabla"></canvas>
-      <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
+      <canvas id="fx" width="360" height="360"></canvas>
     </div>
 
     <div class="tray" id="tray"></div>
-    <div class="footer">Classic mod • Podesavanja • Dostignuća</div>
+    <div class="footer">Classic mod • Podešavanja • Dostignuća</div>
   </div>
 
   <!-- Settings Modal -->
