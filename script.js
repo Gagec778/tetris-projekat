@@ -1,4 +1,3 @@
-
 (function(){
   // ===== DOM REFS =====
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -13,7 +12,6 @@
   const app = document.getElementById('app');
   const startScreen = document.getElementById('startScreen');
   const startClassic = document.getElementById('startClassic');
-  const startDaily = document.getElementById('startDaily');
   const bg = document.getElementById('bg');
   const settingsBtn = document.getElementById('settingsBtn');
   const settingsModal = document.getElementById('settingsModal');
@@ -33,6 +31,16 @@
   const playAgain = document.getElementById('playAgain');
   const goMenu = document.getElementById('goMenu');
   const hud = document.querySelector('.hud');
+  const achMenuBtn = document.getElementById('achBtn'); // 🏆 na start ekranu
+
+  // Action bar (ako postoji u HTML-u)
+  const btnRotate = document.getElementById('btnRotate');
+  const btnHammer = document.getElementById('btnHammer');
+  const btnShuffle = document.getElementById('btnShuffle');
+  const btnBomb = document.getElementById('btnBomb');
+  const cntHammer = document.getElementById('cntHammer');
+  const cntShuffle = document.getElementById('cntShuffle');
+  const cntBomb = document.getElementById('cntBomb');
 
   // ===== CONSTS =====
   const BOARD_SIZE = 10;
@@ -44,7 +52,7 @@
   const settings = {
     theme: LS('bp10.theme') || 'dark',
     sound: LS('bp10.sound')!==null ? LS('bp10.sound')==='1' : true,
-    // classic | daily | obstacles | time | arcade | survival | zen | puzzle
+    // classic | obstacles | time | arcade | survival | zen | puzzle
     mode: LS('bp10.mode') || 'classic',
     onboarded: LS('bp10.onboarded')==='1'
   };
@@ -55,10 +63,6 @@
   // ===== RNG =====
   function RNG(seed){ this.s = seed>>>0; }
   RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223)>>>0; return this.s / 4294967296; };
-  function todaySeed(){
-    const d=new Date();
-    return parseInt(`${d.getFullYear()}${(d.getMonth()+1+'').padStart(2,'0')}${(d.getDate()+'').padStart(2,'0')}`,10)>>>0;
-  }
   let rng = null;
   function rnd(){ return rng ? rng.next() : Math.random(); }
 
@@ -236,7 +240,6 @@
     // soft background gradient blobs
     fctx.save();
     fctx.globalCompositeOperation = 'source-over';
-    // subtle dark base
     const grd = fctx.createLinearGradient(0,0,fx.width,fx.height);
     grd.addColorStop(0,'rgba(8,10,16,0.55)');
     grd.addColorStop(1,'rgba(4,6,10,0.55)');
@@ -328,11 +331,11 @@
   function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
 
   // 3D blok: jači bevel + specular + pod-senka
-  function drawBlock3D(ctx,x,y,s,color,{alpha=1, hover=false}={}){
+  function drawBlock3D(ctx,x,y,s,color,{alpha=1}={}){
     ctx.save();
     ctx.globalAlpha = alpha;
 
-    // pod-senka (cast shadow)
+    // pod-senka
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     roundRect(ctx, x+2, y+3, s-3, s-2, Math.max(6, s*0.18));
     ctx.fill();
@@ -346,8 +349,7 @@
     ctx.fillStyle = body;
     ctx.fill();
 
-    // bevel ivice
-    // gornja ivica svetlija
+    // gornji highlight
     ctx.beginPath();
     ctx.moveTo(x+3, y+3);
     ctx.lineTo(x+s-3, y+3);
@@ -355,7 +357,7 @@
     ctx.strokeStyle = 'rgba(255,255,255,.25)';
     ctx.stroke();
 
-    // donja ivica tamnija
+    // donja ivica
     ctx.beginPath();
     ctx.moveTo(x+3, y+s-3);
     ctx.lineTo(x+s-3, y+s-3);
@@ -363,7 +365,7 @@
     ctx.strokeStyle = 'rgba(0,0,0,.35)';
     ctx.stroke();
 
-    // specular highlight (oval)
+    // specular
     const spec = ctx.createRadialGradient(x+s*0.35, y+s*0.28, 2, x+s*0.30, y+s*0.18, s*0.55);
     spec.addColorStop(0, 'rgba(255,255,255,.55)');
     spec.addColorStop(1, 'rgba(255,255,255,0)');
@@ -374,7 +376,7 @@
     ctx.fill();
     ctx.globalAlpha = alpha;
 
-    // tanki border za definiciju
+    // tanki border
     roundRect(ctx, x+1, y+1, s-2, s-2, Math.max(6, s*0.2));
     ctx.strokeStyle = 'rgba(0,0,0,.35)';
     ctx.lineWidth = Math.max(1, s*0.06);
@@ -393,7 +395,7 @@
     // upis
     for(const [dx,dy] of piece.blocks){ state.grid[gy+dy][gx+dx]=1; }
 
-    // puni redovi/kolone (obstacles -1 blokiraju)
+    // puni redovi/kolone
     const fullRows=[], fullCols=[];
     for(let y=0;y<BOARD_SIZE;y++){
       let ok=true; for(let x=0;x<BOARD_SIZE;x++){ if(state.grid[y][x]!==1){ ok=false; break; } }
@@ -411,7 +413,7 @@
       for(const r of fullRows){ for(let x=0;x<BOARD_SIZE;x++){ clearedCells.push([x,r]); } state.grid[r]=Array(BOARD_SIZE).fill(0); }
       for(const c of fullCols){ for(let y=0;y<BOARD_SIZE;y++){ clearedCells.push([c,y]); state.grid[y][c]=0; } }
       spawnParticles(clearedCells);
-      trayEl.classList.add('neon-glow'); setTimeout(()=> trayEl.classList.remove('neon-glow'), 180);
+      trayEl?.classList.add('neon-glow'); setTimeout(()=> trayEl?.classList.remove('neon-glow'), 180);
       beep(660,0.08); hapt(25);
     } else { beep(420,0.05); hapt(12); }
 
@@ -429,7 +431,7 @@
     if(cleared>0){
       state.combo=Math.min(state.combo+1,9); state.comboTimer=COMBO_WINDOW; comboMult=Math.max(1,state.combo);
       comboFlash=48; comboFlashText=`x${comboMult}`;
-      if(comboMult>=4){ trayEl.classList.add('neon-glow'); setTimeout(()=> trayEl.classList.remove('neon-glow'), 260); }
+      if(comboMult>=4){ trayEl?.classList.add('neon-glow'); setTimeout(()=> trayEl?.classList.remove('neon-glow'), 260); }
     } else { state.combo=0; }
     const gainNow=(baseGain+clearBonus)*comboMult;
     state.score+=gainNow; scoreEl.textContent=state.score;
@@ -456,7 +458,7 @@
     // refill hand
     if(state.hand.every(p=>p.used)) refillHand();
 
-    // Best glow + confetti
+    // Best
     if(state.score>state.best){
       state.best=state.score; LS('bp10.best', String(state.best)); bestEl.textContent=state.best;
       bestEl.parentElement.classList.add('best-glow'); setTimeout(()=>bestEl.parentElement.classList.remove('best-glow'), 500);
@@ -606,14 +608,6 @@
   }
 
   // ===== POWER-UPS & ACTIONS =====
-  const btnRotate = document.getElementById('btnRotate');
-  const btnHammer = document.getElementById('btnHammer');
-  const btnShuffle = document.getElementById('btnShuffle');
-  const btnBomb = document.getElementById('btnBomb');
-  const cntHammer = document.getElementById('cntHammer');
-  const cntShuffle = document.getElementById('cntShuffle');
-  const cntBomb = document.getElementById('cntBomb');
-
   function updatePowerupCounters(){
     if(cntHammer) cntHammer.textContent = state.powerups.hammer;
     if(cntShuffle) cntShuffle.textContent = state.powerups.shuffle;
@@ -636,23 +630,23 @@
     achievementTick('usePower');
   }
 
-  if(btnRotate) btnRotate.addEventListener('click', ()=>{
+  btnRotate?.addEventListener('click', ()=>{
     if(settings.mode!=='arcade'){ showToast('Rotate je deo Arcade moda'); return; }
     const idx = state.hand.findIndex(p=>!p.used);
     if(idx===-1){ showToast('Nema aktivnog komada'); return; }
     state.hand[idx] = rotatePiece(state.hand[idx]);
     renderTray(); showToast('Rotate');
   });
-  if(btnHammer) btnHammer.addEventListener('click', ()=>{
+  btnHammer?.addEventListener('click', ()=>{
     if(state.powerups.hammer<=0){ showToast('Nema više čekića'); return; }
     state.using = state.using==='hammer'? null : 'hammer';
     showToast(state.using==='hammer'?'Hammer ON — tapni ćeliju':'Hammer OFF');
   });
-  if(btnShuffle) btnShuffle.addEventListener('click', ()=>{
+  btnShuffle?.addEventListener('click', ()=>{
     if(state.powerups.shuffle<=0){ showToast('Nema više shuffle-a'); return; }
     shuffleHand(); state.powerups.shuffle=Math.max(0,state.powerups.shuffle-1); updatePowerupCounters();
   });
-  if(btnBomb) btnBomb.addEventListener('click', ()=>{
+  btnBomb?.addEventListener('click', ()=>{
     if(state.powerups.bomb<=0){ showToast('Nema više bombi'); return; }
     bombClear(); state.powerups.bomb=Math.max(0,state.powerups.bomb-1); updatePowerupCounters();
   });
@@ -692,23 +686,30 @@
   settingsModal.querySelector('.backdrop').addEventListener('click', ()=> settingsModal.style.display='none');
   setTheme.addEventListener('click', ()=>{ settings.theme=settings.theme==='dark'?'light':'dark'; LS('bp10.theme',settings.theme); applyTheme(settings.theme); });
   setSound.addEventListener('click', ()=>{ settings.sound=!settings.sound; LS('bp10.sound', settings.sound?'1':'0'); updateSoundLabel(); });
-
-  // === Mode rotacija (bez "dnevnih misija" u classic) ===
   setMode.addEventListener('click', ()=>{
-    const order=['classic','daily','obstacles','time','arcade','survival','zen','puzzle'];
+    const order=['classic','obstacles','time','arcade','survival','zen','puzzle'];
     const idx=order.indexOf(settings.mode); settings.mode=order[(idx+1)%order.length];
     LS('bp10.mode',settings.mode); updateModeLabel(); showToast(`Mode: ${settings.mode}`);
   });
-
   resetBest.addEventListener('click', ()=>{ localStorage.removeItem('bp10.best'); state.best=0; bestEl.textContent=0; showToast('Best resetovan'); });
   runTestsBtn.addEventListener('click', ()=>{ const {passed,failed}=runTests(); showToast(`Testovi: ${passed} ✅ / ${failed} ❌`); });
 
   // Start
-  startClassic.addEventListener('click', ()=> startGame('classic'));
-  startDaily.addEventListener('click', ()=> startGame('daily'));
+  startClassic?.addEventListener('click', ()=> startGame('classic'));
+
+  // Start ekran — Achievements dugme
+  if (achMenuBtn) {
+    achMenuBtn.addEventListener('click', () => {
+      loadAchievements();
+      renderAchievements();
+      ensureAchOverlay();
+      achOverlay.style.display = 'flex';
+    });
+  }
+
   function startGame(mode){
     settings.mode=mode; LS('bp10.mode',mode);
-    rng=(mode==='daily')? new RNG(todaySeed()) : null;
+    rng = null; // nema daily RNG-a jer smo uklonili Daily tab
     startScreen.style.display='none'; app.style.display='flex';
     if(!settings.onboarded) onboarding.style.display='flex';
     sizeToScreen(); newGame();
@@ -727,7 +728,7 @@
   // ===== LABELS/THEME/HUD =====
   function updateModeLabel(){
     const m=settings.mode;
-    setMode.textContent = (m==='daily'?'Daily': m==='obstacles'?'Obstacles': m==='time'?'Time': m==='arcade'?'Arcade': m==='survival'?'Survival': m==='zen'?'Zen': m==='puzzle'?'Puzzle':'Classic');
+    setMode.textContent = (m==='obstacles'?'Obstacles': m==='time'?'Time': m==='arcade'?'Arcade': m==='survival'?'Survival': m==='zen'?'Zen': m==='puzzle'?'Puzzle':'Classic');
   }
   function updateSoundLabel(){ setSound.textContent = (settings.sound?'🔈 On':'🔇 Off'); }
   function applyTheme(t){ document.body.classList.toggle('light', t==='light'); }
@@ -737,10 +738,9 @@
   function ensureTimePill(){ if(!timePill){ timePill=document.createElement('div'); timePill.className='pill'; hud && hud.appendChild(timePill); } timePill.style.display='inline-flex'; updateTimePill(); }
   function hideTimePill(){ if(timePill) timePill.style.display='none'; }
   function updateTimePill(){ if(settings.mode==='time' && timePill) timePill.textContent=`Time: ${Math.max(0,state.timeLeft)}s`; }
-
   function endTimeMode(){ if(timerId){ clearInterval(timerId); timerId=null; } }
 
-  // ===== ACHIEVEMENTS (zamenjuju dnevne misije) =====
+  // ===== ACHIEVEMENTS =====
   const ACH = [
     {id:'clear2',  title:'Double Clean', desc:'Očisti 2 linije u jednom potezu', done:false},
     {id:'combo3',  title:'Combo Starter', desc:'Dostigni combo x3', done:false},
@@ -763,7 +763,7 @@
     }
   }
 
-  // Achievements panel u Settings (tab ispod)
+  // Achievements panel u Settings + Start
   let achOverlay = null;
   function ensureAchOverlay(){
     if(achOverlay) return;
@@ -795,7 +795,7 @@
       list.appendChild(li);
     });
   }
-  // Dugme u Settings panelu (dinamički)
+  // Inject u Settings panel
   (function injectAchievementsRow(){
     const panel = settingsModal.querySelector('.panel');
     if(!panel) return;
@@ -808,7 +808,7 @@
     });
   })();
 
-  // ===== NEW GAME (sa odvojenim Classic bez misija) =====
+  // ===== NEW GAME (Classic bez dnevnih misija) =====
   function newGame(){
     endTimeMode();
     // grid po modu
@@ -835,12 +835,17 @@
     // survival reset
     state.turns = 0;
 
-    // nema dnevnih misija u classic (uopšte ne prikazujemo nikakav banner)
-    // achievements su u Settings tabu
-
     loadAchievements();
 
-    showToast(settings.mode==='daily'?'Daily Challenge': settings.mode==='obstacles'?'Obstacles': settings.mode==='time'?'Time Attack': settings.mode==='arcade'?'Arcade (Rotate)': settings.mode==='survival'?'Survival': settings.mode==='zen'?'Zen': settings.mode==='puzzle'?'Puzzle Pack':'Classic');
+    showToast(
+      settings.mode==='obstacles'?'Obstacles':
+      settings.mode==='time'?'Time Attack':
+      settings.mode==='arcade'?'Arcade (Rotate)':
+      settings.mode==='survival'?'Survival':
+      settings.mode==='zen'?'Zen':
+      settings.mode==='puzzle'?'Puzzle Pack':
+      'Classic'
+    );
   }
 
   function puzzleLevelGrid(i){
@@ -868,7 +873,6 @@
   // ===== UTILS =====
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  // ===== INIT BUTTONS & LOOPS =====
-  requestAnimationFrame(()=>{ /* FX loop started already */ });
-
+  // ===== INIT =====
+  // FX loop je već startovan pozivom tickFX() iznad.
 })();
