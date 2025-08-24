@@ -1,11 +1,13 @@
 (function(){
-  // ====== DOM REFS ======
+  // =========================
+  //  CORE / DOM REFERENCES
+  // =========================
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
   const canvas = document.getElementById('game');
-  const ctx = canvas?.getContext('2d');
+  const ctx = canvas?.getContext('2d', { alpha: true });
   const fx = document.getElementById('fx');
-  const fctx = fx?.getContext('2d');
+  const fctx = fx?.getContext('2d', { alpha: true });
 
   const app = document.getElementById('app');
   const startScreen = document.getElementById('startScreen');
@@ -18,14 +20,14 @@
   const resetBtn   = document.getElementById('reset');
   const backBtn    = document.getElementById('backBtn');
 
-  const settingsBtn  = document.getElementById('settingsBtn');
-  const settingsModal= document.getElementById('settingsModal');
-  const setTheme     = document.getElementById('setTheme');
-  const setSound     = document.getElementById('setSound');
-  const setMode      = document.getElementById('setMode');
-  const resetBest    = document.getElementById('resetBest');
-  const closeSettings= document.getElementById('closeSettings');
-  const runTestsBtn  = document.getElementById('runTests');
+  const settingsBtn   = document.getElementById('settingsBtn');
+  const settingsModal = document.getElementById('settingsModal');
+  const setTheme      = document.getElementById('setTheme');
+  const setSound      = document.getElementById('setSound');
+  const setMode       = document.getElementById('setMode');
+  const resetBest     = document.getElementById('resetBest');
+  const closeSettings = document.getElementById('closeSettings');
+  const runTestsBtn   = document.getElementById('runTests');
 
   const onboarding = document.getElementById('onboarding');
   const skipOnb    = document.getElementById('skipOnb');
@@ -40,7 +42,7 @@
   const achMenuBtn   = document.getElementById('achBtn');
   const ghost        = document.getElementById('ghost');
 
-  // Action bar (ako ih dodaš u HTML)
+  // (Opcioni) Action bar
   const btnRotate = document.getElementById('btnRotate');
   const btnHammer = document.getElementById('btnHammer');
   const btnShuffle= document.getElementById('btnShuffle');
@@ -49,12 +51,22 @@
   const cntShuffle= document.getElementById('cntShuffle');
   const cntBomb   = document.getElementById('cntBomb');
 
-  // ====== CONSTS ======
+  // =========================
+  //  CONSTANTS / SETTINGS
+  // =========================
   const BOARD_SIZE = 10;
-  const COLORS = ['#5b8cff','#7ad37a','#ffb86b','#f17fb5','#6ee7f0','#c9a6ff','#ffd166','#8ecae6'];
+  const COLORS = [
+    '#76b3ff', // sapphire
+    '#7ad37a', // emerald
+    '#ffd166', // topaz (gold)
+    '#f17fb5', // rose
+    '#6ee7f0', // aquamarine
+    '#c9a6ff', // amethyst
+    '#ffb86b', // amber
+    '#8ecae6'  // light sapphire
+  ];
   const COMBO_WINDOW = 360; // ~6s @60fps
 
-  // ====== SETTINGS / STORAGE ======
   const LS = (k,v)=> (v===undefined ? localStorage.getItem(k) : localStorage.setItem(k, v));
   const settings = {
     theme: LS('bp10.theme') || 'dark',
@@ -67,44 +79,49 @@
   updateSoundLabel();
   updateModeLabel();
 
-  // ====== RNG ======
+  // RNG
   function RNG(seed){ this.s = seed>>>0; }
   RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223)>>>0; return this.s/4294967296; };
   let rng = null;
   const rnd = ()=> rng ? rng.next() : Math.random();
 
-  // ====== AUDIO / HAPTICS ======
+  // Audio/Haptics
   let audioCtx = null;
   function ensureAudio(){ if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
-  function beep(freq=440, dur=0.06){
+  function beep(freq=600, dur=0.06, type='sine', gain=0.18){
     if(!settings.sound) return;
     ensureAudio(); if(!audioCtx) return;
     const t=audioCtx.currentTime, osc=audioCtx.createOscillator(), g=audioCtx.createGain();
-    osc.type='sine'; osc.frequency.value=freq;
-    g.gain.setValueAtTime(0.001,t);
-    g.gain.exponentialRampToValueAtTime(0.18,t+0.01);
-    g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    osc.type=type; osc.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(gain,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
     osc.connect(g); g.connect(audioCtx.destination);
     osc.start(t); osc.stop(t+dur);
   }
   const hapt=(ms=15)=>{ if(!settings.sound) return; if(navigator.vibrate) navigator.vibrate(ms); };
 
-  // ====== STATE ======
+  // =========================
+  //  STATE
+  // =========================
   let state = {
-    grid: createGrid(), cell:32,
-    score:0, best:Number(LS('bp10.best')||0),
-    hand:[], dragging:null,
-    combo:0, comboTimer:0,
-    timeLeft:0,
-    powerups:{hammer:1, shuffle:1, bomb:1},
-    using:null,
+    grid: createGrid(),
+    cell: 32,
+    score: 0, best: Number(LS('bp10.best')||0),
+    hand: [], dragging: null,
+    combo: 0, comboTimer: 0,
+    timeLeft: 0,
+    powerups: { hammer:1, shuffle:1, bomb:1 },
+    using: null,
     arcadeRotate:false,
-    turns:0,
-    puzzleIndex:0
+    turns: 0,
+    puzzleIndex: 0
   };
   if(bestEl) bestEl.textContent = state.best;
 
-  // ====== LAYOUT ======
+  // =========================
+  //  LAYOUT / CANVAS SIZING
+  // =========================
   function sizeToScreen(){
     if(!canvas || !ctx) return;
     const headerH = document.querySelector('header')?.offsetHeight || 60;
@@ -116,15 +133,12 @@
     const cell    = Math.floor(side / BOARD_SIZE);
     const px      = cell * BOARD_SIZE;
 
-    // CSS dimenzije
     canvas.style.width = px+'px'; canvas.style.height = px+'px';
-    fx && (fx.style.width = px+'px'); fx && (fx.style.height = px+'px');
+    if(fx){ fx.style.width = px+'px'; fx.style.height = px+'px'; }
 
-    // DPR pikseli
     canvas.width = Math.floor(px * DPR); canvas.height = Math.floor(px * DPR);
     if(fx){ fx.width = Math.floor(px * DPR); fx.height = Math.floor(px * DPR); }
 
-    // transform
     ctx.setTransform(1,0,0,1,0,0); ctx.scale(DPR, DPR);
     if(fctx){ fctx.setTransform(1,0,0,1,0,0); }
 
@@ -133,14 +147,16 @@
   }
   addEventListener('resize', sizeToScreen, {passive:true});
 
-  // ====== GRID / PIECES ======
+  // =========================
+  //  GRID / PIECES
+  // =========================
   function createGrid(){ return Array.from({length:BOARD_SIZE},()=>Array(BOARD_SIZE).fill(0)); }
   function createObstaclesGrid(density=0.10, rngLike=null){
     const g=createGrid(); const R=rngLike||{next:Math.random};
     for(let y=0;y<BOARD_SIZE;y++){
       for(let x=0;x<BOARD_SIZE;x++){
         const centerDist=Math.hypot(x-5,y-5); if(centerDist<2) continue;
-        const r=rngLike?R.next():Math.random(); if(r<density) g[y][x]=-1; // -1 prepreka
+        const r=rngLike?R.next():Math.random(); if(r<density) g[y][x]=-1;
       }
     }
     return g;
@@ -187,34 +203,70 @@
   }
   function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-  // ====== DRAW HELPERS ======
-  function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); r=Math.min(r,w/2,h/2); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+  // =========================
+  //  COLOR UTILS / LUX LOOK
+  // =========================
+  function roundRect(c,x,y,w,h,r){ c.beginPath(); r=Math.min(r,w/2,h/2); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
   function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:91,g:140,b:255}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   function adjustColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r+(255-r)*amt),0,255); const ng=clamp(Math.round(g+(255-g)*amt),0,255); const nb=clamp(Math.round(b+(255-b)*amt),0,255); return `rgb(${nr},${ng},${nb})`; }
   function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  function drawBlock3D(c,x,y,s,color,{alpha=1}={}){
+  // Dragulj blok (fasete + specular + golden rim kod placed)
+  function drawGem(c,x,y,s,baseColor,{alpha=1, placed=false}={}){
     c.save(); c.globalAlpha=alpha;
-    c.fillStyle='rgba(0,0,0,.28)'; roundRect(c,x+2,y+3,s-3,s-2,Math.max(6,s*.18)); c.fill();
-    roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.2));
-    const g=c.createLinearGradient(x,y,x,y+s);
-    g.addColorStop(0,adjustColor(color,.2)); g.addColorStop(.55,color); g.addColorStop(1,darkenColor(color,.25));
-    c.fillStyle=g; c.fill();
-    c.beginPath(); c.moveTo(x+3,y+3); c.lineTo(x+s-3,y+3); c.lineWidth=Math.max(1,s*.06); c.strokeStyle='rgba(255,255,255,.25)'; c.stroke();
-    c.beginPath(); c.moveTo(x+3,y+s-3); c.lineTo(x+s-3,y+s-3); c.lineWidth=Math.max(1,s*.08); c.strokeStyle='rgba(0,0,0,.35)'; c.stroke();
-    const spec=c.createRadialGradient(x+s*.35,y+s*.28,2,x+s*.30,y+s*.18,s*.55);
-    spec.addColorStop(0,'rgba(255,255,255,.55)'); spec.addColorStop(1,'rgba(255,255,255,0)');
-    c.globalAlpha=.55; c.fillStyle=spec; c.beginPath(); c.ellipse(x+s*.35,y+s*.28,s*.42,s*.28,-.3,0,Math.PI*2); c.fill();
-    c.globalAlpha=alpha;
-    roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.2)); c.strokeStyle='rgba(0,0,0,.35)'; c.lineWidth=Math.max(1,s*.06); c.stroke();
+
+    // soft drop shadow
+    c.fillStyle='rgba(0,0,0,.28)';
+    roundRect(c,x+2,y+4,s-4,s-3,Math.max(6,s*.18)); c.fill();
+
+    // telo (stakleni gradient)
+    roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+    const body=c.createLinearGradient(x,y, x, y+s);
+    body.addColorStop(0.00, adjustColor(baseColor, .35));
+    body.addColorStop(0.45, baseColor);
+    body.addColorStop(1.00, darkenColor(baseColor, .30));
+    c.fillStyle=body; c.fill();
+
+    // fasete (dijagonalne)
+    const facet=c.createLinearGradient(x, y, x+s, y+s);
+    facet.addColorStop(0.0, 'rgba(255,255,255,.30)');
+    facet.addColorStop(0.5, 'rgba(255,255,255,0)');
+    c.save(); c.globalCompositeOperation='overlay';
+    roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22)); c.fillStyle=facet; c.fill();
+    c.restore();
+
+    // unutrašnji specular (highlight)
+    const spec=c.createRadialGradient(x+s*.35,y+s*.25,1, x+s*.25,y+s*.18, s*.65);
+    spec.addColorStop(0,'rgba(255,255,255,.65)');
+    spec.addColorStop(.35,'rgba(255,255,255,.28)');
+    spec.addColorStop(1,'rgba(255,255,255,0)');
+    c.globalAlpha=.75; c.fillStyle=spec;
+    c.beginPath(); c.ellipse(x+s*.34, y+s*.26, s*.42, s*.28, -0.25, 0, Math.PI*2); c.fill();
+
+    // border (stakleni)
+    roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+    c.lineWidth=Math.max(1,s*.06);
+    c.strokeStyle='rgba(0,0,0,.40)'; c.stroke();
+
+    // zlatni rim kada je postavljen
+    if(placed){
+      roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+      const gold=c.createLinearGradient(x,y,x,y+s);
+      gold.addColorStop(0,'rgba(255,215,130,.85)');
+      gold.addColorStop(1,'rgba(180,120,30,.55)');
+      c.lineWidth=Math.max(1, s*.07); c.strokeStyle=gold; c.stroke();
+    }
+
     c.restore();
   }
-  function drawPlacedCell(c,x,y,s){ drawBlock3D(c,x,y,s,getCss('--accent')||'#5b8cff',{alpha:.98}); }
-  function drawPieceCell(c,x,y,s,color,alpha){ drawBlock3D(c,x,y,s,color,{alpha}); }
+  const drawPieceCell = (c,x,y,s,color,alpha)=> drawGem(c,x,y,s,color,{alpha});
+  const drawPlacedCell= (c,x,y,s)=> drawGem(c,x,y,s,getCss('--accent')||'#ffd166',{alpha:.98, placed:true});
 
-  // ====== RENDER BOARD ======
+  // =========================
+  //  RENDER BOARD (glass panel)
+  // =========================
   function draw(){
     if(!canvas||!ctx) return;
     const s=state.cell;
@@ -223,23 +275,27 @@
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.scale(DPR, DPR);
 
-    // poluprovidan panel (aurora se vidi ispod)
-    roundRect(ctx,0,0,s*BOARD_SIZE,s*BOARD_SIZE,16);
+    // stakleni panel preko aurore
+    roundRect(ctx,0,0,s*BOARD_SIZE,s*BOARD_SIZE,18);
     const panel=ctx.createLinearGradient(0,0,0,s*BOARD_SIZE);
-    panel.addColorStop(0,'rgba(10,12,18,.28)'); panel.addColorStop(1,'rgba(10,12,18,.38)');
+    panel.addColorStop(0,'rgba(13,16,25,.32)');
+    panel.addColorStop(1,'rgba(13,16,25,.42)');
     ctx.fillStyle=panel; ctx.fill();
 
+    // unutrašnja bordura (led/glass feel)
+    roundRect(ctx,1,1,s*BOARD_SIZE-2,s*BOARD_SIZE-2,16);
+    ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1; ctx.stroke();
+
+    // mreža ćelija (vrlo diskretna)
     for(let y=0;y<BOARD_SIZE;y++){
       for(let x=0;x<BOARD_SIZE;x++){
         const px=x*s, py=y*s, v=state.grid[y][x];
-        roundRect(ctx,px+1,py+1,s-2,s-2,8);
+        roundRect(ctx,px+1,py+1,s-2,s-2,9);
         if(v===1)      drawPlacedCell(ctx,px,py,s);
         else if(v===-1){
           const g=ctx.createLinearGradient(px,py,px,py+s); g.addColorStop(0,'rgba(255,255,255,.05)'); g.addColorStop(1,'rgba(0,0,0,.22)');
           ctx.fillStyle=g; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1; ctx.stroke();
-        } else {
-          ctx.fillStyle='rgba(255,255,255,.03)'; ctx.fill();
-        }
+        } else { ctx.fillStyle='rgba(255,255,255,.03)'; ctx.fill(); }
       }
     }
 
@@ -249,14 +305,18 @@
       if(gx!=null&&gy!=null){
         for(const [dx,dy] of piece.blocks){
           const x=(gx+dx)*s, y=(gy+dy)*s;
-          valid ? drawPieceCell(ctx,x,y,s,piece.color,.94) : drawBlock3D(ctx,x,y,s,'#7a2c2c',{alpha:.55});
+          valid ? drawPieceCell(ctx,x,y,s,piece.color,.95) : drawGem(ctx,x,y,s,'#7a2c2c',{alpha:.55});
         }
       }
     }
   }
 
-  // ====== FX LAYER ======
+  // =========================
+  //  FX LAYER (particles, ring, popups)
+  // =========================
   const particles=[]; const scorePopups=[]; let comboFlash=0, comboFlashText=''; let pcFlash=0; let confetti=[];
+  const rings=[];
+
   function spawnParticles(cells){
     if(!fx||!fctx) return;
     const s=state.cell, d=DPR;
@@ -273,12 +333,18 @@
       confetti.push({x:fx.width/2, y:fx.height/3, vx:(Math.random()-0.5)*6, vy:(Math.random()*-4-2), life:120, c:COLORS[i%COLORS.length]});
     }
   }
+  function spawnRing(x,y){
+    if(!fx) return;
+    rings.push({x:x*state.cell*DPR, y:y*state.cell*DPR, r:0, life:26});
+  }
+
   function stepFX(){
     if(!fx||!fctx){ requestAnimationFrame(stepFX); return; }
 
     fctx.setTransform(1,0,0,1,0,0);
     fctx.clearRect(0,0,fx.width,fx.height);
 
+    // particles
     fctx.fillStyle='#ffffffaa';
     for(let i=0;i<particles.length;i++){
       const p=particles[i];
@@ -288,17 +354,33 @@
     }
     for(let i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
 
+    // confetti
     confetti.forEach(c=>{ c.x+=c.vx; c.y+=c.vy; c.vy+=0.06; c.life--; fctx.globalAlpha=Math.max(0,c.life/120); fctx.fillStyle=c.c; fctx.fillRect(c.x,c.y,3*DPR,6*DPR); });
     for(let i=confetti.length-1;i>=0;i--) if(confetti[i].life<=0) confetti.splice(i,1);
 
-    // score popups
+    // rings (gold ripple)
+    for(let i=0;i<rings.length;i++){
+      const r=rings[i];
+      r.r += 8*DPR; r.life--;
+      const a = Math.max(0, r.life/26);
+      fctx.beginPath(); fctx.arc(r.x, r.y, r.r, 0, Math.PI*2);
+      fctx.strokeStyle = `rgba(255,215,130,${a*.75})`;
+      fctx.lineWidth = Math.max(2*DPR, r.r*0.04);
+      fctx.stroke();
+    }
+    for(let i=rings.length-1;i>=0;i--) if(rings[i].life<=0) rings.splice(i,1);
+
+    // score popups (zlatni)
     fctx.globalAlpha=1;
     for(let i=0;i<scorePopups.length;i++){
       const p=scorePopups[i];
       p.y-=0.4; p.life--;
       const a=Math.max(0,p.life/40);
-      fctx.globalAlpha=a; fctx.font=`${Math.max(12,12*DPR)}px system-ui,sans-serif`;
-      fctx.textAlign='center'; fctx.fillStyle='#ffffff'; fctx.fillText(p.txt, p.x, p.y);
+      fctx.globalAlpha=a;
+      fctx.font=`${Math.max(12,12*DPR)}px system-ui,sans-serif`;
+      fctx.textAlign='center';
+      fctx.fillStyle='rgba(255,215,130,.95)';
+      fctx.fillText(p.txt, p.x, p.y);
     }
     for(let i=scorePopups.length-1;i>=0;i--) if(scorePopups[i].life<=0) scorePopups.splice(i,1);
 
@@ -313,9 +395,9 @@
       fctx.save();
       fctx.globalAlpha=alpha; fctx.textAlign='center'; fctx.textBaseline='middle';
       fctx.font=`800 ${fontSize}px system-ui,-apple-system,Segoe UI,Roboto,sans-serif`;
-      fctx.fillStyle='#000';
+      fctx.fillStyle='rgba(0,0,0,.85)';
       for(let i=0;i<6;i++){ fctx.globalAlpha=alpha*(0.18+i*0.08); fctx.fillText(comboFlashText, cx+i*2, cy+i*2); }
-      fctx.globalAlpha=alpha*0.75; fctx.fillStyle='#ffffff14'; fctx.fillText(comboFlashText, cx, cy);
+      fctx.globalAlpha=alpha*0.85; fctx.fillStyle='rgba(255,215,130,.85)'; fctx.fillText(comboFlashText, cx, cy);
       fctx.restore();
       comboFlash--;
     }
@@ -332,12 +414,18 @@
   }
   requestAnimationFrame(stepFX);
 
-  // ====== GAME LOGIC ======
+  // =========================
+  //  GAME LOGIC
+  // =========================
   function scoreForClear(c){ return c*10 + (c>1 ? (c-1)*5 : 0); }
 
   function place(piece,gx,gy){
     for(const [dx,dy] of piece.blocks){ state.grid[gy+dy][gx+dx]=1; }
 
+    // prsten svetlosti sa centra komada
+    spawnRing(gx + piece.w/2, gy + piece.h/2);
+
+    // clean check
     const fullRows=[], fullCols=[];
     for(let y=0;y<BOARD_SIZE;y++){ let ok=true; for(let x=0;x<BOARD_SIZE;x++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullRows.push(y); }
     for(let x=0;x<BOARD_SIZE;x++){ let ok=true; for(let y=0;y<BOARD_SIZE;y++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullCols.push(x); }
@@ -348,32 +436,34 @@
       for(const r of fullRows){ for(let x=0;x<BOARD_SIZE;x++){ cells.push([x,r]); } state.grid[r]=Array(BOARD_SIZE).fill(0); }
       for(const c of fullCols){ for(let y=0;y<BOARD_SIZE;y++){ cells.push([c,y]); state.grid[y][c]=0; } }
       spawnParticles(cells);
-      trayEl?.classList.add('neon-glow'); setTimeout(()=> trayEl?.classList.remove('neon-glow'), 180);
-      beep(660,.08); hapt(25);
-    } else { beep(420,.05); hapt(12); }
+      trayEl?.classList.add('neon-glow'); setTimeout(()=> trayEl?.classList.remove('neon-glow'), 200);
+      beep(760,.08,'triangle',0.22); hapt(28);
+    } else { beep(520,.05,'sine',0.16); hapt(12); }
 
+    // time bonus
     if (settings.mode==='time' && cleared>0){
       const add = cleared===1?3 : cleared===2?6 : 10;
       state.timeLeft = Math.min(state.timeLeft + add, 120);
       showToast(`+${add}s`); updateTimePill();
     }
 
+    // combo & scoring
     const baseGain=piece.blocks.length, clearBonus=scoreForClear(cleared);
     let comboMult=1;
     if(cleared>0){
       state.combo=Math.min(state.combo+1,9); state.comboTimer=COMBO_WINDOW; comboMult=Math.max(1,state.combo);
       comboFlash=48; comboFlashText=`x${comboMult}`;
-      if(comboMult>=4){ trayEl?.classList.add('neon-glow'); setTimeout(()=> trayEl?.classList.remove('neon-glow'), 260); }
     } else state.combo=0;
     const gainNow=(baseGain+clearBonus)*comboMult;
     state.score+=gainNow; if(scoreEl) scoreEl.textContent=state.score;
 
-    // popup
-    if(fx){ const cx=(gx+piece.w/2)*state.cell*DPR, cy=(gy+piece.h/2)*state.cell*DPR; scorePopups.push({x:cx,y:cy,txt:(cleared>0&&comboMult>1)?`+${gainNow} x${comboMult}`:`+${gainNow}`,life:40}); }
+    // golden popup
+    if(fx){ const cx=(gx+piece.w/2)*state.cell*DPR, cy=(gy+piece.h/2)*state.cell*DPR; scorePopups.push({x:cx,y:cy,txt:(cleared>0&&comboMult>1)?`+${gainNow} ×${comboMult}`:`+${gainNow}`,life:40}); }
 
+    // perfect clear
     if(isBoardEmpty()){
       state.score+=50; if(scoreEl) scoreEl.textContent=state.score;
-      pcFlash=40; showToast('✨ Perfect Clear +50'); beep(880,0.1);
+      pcFlash=40; showToast('✨ Perfect Clear +50'); beep(880,0.1,'sawtooth',0.18);
       achievementTick('perfect');
     }
 
@@ -393,7 +483,7 @@
     if(state.combo>=3) achievementTick('combo3');
 
     if(!anyFits()){
-      if(settings.mode==='zen'){ showToast('Zen: nema poteza — reshuffle ruke'); shuffleHand(); renderTray(); }
+      if(settings.mode==='zen'){ showToast('Zen: nema poteza — reshuffle'); shuffleHand(); renderTray(); }
       else { endTimeMode(); if(goStats) goStats.textContent = `Score: ${state.score} • Best: ${state.best}`; if(gameOver) gameOver.style.display='flex'; beep(220,0.15); hapt(40); }
     }
 
@@ -409,14 +499,17 @@
     state.grid[0]=row;
   }
 
-  // ====== TRAY & PIECES MINI CANVAS ======
+  // =========================
+  //  TRAY & MINI CANVAS
+  // =========================
   function pieceToCanvas(piece){
     const scale=18, pad=6;
     const w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
     const c=document.createElement('canvas');
     c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
     const cx=c.getContext('2d'); cx.scale(DPR,DPR);
-    cx.fillStyle='rgba(0,0,0,.22)'; roundRect(cx,0,0,w,h,12); cx.fill();
+    // baršunasta podloga
+    cx.fillStyle='rgba(0,0,0,.24)'; roundRect(cx,0,0,w,h,12); cx.fill();
     for(const [dx,dy] of piece.blocks){
       const x=pad+dx*scale, y=pad+dy*scale;
       drawPieceCell(cx,x+1,y+1,scale-2,piece.color,1);
@@ -437,7 +530,9 @@
     });
   }
 
-  // ====== POINTER / DRAG ======
+  // =========================
+  //  POINTER / DRAG
+  // =========================
   const POINTER={active:false,fromSlotIndex:null};
   function getCanvasPosFromClient(clientX, clientY){
     const rect=canvas.getBoundingClientRect();
@@ -457,7 +552,7 @@
     e.preventDefault();
   }
 
-  // raf-batched pointer move (glatkije)
+  // raf-batched pointer move
   let moveQueued=false, lastMoveEvent=null;
   function onGlobalPointerMoveRaw(e){
     if(!POINTER.active||!state.dragging) return;
@@ -471,6 +566,7 @@
     const s=state.cell;
     let gx=Math.floor(x/s), gy=Math.floor(y/s);
 
+    // tolerantno klampovanje uz ivice
     const maxX=BOARD_SIZE - state.dragging.piece.w;
     const maxY=BOARD_SIZE - state.dragging.piece.h;
     if (gx < -0.3) { gx = null; } else if (gx > maxX + 0.3) { gx = null; } else { gx = Math.max(0, Math.min(maxX, gx)); }
@@ -506,7 +602,9 @@
   window.addEventListener('pointerup', onGlobalPointerUp, {passive:true});
   window.addEventListener('pointercancel', onGlobalPointerUp, {passive:true});
 
-  // ====== POWER-UPS ======
+  // =========================
+  //  POWER-UPS
+  // =========================
   function updatePowerupCounters(){
     if(cntHammer) cntHammer.textContent = state.powerups.hammer;
     if(cntShuffle) cntShuffle.textContent = state.powerups.shuffle;
@@ -515,7 +613,7 @@
   function shuffleHand(){
     if(state.hand.some(p=>!p.used)){
       state.hand = state.hand.map(p=> p.used ? p : newPiece());
-      renderTray(); showToast('Shuffle!'); beep(520,0.08); achievementTick('usePower');
+      renderTray(); showToast('Shuffle!'); beep(540,0.08,'square',0.18); achievementTick('usePower');
     }
   }
   function bombClear(){
@@ -524,7 +622,7 @@
     spawnParticles(cells);
     state.grid = createGrid();
     pcFlash=28; requestDraw();
-    showToast('💥 Bomb: full clear!'); beep(200,0.1); setTimeout(()=>beep(180,0.1), 90);
+    showToast('💥 Bomb: full clear!'); beep(220,0.1,'sawtooth',0.22); setTimeout(()=>beep(180,0.1,'square',0.18), 100);
     achievementTick('usePower');
   }
   btnRotate?.addEventListener('click', ()=>{
@@ -558,12 +656,14 @@
       if(state.grid[gy][gx]===1){
         state.grid[gy][gx]=0; requestDraw();
         state.using=null; state.powerups.hammer=Math.max(0,state.powerups.hammer-1); updatePowerupCounters();
-        showToast('Razbijeno!'); beep(300,0.06); hapt(15); achievementTick('usePower');
+        showToast('Razbijeno!'); beep(320,0.06,'triangle',0.18); hapt(16); achievementTick('usePower');
       } else { showToast('Nema šta da se razbije ovde'); }
     }
   });
 
-  // ====== TOAST ======
+  // =========================
+  //  TOAST
+  // =========================
   let toastTimer=null;
   function showToast(msg){
     let t=document.getElementById('toast');
@@ -572,14 +672,18 @@
     t.textContent=msg; t.style.opacity='1'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ t.style.opacity='0'; }, 1600);
   }
 
-  // ====== TIME HUD ======
+  // =========================
+  //  TIME HUD
+  // =========================
   let timePill=null, timerId=null;
   function ensureTimePill(){ if(!timePill){ timePill=document.createElement('div'); timePill.className='pill'; hud && hud.appendChild(timePill); } timePill.style.display='inline-flex'; updateTimePill(); }
   function hideTimePill(){ if(timePill) timePill.style.display='none'; }
   function updateTimePill(){ if(settings.mode==='time' && timePill) timePill.textContent=`Time: ${Math.max(0,state.timeLeft)}s`; }
   function endTimeMode(){ if(timerId){ clearInterval(timerId); timerId=null; } }
 
-  // ====== ACHIEVEMENTS ======
+  // =========================
+  //  ACHIEVEMENTS
+  // =========================
   const ACH = [
     {id:'clear2',  title:'Double Clean', desc:'Očisti 2 linije u jednom potezu', done:false},
     {id:'combo3',  title:'Combo Starter', desc:'Dostigni combo x3', done:false},
@@ -600,7 +704,7 @@
     }
   }
 
-  // Ach overlay (otvara se iz Settings reda ili iz #achBtn)
+  // Ach overlay
   let achOverlay = null;
   function ensureAchOverlay(){
     if(achOverlay) return;
@@ -644,7 +748,9 @@
     });
   })();
 
-  // ====== CONTROLS ======
+  // =========================
+  //  CONTROLS / NAV
+  // =========================
   resetBtn?.addEventListener('click', ()=> newGame());
   backBtn?.addEventListener('click', ()=> goHome());
 
@@ -699,7 +805,9 @@
   function updateSoundLabel(){ if(setSound) setSound.textContent = settings.sound?'🔈 On':'🔇 Off'; }
   function applyTheme(t){ document.body.classList.toggle('light', t==='light'); }
 
-  // ====== GAME FLOW ======
+  // =========================
+  //  GAME FLOW
+  // =========================
   function newGame(){
     endTimeMode();
     if(settings.mode==='obstacles'){ const r=rng||{next:Math.random}; state.grid=createObstaclesGrid(0.10, r); }
@@ -709,7 +817,7 @@
     state.score=0; if(scoreEl) scoreEl.textContent=0;
     state.hand=[]; state.combo=0; state.comboTimer=0;
     state.powerups={hammer:1, shuffle:1, bomb:1};
-    state.using=null; comboFlash=0; comboFlashText=''; pcFlash=0; confetti.length=0;
+    state.using=null; comboFlash=0; comboFlashText=''; pcFlash=0; confetti.length=0; rings.length=0;
     updatePowerupCounters();
     refillHand(); requestDraw();
 
@@ -740,7 +848,9 @@
     return g;
   }
 
-  // ====== TESTS ======
+  // =========================
+  //  TESTS
+  // =========================
   function runTests(){
     const results=[]; const log=(n,ok)=>{ results.push({n,ok}); (ok?console.log:console.error)(`[TEST] ${n}: ${ok?'PASS':'FAIL'}`); };
     try{
@@ -754,11 +864,15 @@
     return {passed:results.filter(r=>r.ok).length, failed:results.filter(r=>!r.ok).length};
   }
 
-  // ====== DRAW SCHEDULER ======
+  // =========================
+  //  DRAW SCHEDULER
+  // =========================
   let drawQueued=false;
   function requestDraw(){ if(!drawQueued){ drawQueued=true; requestAnimationFrame(()=>{ drawQueued=false; draw(); }); } }
 
-  // ====== INIT ======
+  // =========================
+  //  INIT
+  // =========================
   (function initGhost(){
     if(!ghost) return; ghost.innerHTML='';
     for(let i=0;i<100;i++){ const s=document.createElement('span'); ghost.appendChild(s); }
