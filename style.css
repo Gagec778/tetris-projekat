@@ -1,213 +1,106 @@
-:root {
-  --bg:#0e0f12;
-  --grid:#1b1e24;
-  --cell:#242833;
-  --accent:#5b8cff;
-  --good:#57c857;
-  --bad:#e06b6b;
-  --text:#e8ecf1;
-  --muted:#a6afc3;
+:root{
+  --bg:#0e0f12; --text:#e8ecf1; --muted:#a6afc3;
+  --accent:#ffd166; /* zlatna nijansa za akcenat i dugme */
+  --good:#57c857; --bad:#e06b6b;
 }
-.light {
-  --bg:#f6f8fb;
-  --grid:#e8edf5;
-  --cell:#f0f3f9;
-  --accent:#3a6cff;
-  --good:#27a227;
-  --bad:#d34b4b;
-  --text:#0e1014;
-  --muted:#4c5672;
+.light{
+  --bg:#f6f8fb; --text:#0e1014; --muted:#4c5672;
+  --accent:#c8a045;
 }
 
-html, body {
-  height:100%;
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
+*{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+html,body{
+  height:100%; margin:0; background:var(--bg); color:var(--text);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
   overflow:hidden;
 }
+button,canvas{ user-select:none; }
 
-/* Aurora pozadina */
-body::before {
-  content:"";
-  position:fixed;
-  inset:0;
-  background: radial-gradient(circle at 20% 30%, #4facfe66, transparent 60%),
-              radial-gradient(circle at 80% 70%, #43e97b66, transparent 60%),
-              radial-gradient(circle at 60% 20%, #fa709a66, transparent 60%),
-              radial-gradient(circle at 30% 80%, #fee14066, transparent 60%),
-              linear-gradient(180deg, #0e0f12, #1b1e24);
-  background-blend-mode: screen;
-  z-index:-2;
-  animation: auroraMove 20s ease-in-out infinite alternate;
+/* AURORA – organska, bez ravnih preseka */
+body::before{
+  content:""; position:fixed; inset:-10%; z-index:-3;
+  background:
+    radial-gradient(1200px 900px at 15% 25%, rgba(255,95,190,.55) 0%, rgba(255,95,190,.18) 35%, transparent 65%),
+    radial-gradient(1400px 1000px at 85% 35%, rgba(95,120,255,.55) 0%, rgba(95,120,255,.18) 36%, transparent 66%),
+    radial-gradient(1100px 900px at 60% 80%, rgba(70,255,205,.45) 0%, rgba(70,255,205,.12) 32%, transparent 70%),
+    conic-gradient(from 210deg at 50% 50%, #101320 0%, #0f1320 30%, #101421 60%, #121624 100%);
+  filter: blur(40px) saturate(1.08);
+  animation: auroraFloat 26s ease-in-out infinite alternate;
 }
-@keyframes auroraMove {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 100% 50%; }
+body::after{
+  content:""; position:fixed; inset:-8%; z-index:-2; pointer-events:none;
+  background: radial-gradient(85% 85% at 50% 60%, transparent 60%, rgba(0,0,0,.38) 100%);
 }
-
-.wrap {
-  display:flex;
-  flex-direction:column;
-  height:100%;
-  max-width:720px;
-  margin:0 auto;
+@keyframes auroraFloat{
+  0%{ transform:translate3d(0,0,0) rotate(0deg); }
+  100%{ transform:translate3d(-2%, -1%, 0) rotate(-1deg); }
 }
 
-header {
-  padding:12px 16px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-}
-.brand { font-weight:700; letter-spacing:0.3px; opacity:.9 }
+/* App layout */
+.wrap{display:flex;flex-direction:column;height:100%;max-width:720px;margin:0 auto}
+header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.brand{font-weight:800;letter-spacing:.3px;opacity:.95;text-shadow:0 6px 30px rgba(0,0,0,.25)}
+.hud{display:flex;gap:12px;align-items:center}
+.pill{background:rgba(15,18,28,.45);padding:6px 10px;border-radius:12px;font-weight:700;border:1px solid rgba(255,255,255,.05);backdrop-filter: blur(4px)}
 
-.btn {
-  background:transparent;
-  border:1px solid #2b2f3a;
-  color:var(--text);
-  padding:8px 12px;
-  border-radius:14px;
-  font-weight:600;
-  cursor:pointer;
-}
-.btn:active { transform: translateY(1px); }
+.btn{background:rgba(15,18,28,.45);border:1px solid rgba(255,255,255,.06);color:var(--text);
+  padding:8px 12px;border-radius:14px;font-weight:700;cursor:pointer;backdrop-filter: blur(4px)}
+.btn:active{transform:translateY(1px)}
 
-.toolbar { display:flex; gap:8px; align-items:center; }
-.hud { display:flex; gap:12px; align-items:center; }
-.pill {
-  background:#16192266;
-  padding:6px 10px;
-  border-radius:12px;
-  font-weight:600;
-  opacity:.95
-}
+/* Board area */
+.board-area{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 8px 0;position:relative}
+canvas{touch-action:none}
+#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 
-.board-area {
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:8px 8px 0;
-  position:relative;
-}
-canvas { touch-action:none; }
+/* Tray */
+.tray{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 16px 12px}
+.slot{background:rgba(12,14,22,.45);border:1px dashed rgba(255,255,255,.07);border-radius:16px;min-height:96px;display:flex;align-items:center;justify-content:center;transition:all .18s}
+.slot.used{opacity:.35}
+.slot.good{border-color:var(--good);box-shadow:0 0 0 2px color-mix(in oklab, var(--good) 40%, transparent)}
+.slot.bad{border-color:var(--bad);box-shadow:0 0 0 2px color-mix(in oklab, var(--bad) 40%, transparent)}
 
-.tray {
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap:10px;
-  padding:12px 16px 18px;
-}
-.slot {
-  background:#141720;
-  border:1px dashed #2b2f3a;
-  border-radius:16px;
-  min-height:96px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  position:relative;
-  transition:border-color .18s, box-shadow .18s, opacity .18s;
-}
-.slot.used { opacity:.3 }
-.slot.good {
-  border-color: var(--good);
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--good) 40%, transparent);
-}
-.slot.bad  {
-  border-color: var(--bad);
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--bad) 40%, transparent);
-}
-
-.footer {
-  text-align:center;
-  opacity:.6;
-  font-size:12px;
-  padding-bottom:10px
-}
+.footer{text-align:center;opacity:.6;font-size:12px;padding-bottom:10px}
 
 /* Start screen */
-#startScreen {
-  position:absolute;
-  inset:0;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  background:transparent;
-  z-index:2;
-}
-#startScreen h1 {
-  font-size:32px;
-  font-weight:800;
-  margin-bottom:12px;
-}
-#startScreen .cta { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
-#settingsBtn, #achBtn {
-  position:absolute;
-  right:12px;
-  z-index:3;
-}
-#settingsBtn { top:12px; }
-#achBtn { top:56px; }
+#startScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#startScreen .ss-inner{text-align:center;z-index:1;max-width:680px;padding:0 12px}
+#startScreen h1{margin:0 0 10px;font-size:30px;letter-spacing:1px;text-shadow:0 10px 50px rgba(0,0,0,.5)}
 
-/* Ghost board (preview grid) */
-.ghost-board {
-  width:200px;
-  display:grid;
-  grid-template-columns: repeat(10,1fr);
-  gap:2px;
-  margin:0 auto;
+/* Icon-only buttons (podešavanja + dostignuća) */
+#settingsBtn,#achBtn{
+  position:absolute; right:14px; width:56px; height:56px; border:none; background:transparent;
+  display:grid; place-items:center; border-radius:50%; font-size:28px; cursor:pointer;
+  filter: drop-shadow(0 6px 20px rgba(0,0,0,.35));
 }
-.ghost-board span {
-  display:block;
-  width:100%;
-  aspect-ratio:1;
-  background:#ffffff11;
-  border-radius:2px;
-}
+#settingsBtn{ top:12px }
+#achBtn{ top:68px }
+#settingsBtn:hover,#achBtn:hover{ transform:scale(1.06) }
+#settingsBtn:active,#achBtn:active{ transform:scale(0.98) }
 
-/* Modal overlay */
-.overlay {
-  display:none;
-  position:fixed;
-  inset:0;
-  align-items:center;
-  justify-content:center;
-  z-index:10;
+/* Play (glavno) dugme – crno + zlatni okvir */
+#startScreen .cta{display:flex;justify-content:center;margin-top:16px}
+#startClassic{
+  appearance:none; border:none; cursor:pointer; padding:12px 22px; font-weight:800; letter-spacing:.2px;
+  color:#f6f2e6; background:#0a0a0a;
+  border:2px solid var(--accent); border-radius:14px;
+  box-shadow: 0 0 0 1px rgba(255,215,130,.2) inset, 0 10px 30px rgba(0,0,0,.35), 0 0 22px rgba(255,215,130,.18);
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
 }
-.overlay .backdrop {
-  position:absolute;
-  inset:0;
-  background:rgba(0,0,0,0.6);
-}
-.overlay .panel {
-  position:relative;
-  background:var(--cell);
-  padding:18px;
-  border-radius:14px;
-  max-width:320px;
-  z-index:11;
-  box-shadow:0 6px 20px rgba(0,0,0,0.45);
-}
+#startClassic:hover{ transform:translateY(-1px); box-shadow: 0 0 0 1px rgba(255,215,130,.22) inset, 0 16px 36px rgba(0,0,0,.45), 0 0 28px rgba(255,215,130,.24) }
+#startClassic:active{ transform:translateY(1px) }
 
-/* Settings modal */
-#settingsModal { display:none; position:fixed; inset:0; z-index:12; align-items:center; justify-content:center; }
-#settingsModal .backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.65); }
-#settingsModal .panel {
-  position:relative;
-  background:var(--cell);
-  padding:18px;
-  border-radius:14px;
-  max-width:320px;
-  z-index:13;
-}
-#settingsModal .row {
-  display:flex; align-items:center; justify-content:space-between;
-  margin:6px 0;
-}
+/* Ghost preview grid */
+#ghost{display:grid;grid-template-columns:repeat(10,10px);gap:3px;justify-content:center;margin:10px auto}
+#ghost span{width:10px;height:10px;background:#ffffff18;border-radius:2px}
+
+/* Modals/overlays */
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10}
+.overlay .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)}
+.overlay .panel{position:relative;z-index:1;background:rgba(13,16,25,.8);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:14px;width:min(92vw,480px);backdrop-filter:blur(8px)}
+#settingsModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:12}
+#settingsModal .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+#settingsModal .panel .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0}
+
+/* FX helpers */
+.neon-glow{box-shadow:0 0 12px #7df9ff, 0 0 24px color-mix(in oklab, #7df9ff 50%, transparent) inset}
+.best-glow{box-shadow:0 0 10px #ffd166, 0 0 22px color-mix(in oklab, #ffd166 40%, transparent) inset}
