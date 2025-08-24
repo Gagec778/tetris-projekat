@@ -31,9 +31,9 @@
   const playAgain = document.getElementById('playAgain');
   const goMenu = document.getElementById('goMenu');
   const hud = document.querySelector('.hud');
-  const achMenuBtn = document.getElementById('achBtn'); // 🏆 na start ekranu
+  const achMenuBtn = document.getElementById('achBtn');
 
-  // Action bar (ako postoji u HTML-u)
+  // Action bar
   const btnRotate = document.getElementById('btnRotate');
   const btnHammer = document.getElementById('btnHammer');
   const btnShuffle = document.getElementById('btnShuffle');
@@ -52,8 +52,7 @@
   const settings = {
     theme: LS('bp10.theme') || 'dark',
     sound: LS('bp10.sound')!==null ? LS('bp10.sound')==='1' : true,
-    // classic | obstacles | time | arcade | survival | zen | puzzle
-    mode: LS('bp10.mode') || 'classic',
+    mode: LS('bp10.mode') || 'classic', // classic | obstacles | time | arcade | survival | zen | puzzle
     onboarded: LS('bp10.onboarded')==='1'
   };
   applyTheme(settings.theme);
@@ -62,7 +61,7 @@
 
   // ===== RNG =====
   function RNG(seed){ this.s = seed>>>0; }
-  RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223)>>>0; return this.s / 4294967296; };
+  RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223)>>>0; return this.s / 4294967296; }
   let rng = null;
   function rnd(){ return rng ? rng.next() : Math.random(); }
 
@@ -92,7 +91,7 @@
     timeLeft:0,
     powerups: { hammer:1, shuffle:1, bomb:1 },
     using: null,           // 'hammer' | null
-    arcadeRotate: false,   // samo u Arcade modu
+    arcadeRotate: false,   // Arcade
     turns: 0,              // Survival
     puzzleIndex: 0         // Puzzle pack
   };
@@ -113,7 +112,7 @@
     const gctx = bg.getContext('2d');
     function resize(){ bg.width=Math.floor(innerWidth*DPR); bg.height=Math.floor(innerHeight*DPR); }
     resize(); addEventListener('resize', resize, {passive:true});
-    const shapes=Array.from({length:16},(_,i)=>({x:Math.random()*bg.width,y:Math.random()*bg.height,s:(40+Math.random()*100)*DPR,a:Math.random()*Math.PI*2,vx:(-0.2+Math.random()*0.4)*DPR,vy:(-0.2+Math.random()*0.4)*DPR,c:COLORS[i%COLORS.length]}));
+    const shapes=Array.from({length:16},(_,i)=>({x=Math.random()*bg.width,y=Math.random()*bg.height,s=(40+Math.random()*100)*DPR,a=Math.random()*Math.PI*2,vx:(-0.2+Math.random()*0.4)*DPR,vy:(-0.2+Math.random()*0.4)*DPR,c:COLORS[i%COLORS.length]}));
     (function loop(){
       gctx.clearRect(0,0,bg.width,bg.height);
       const grad=gctx.createLinearGradient(0,0,bg.width,bg.height); grad.addColorStop(0,'#0f1220'); grad.addColorStop(1,'#0b0c12');
@@ -132,26 +131,47 @@
     for(let i=0;i<count;i++){
       aurora.push({
         x: Math.random()*fx.width, y: Math.random()*fx.height,
-        r: (120 + Math.random()*240) * DPR,
-        vx: (-0.4 + Math.random()*0.8) * DPR,
-        vy: (-0.4 + Math.random()*0.8) * DPR,
+        r: (120 + Math.random()*240),
+        vx: (-0.4 + Math.random()*0.8),
+        vy: (-0.4 + Math.random()*0.8),
         hue: Math.floor(Math.random()*360)
       });
     }
   }
 
-  // ===== LAYOUT =====
+  // ===== LAYOUT (robust) =====
   function sizeToScreen(){
-    const W=Math.min(window.innerWidth,720)-32;
-    const H=Math.max(320,window.innerHeight*0.42);
-    const side=Math.min(W,H);
-    const cell=Math.floor(side/BOARD_SIZE);
-    const px=cell*BOARD_SIZE;
-    canvas.style.width=px+'px'; canvas.style.height=px+'px';
-    fx.style.width=px+'px'; fx.style.height=px+'px';
-    canvas.width=Math.floor(px*DPR); canvas.height=Math.floor(px*DPR);
-    fx.width=canvas.width; fx.height=canvas.height;
-    state.cell=Math.floor(px/BOARD_SIZE);
+    // ograniči po širini wrap-a (720) i visini viewporta
+    const W = Math.min(document.documentElement.clientWidth, 720) - 32;
+    const H = Math.max(320, Math.floor(window.innerHeight * 0.5)); // malo više prostora
+    const side = Math.min(W, H);
+    const cell = Math.floor(side / BOARD_SIZE);
+    const px = cell * BOARD_SIZE;
+
+    // CSS dimenzije
+    canvas.style.width = px + 'px';
+    canvas.style.height = px + 'px';
+    fx.style.width = px + 'px';
+    fx.style.height = px + 'px';
+
+    // stvarne piksel dimenzije (DPR)
+    const Wpx = Math.floor(px * DPR);
+    const Hpx = Math.floor(px * DPR);
+    canvas.width = Wpx; canvas.height = Hpx;
+    fx.width = Wpx; fx.height = Hpx;
+
+    // reset transformacija pre crtanja
+    ctx.setTransform(1,0,0,1,0,0);
+    fctx.setTransform(1,0,0,1,0,0);
+
+    // skaliranje samo za game (radimo u CSS pikselima)
+    ctx.scale(DPR, DPR);
+
+    state.cell = Math.floor(px / BOARD_SIZE);
+
+    // Spriječi FX da ikad prima input
+    fx.style.pointerEvents = 'none';
+
     initAurora();
     draw();
   }
@@ -211,7 +231,6 @@
     return false;
   }
   function anyFits(){ return state.hand.some(p => !p.used && canFitAnywhere(p)); }
-
   function scoreForClear(c){ return c*10 + (c>1 ? (c-1)*5 : 0); }
 
   // ===== FX / OVERLAYS =====
@@ -230,22 +249,22 @@
     });
   }
   function spawnConfettiBurst(){
-    const d=DPR;
     for(let i=0;i<80;i++){
       confetti.push({x:fx.width/2, y:fx.height/3, vx:(Math.random()-0.5)*6, vy:(Math.random()*-4-2), life:120, c:COLORS[i%COLORS.length]});
     }
   }
 
   function drawAurora(){
-    // soft background gradient blobs
-    fctx.save();
-    fctx.globalCompositeOperation = 'source-over';
+    // očisti & tamna baza
+    fctx.setTransform(1,0,0,1,0,0);
+    fctx.clearRect(0,0,fx.width,fx.height);
     const grd = fctx.createLinearGradient(0,0,fx.width,fx.height);
     grd.addColorStop(0,'rgba(8,10,16,0.55)');
     grd.addColorStop(1,'rgba(4,6,10,0.55)');
     fctx.fillStyle = grd;
     fctx.fillRect(0,0,fx.width,fx.height);
 
+    // blobovi
     aurora.forEach(b=>{
       b.x += b.vx; b.y += b.vy;
       if(b.x<-200 || b.x>fx.width+200) b.vx*=-1;
@@ -260,12 +279,9 @@
       fctx.arc(b.x,b.y,b.r,0,Math.PI*2);
       fctx.fill();
     });
-    fctx.restore();
   }
 
   function tickFX(){
-    // pozadina
-    fctx.clearRect(0,0,fx.width,fx.height);
     drawAurora();
 
     // particles
@@ -330,58 +346,35 @@
   function adjustColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r+(255-r)*amt),0,255); const ng=clamp(Math.round(g+(255-g)*amt),0,255); const nb=clamp(Math.round(b+(255-b)*amt),0,255); return `rgb(${nr},${ng},${nb})`; }
   function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
 
-  // 3D blok: jači bevel + specular + pod-senka
+  // 3D blok
   function drawBlock3D(ctx,x,y,s,color,{alpha=1}={}){
     ctx.save();
     ctx.globalAlpha = alpha;
-
     // pod-senka
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     roundRect(ctx, x+2, y+3, s-3, s-2, Math.max(6, s*0.18));
     ctx.fill();
-
     // telo
     roundRect(ctx, x+1, y+1, s-2, s-2, Math.max(6, s*0.2));
     const body = ctx.createLinearGradient(x, y, x, y+s);
     body.addColorStop(0, adjustColor(color, 0.20));
     body.addColorStop(0.55, color);
     body.addColorStop(1, darkenColor(color, 0.25));
-    ctx.fillStyle = body;
-    ctx.fill();
-
-    // gornji highlight
-    ctx.beginPath();
-    ctx.moveTo(x+3, y+3);
-    ctx.lineTo(x+s-3, y+3);
-    ctx.lineWidth = Math.max(1, s*0.06);
-    ctx.strokeStyle = 'rgba(255,255,255,.25)';
-    ctx.stroke();
-
-    // donja ivica
-    ctx.beginPath();
-    ctx.moveTo(x+3, y+s-3);
-    ctx.lineTo(x+s-3, y+s-3);
-    ctx.lineWidth = Math.max(1, s*0.08);
-    ctx.strokeStyle = 'rgba(0,0,0,.35)';
-    ctx.stroke();
-
+    ctx.fillStyle = body; ctx.fill();
+    // ivice
+    ctx.beginPath(); ctx.moveTo(x+3, y+3); ctx.lineTo(x+s-3, y+3);
+    ctx.lineWidth = Math.max(1, s*0.06); ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+3, y+s-3); ctx.lineTo(x+s-3, y+s-3);
+    ctx.lineWidth = Math.max(1, s*0.08); ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.stroke();
     // specular
     const spec = ctx.createRadialGradient(x+s*0.35, y+s*0.28, 2, x+s*0.30, y+s*0.18, s*0.55);
-    spec.addColorStop(0, 'rgba(255,255,255,.55)');
-    spec.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.globalAlpha = 0.55;
-    ctx.fillStyle = spec;
-    ctx.beginPath();
-    ctx.ellipse(x+s*0.35, y+s*0.28, s*0.42, s*0.28, -0.3, 0, Math.PI*2);
-    ctx.fill();
+    spec.addColorStop(0, 'rgba(255,255,255,.55)'); spec.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.globalAlpha = 0.55; ctx.fillStyle = spec;
+    ctx.beginPath(); ctx.ellipse(x+s*0.35, y+s*0.28, s*0.42, s*0.28, -0.3, 0, Math.PI*2); ctx.fill();
     ctx.globalAlpha = alpha;
-
-    // tanki border
+    // border
     roundRect(ctx, x+1, y+1, s-2, s-2, Math.max(6, s*0.2));
-    ctx.strokeStyle = 'rgba(0,0,0,.35)';
-    ctx.lineWidth = Math.max(1, s*0.06);
-    ctx.stroke();
-
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = Math.max(1, s*0.06); ctx.stroke();
     ctx.restore();
   }
   function drawPlacedCell(ctx,x,y,s){
@@ -392,7 +385,6 @@
 
   // ===== PLACE & CLEAR =====
   function place(piece,gx,gy){
-    // upis
     for(const [dx,dy] of piece.blocks){ state.grid[gy+dy][gx+dx]=1; }
 
     // puni redovi/kolone
@@ -421,8 +413,7 @@
     if (settings.mode==='time' && cleared>0){
       const add = cleared===1?3 : cleared===2?6 : 10;
       state.timeLeft = Math.min(state.timeLeft + add, 120);
-      showToast(`+${add}s`);
-      updateTimePill();
+      showToast(`+${add}s`); updateTimePill();
     }
 
     // Combo & score
@@ -436,11 +427,11 @@
     const gainNow=(baseGain+clearBonus)*comboMult;
     state.score+=gainNow; scoreEl.textContent=state.score;
 
-    // Score popup
+    // popup
     const cx=(gx+piece.w/2)*state.cell*DPR, cy=(gy+piece.h/2)*state.cell*DPR;
     scorePopups.push({x:cx,y:cy,txt:(cleared>0&&comboMult>1)?`+${gainNow} x${comboMult}`:`+${gainNow}`,life:40});
 
-    // Perfect Clear bonus
+    // Perfect Clear
     if(isBoardEmpty()){
       state.score+=50; scoreEl.textContent=state.score;
       pcFlash=40; showToast('✨ Perfect Clear +50'); beep(880,0.1);
@@ -452,35 +443,20 @@
     state.hand = state.hand.map(p => p.id===piece.id ? {...p, used:true} : p);
     renderTray();
 
-    // Survival: posle poteza garbage red
     if(settings.mode==='survival'){ addGarbageRow(); }
-
-    // refill hand
     if(state.hand.every(p=>p.used)) refillHand();
 
-    // Best
     if(state.score>state.best){
       state.best=state.score; LS('bp10.best', String(state.best)); bestEl.textContent=state.best;
       bestEl.parentElement.classList.add('best-glow'); setTimeout(()=>bestEl.parentElement.classList.remove('best-glow'), 500);
-      spawnConfettiBurst();
-      achievementTick('newbest');
+      spawnConfettiBurst(); achievementTick('newbest');
     }
-
-    // Achievements tick
     if(cleared>=2) achievementTick('clear2');
     if(state.combo>=3) achievementTick('combo3');
 
-    // kraj?
     if(!anyFits()){
-      if(settings.mode==='zen'){
-        showToast('Zen: nema poteza — reshuffle ruke');
-        shuffleHand(); renderTray();
-      } else {
-        endTimeMode();
-        goStats.textContent = `Score: ${state.score} • Best: ${state.best}`;
-        gameOver.style.display='flex';
-        beep(220,0.15); hapt(40);
-      }
+      if(settings.mode==='zen'){ showToast('Zen: nema poteza — reshuffle ruke'); shuffleHand(); renderTray(); }
+      else { endTimeMode(); goStats.textContent = `Score: ${state.score} • Best: ${state.best}`; gameOver.style.display='flex'; beep(220,0.15); hapt(40); }
     }
 
     draw();
@@ -500,9 +476,12 @@
 
   // ===== RENDER BOARD =====
   function draw(){
-    const s=state.cell; const d=DPR;
-    ctx.save(); ctx.scale(d,d);
+    const s=state.cell;
+    // reset transform i skaliraj na DPR (u CSS px)
+    ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.scale(DPR, DPR);
+
     roundRect(ctx,0,0,s*BOARD_SIZE,s*BOARD_SIZE,16); ctx.fillStyle=getCss('--grid'); ctx.fill();
 
     for(let y=0;y<BOARD_SIZE;y++){
@@ -529,39 +508,43 @@
         }
       }
     }
-    ctx.restore();
   }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  // ===== POINTER =====
-  const POINTER={x:0,y:0,active:false,fromSlotIndex:null};
-  function canvasPos(e){
+  // ===== POINTER (novi: Pointer Events + global move/up) =====
+  const POINTER={active:false,fromSlotIndex:null};
+  function getCanvasPosFromClient(clientX, clientY){
     const rect=canvas.getBoundingClientRect();
-    const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-    const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
-    return {x,y};
+    return { x: clientX - rect.left, y: clientY - rect.top };
   }
-  function startDrag(e){
-    if(state.using==='hammer'){ showToast('Tapni na tablu da razbiješ ćeliju'); return; }
-    const target=e.currentTarget.closest('.slot');
+
+  function startDragFromSlot(e){
+    const target=e.currentTarget; // .slot
     const idx=Number(target.dataset.index);
     const piece=state.hand[idx];
     if(!piece||piece.used) return;
     POINTER.active=true; POINTER.fromSlotIndex=idx;
     state.dragging={piece,gx:null,gy:null,valid:false};
     target.classList.add('used');
+    // capture pointer za mobilne
+    (target.setPointerCapture?.(e.pointerId));
+    e.preventDefault();
   }
-  function moveDrag(e){
+
+  function onGlobalPointerMove(e){
     if(!POINTER.active||!state.dragging) return;
-    const {x,y}=canvasPos(e); const s=state.cell;
+    const {x,y}=getCanvasPosFromClient(e.clientX, e.clientY);
+    const s=state.cell;
     const gx=Math.floor(x/s), gy=Math.floor(y/s);
     if(gx>=0&&gy>=0&&gx<=BOARD_SIZE-state.dragging.piece.w&&gy<=BOARD_SIZE-state.dragging.piece.h){
       const valid=canPlace(state.dragging.piece,gx,gy);
       state.dragging.gx=gx; state.dragging.gy=gy; state.dragging.valid=valid;
     } else { state.dragging.gx=null; state.dragging.gy=null; state.dragging.valid=false; }
     draw();
+    e.preventDefault();
   }
-  function endDrag(){
+
+  function onGlobalPointerUp(){
     if(!POINTER.active||!state.dragging) return;
     const d=state.dragging;
     const slot=trayEl.querySelector(`.slot[data-index="${POINTER.fromSlotIndex}"]`);
@@ -570,12 +553,8 @@
     else { if(slot) slot.classList.remove('used'); }
     state.dragging=null;
   }
-  canvas.addEventListener('touchmove', moveDrag,{passive:false});
-  canvas.addEventListener('mousemove', moveDrag);
-  window.addEventListener('touchend', endDrag);
-  window.addEventListener('mouseup', endDrag);
 
-  // ===== TRAY =====
+  // prikaci pointer down na slotove pri renderu
   function renderTray(){
     trayEl.innerHTML='';
     state.hand.forEach((p,i)=>{
@@ -586,13 +565,18 @@
       const mini=pieceToCanvas(p);
       div.appendChild(mini);
       if(!p.used){
-        div.title = fits? 'Može se postaviti' : 'Nema mesta';
-        div.addEventListener('touchstart',(e)=>{startDrag(e);e.preventDefault();},{passive:false});
-        div.addEventListener('mousedown',startDrag);
+        // pointer events (radi i za mouse i za touch)
+        div.addEventListener('pointerdown', startDragFromSlot);
       }
       trayEl.appendChild(div);
     });
   }
+
+  // globalni handleri da ne gubimo drag
+  window.addEventListener('pointermove', onGlobalPointerMove, {passive:false});
+  window.addEventListener('pointerup', onGlobalPointerUp, {passive:true});
+  window.addEventListener('pointercancel', onGlobalPointerUp, {passive:true});
+
   function pieceToCanvas(piece){
     const scale=18, pad=6;
     const w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
@@ -616,8 +600,7 @@
   function shuffleHand(){
     if(state.hand.some(p=>!p.used)){
       state.hand = state.hand.map(p=> p.used ? p : newPiece());
-      renderTray(); showToast('Shuffle!'); beep(520,0.08);
-      achievementTick('usePower');
+      renderTray(); showToast('Shuffle!'); beep(520,0.08); achievementTick('usePower');
     }
   }
   function bombClear(){
@@ -629,7 +612,6 @@
     showToast('💥 Bomb: full clear!'); beep(200,0.1); setTimeout(()=>beep(180,0.1), 90);
     achievementTick('usePower');
   }
-
   btnRotate?.addEventListener('click', ()=>{
     if(settings.mode!=='arcade'){ showToast('Rotate je deo Arcade moda'); return; }
     const idx = state.hand.findIndex(p=>!p.used);
@@ -651,19 +633,18 @@
     bombClear(); state.powerups.bomb=Math.max(0,state.powerups.bomb-1); updatePowerupCounters();
   });
 
-  // Hammer klik na tablu
+  // Hammer klik na tablu (ostaje)
   canvas.addEventListener('click', (e)=>{
     if(state.using!=='hammer') return;
-    const {x,y}=canvasPos(e); const gx=Math.floor(x/state.cell), gy=Math.floor(y/state.cell);
+    const rect=canvas.getBoundingClientRect();
+    const gx=Math.floor((e.clientX-rect.left)/state.cell);
+    const gy=Math.floor((e.clientY-rect.top)/state.cell);
     if(gx>=0 && gy>=0 && gx<BOARD_SIZE && gy<BOARD_SIZE){
       if(state.grid[gy][gx]===1){
         state.grid[gy][gx]=0; draw();
         state.using=null; state.powerups.hammer=Math.max(0,state.powerups.hammer-1); updatePowerupCounters();
-        showToast('Razbijeno!'); beep(300,0.06); hapt(15);
-        achievementTick('usePower');
-      } else {
-        showToast('Nema šta da se razbije ovde');
-      }
+        showToast('Razbijeno!'); beep(300,0.06); hapt(15); achievementTick('usePower');
+      } else { showToast('Nema šta da se razbije ovde'); }
     }
   });
 
@@ -677,10 +658,8 @@
   }
 
   // ===== CONTROLS =====
-  resetBtn.addEventListener('click', ()=> newGame());
+  document.getElementById('reset')?.addEventListener('click', ()=> newGame());
   backBtn.addEventListener('click', ()=> goHome());
-
-  // Settings
   settingsBtn.addEventListener('click', ()=> settingsModal.style.display='flex');
   closeSettings.addEventListener('click', ()=> settingsModal.style.display='none');
   settingsModal.querySelector('.backdrop').addEventListener('click', ()=> settingsModal.style.display='none');
@@ -694,22 +673,16 @@
   resetBest.addEventListener('click', ()=>{ localStorage.removeItem('bp10.best'); state.best=0; bestEl.textContent=0; showToast('Best resetovan'); });
   runTestsBtn.addEventListener('click', ()=>{ const {passed,failed}=runTests(); showToast(`Testovi: ${passed} ✅ / ${failed} ❌`); });
 
-  // Start
   startClassic?.addEventListener('click', ()=> startGame('classic'));
-
-  // Start ekran — Achievements dugme
   if (achMenuBtn) {
     achMenuBtn.addEventListener('click', () => {
-      loadAchievements();
-      renderAchievements();
-      ensureAchOverlay();
-      achOverlay.style.display = 'flex';
+      loadAchievements(); renderAchievements(); ensureAchOverlay(); achOverlay.style.display = 'flex';
     });
   }
 
   function startGame(mode){
     settings.mode=mode; LS('bp10.mode',mode);
-    rng = null; // nema daily RNG-a jer smo uklonili Daily tab
+    rng = null; // nema daily
     startScreen.style.display='none'; app.style.display='flex';
     if(!settings.onboarded) onboarding.style.display='flex';
     sizeToScreen(); newGame();
@@ -763,7 +736,7 @@
     }
   }
 
-  // Achievements panel u Settings + Start
+  // Achievements panel
   let achOverlay = null;
   function ensureAchOverlay(){
     if(achOverlay) return;
@@ -795,7 +768,7 @@
       list.appendChild(li);
     });
   }
-  // Inject u Settings panel
+  // Inject u Settings
   (function injectAchievementsRow(){
     const panel = settingsModal.querySelector('.panel');
     if(!panel) return;
@@ -808,10 +781,9 @@
     });
   })();
 
-  // ===== NEW GAME (Classic bez dnevnih misija) =====
+  // ===== NEW GAME =====
   function newGame(){
     endTimeMode();
-    // grid po modu
     if(settings.mode==='obstacles'){ const r=rng||{next:Math.random}; state.grid=createObstaclesGrid(0.10, r); }
     else if(settings.mode==='puzzle'){ state.grid = puzzleLevelGrid(0); state.puzzleIndex=0; }
     else { state.grid=createGrid(); }
@@ -823,16 +795,12 @@
     updatePowerupCounters();
     refillHand(); draw();
 
-    // timers
     if(settings.mode==='time'){
       state.timeLeft=60; ensureTimePill(); updateTimePill();
       timerId=setInterval(()=>{ state.timeLeft--; updateTimePill(); if(state.timeLeft<=0){ endTimeMode(); goStats.textContent=`Score: ${state.score} • Best: ${state.best}`; gameOver.style.display='flex'; } },1000);
     } else { hideTimePill(); }
 
-    // arcade flag
     state.arcadeRotate = (settings.mode==='arcade');
-
-    // survival reset
     state.turns = 0;
 
     loadAchievements();
@@ -847,7 +815,6 @@
       'Classic'
     );
   }
-
   function puzzleLevelGrid(i){
     const g=createGrid();
     for(let x=0;x<BOARD_SIZE;x++){ g[0][x]=-1; g[BOARD_SIZE-1][x]=-1; }
@@ -856,7 +823,7 @@
     return g;
   }
 
-  // ===== TESTS (sanity) =====
+  // ===== TESTS =====
   function runTests(){
     const results=[]; const log=(n,ok,info='')=>{ results.push({n,ok}); (ok?console.log:console.error)(`[TEST] ${n}: ${ok?'PASS':'FAIL'} ${info}`); };
     try{
@@ -870,9 +837,7 @@
     return {passed:results.filter(r=>r.ok).length, failed:results.filter(r=>!r.ok).length};
   }
 
-  // ===== UTILS =====
-  function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
-
   // ===== INIT =====
-  // FX loop je već startovan pozivom tickFX() iznad.
+  // Pokreće se kada klikneš „Classic Mode“
+  // (sizeToScreen i FX loop su već aktivni)
 })();
