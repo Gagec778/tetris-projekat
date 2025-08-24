@@ -42,7 +42,7 @@
   const achMenuBtn   = document.getElementById('achBtn');
   const ghost        = document.getElementById('ghost');
 
-  // (Opcioni) Action bar
+  // (Opcioni) Action bar (ako kasnije dodaš u HTML)
   const btnRotate = document.getElementById('btnRotate');
   const btnHammer = document.getElementById('btnHammer');
   const btnShuffle= document.getElementById('btnShuffle');
@@ -56,14 +56,7 @@
   // =========================
   const BOARD_SIZE = 10;
   const COLORS = [
-    '#76b3ff', // sapphire
-    '#7ad37a', // emerald
-    '#ffd166', // topaz (gold)
-    '#f17fb5', // rose
-    '#6ee7f0', // aquamarine
-    '#c9a6ff', // amethyst
-    '#ffb86b', // amber
-    '#8ecae6'  // light sapphire
+    '#76b3ff','#7ad37a','#ffd166','#f17fb5','#6ee7f0','#c9a6ff','#ffb86b','#8ecae6'
   ];
   const COMBO_WINDOW = 360; // ~6s @60fps
 
@@ -282,11 +275,11 @@
     panel.addColorStop(1,'rgba(13,16,25,.42)');
     ctx.fillStyle=panel; ctx.fill();
 
-    // unutrašnja bordura (led/glass feel)
+    // unutrašnja bordura
     roundRect(ctx,1,1,s*BOARD_SIZE-2,s*BOARD_SIZE-2,16);
     ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1; ctx.stroke();
 
-    // mreža ćelija (vrlo diskretna)
+    // mreža ćelija (diskretno)
     for(let y=0;y<BOARD_SIZE;y++){
       for(let x=0;x<BOARD_SIZE;x++){
         const px=x*s, py=y*s, v=state.grid[y][x];
@@ -547,12 +540,12 @@
     POINTER.active=true; POINTER.fromSlotIndex=idx;
     state.dragging={piece,gx:null,gy:null,valid:false,lastValid:null};
     target.classList.add('used');
-    target.setPointerCapture?.(e.pointerId);
+    try{ target.setPointerCapture && target.setPointerCapture(e.pointerId); }catch(_){}
     document.body.style.cursor='grabbing';
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
   }
 
-  // raf-batched pointer move
+  // raf-batched pointer move (glatko)
   let moveQueued=false, lastMoveEvent=null;
   function onGlobalPointerMoveRaw(e){
     if(!POINTER.active||!state.dragging) return;
@@ -775,9 +768,13 @@
     settings.mode=mode; LS('bp10.mode',mode);
     rng=null;
     if(startScreen) startScreen.style.display='none';
-    if(app) app.style.display='flex';
-    if(!settings.onboarded && onboarding) onboarding.style.display='flex';
-    sizeToScreen(); newGame();
+    if(app){
+      app.style.display='flex';
+      app.style.pointerEvents='auto';
+    }
+    // važno: prvo layout pa tek onda newGame (sprečava "crni" frame)
+    sizeToScreen();
+    newGame();
   }
   function goHome(){
     endTimeMode();
@@ -882,7 +879,10 @@
   sizeToScreen();
   if(!startClassic){
     if(startScreen) startScreen.style.display='none';
-    if(app) app.style.display='flex';
+    if(app){
+      app.style.display='flex';
+      app.style.pointerEvents='auto';
+    }
     newGame();
   }
 })();
