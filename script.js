@@ -12,7 +12,7 @@
   const app = document.getElementById('app');
   const startScreen = document.getElementById('startScreen');
   const startClassic = document.getElementById('startClassic');
-  const bg = document.getElementById('bg');
+  const bg = document.getElementById('bg'); // start-screen aurora canvas
   const settingsBtn = document.getElementById('settingsBtn');
   const settingsModal = document.getElementById('settingsModal');
   const setTheme = document.getElementById('setTheme');
@@ -33,7 +33,7 @@
   const hud = document.querySelector('.hud');
   const achMenuBtn = document.getElementById('achBtn');
 
-  // Action bar
+  // Action bar (ako postoji u HTML-u)
   const btnRotate = document.getElementById('btnRotate');
   const btnHammer = document.getElementById('btnHammer');
   const btnShuffle = document.getElementById('btnShuffle');
@@ -52,7 +52,8 @@
   const settings = {
     theme: LS('bp10.theme') || 'dark',
     sound: LS('bp10.sound')!==null ? LS('bp10.sound')==='1' : true,
-    mode: LS('bp10.mode') || 'classic', // classic | obstacles | time | arcade | survival | zen | puzzle
+    // classic | obstacles | time | arcade | survival | zen | puzzle
+    mode: LS('bp10.mode') || 'classic',
     onboarded: LS('bp10.onboarded')==='1'
   };
   applyTheme(settings.theme);
@@ -61,7 +62,7 @@
 
   // ===== RNG =====
   function RNG(seed){ this.s = seed>>>0; }
-  RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223)>>>0; return this.s / 4294967296; }
+  RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223)>>>0; return this.s / 4294967296; };
   let rng = null;
   function rnd(){ return rng ? rng.next() : Math.random(); }
 
@@ -91,15 +92,65 @@
     timeLeft:0,
     powerups: { hammer:1, shuffle:1, bomb:1 },
     using: null,           // 'hammer' | null
-    arcadeRotate: false,   // Arcade
+    arcadeRotate: false,   // samo u Arcade modu
     turns: 0,              // Survival
     puzzleIndex: 0         // Puzzle pack
   };
   bestEl.textContent = state.best;
 
-  // ===== START SCREEN FX =====
+  // ====== AURORA ENGINE (za bilo koji canvas) ======
+  function makeAuroraEngine(canvas, ctx){
+    const blobs = [];
+    function resize(){
+      canvas.width = Math.floor(canvas.clientWidth * DPR || innerWidth * DPR);
+      canvas.height = Math.floor(canvas.clientHeight * DPR || innerHeight * DPR);
+      // fallback: ako canvas nema CSS dimenziju (npr. fullscreen)
+      if(canvas === bg){ canvas.width = Math.floor(innerWidth * DPR); canvas.height = Math.floor(innerHeight * DPR); }
+      blobs.length = 0;
+      const count = canvas===bg ? 9 : 5;
+      for(let i=0;i<count;i++){
+        blobs.push({
+          x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+          r: (canvas===bg ? 240 : 160) + Math.random()*(canvas===bg?340:220),
+          vx: (-0.35 + Math.random()*0.7) * DPR,
+          vy: (-0.35 + Math.random()*0.7) * DPR,
+          hue: Math.floor(Math.random()*360)
+        });
+      }
+    }
+    function drawBase(){
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const grd = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+      grd.addColorStop(0,'rgba(8,10,16,0.55)');
+      grd.addColorStop(1,'rgba(4,6,10,0.55)');
+      ctx.fillStyle = grd; ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+    function step(){
+      drawBase();
+      blobs.forEach(b=>{
+        b.x += b.vx; b.y += b.vy;
+        if(b.x<-200 || b.x>canvas.width+200) b.vx*=-1;
+        if(b.y<-200 || b.y>canvas.height+200) b.vy*=-1;
+        const rad = ctx.createRadialGradient(b.x,b.y,0, b.x,b.y,b.r);
+        const c1 = `hsla(${b.hue}, 85%, 62%, ${canvas===bg?0.16:0.12})`;
+        const c2 = `hsla(${(b.hue+40)%360}, 85%, 62%, ${canvas===bg?0.08:0.06})`;
+        rad.addColorStop(0, c1); rad.addColorStop(1, c2);
+        ctx.fillStyle = rad;
+        ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill();
+      });
+      requestAnimationFrame(step);
+    }
+    resize();
+    addEventListener('resize', resize, {passive:true});
+    requestAnimationFrame(step);
+    return {resize};
+  }
+
+  // ===== START SCREEN: aurora + „ghost board“ =====
   initGhostBoard();
-  initAmbientBackgroundStart();
+  const startAurora = makeAuroraEngine(bg, bg.getContext('2d'));
+  bg.style.pointerEvents = 'none'; // sigurnost
 
   function initGhostBoard(){
     if(!ghost) return;
@@ -108,42 +159,15 @@
     const on=[12,13,14,22,32,42,52,62,72,82];
     on.forEach(i=>{ if(ghost.children[i]) ghost.children[i].style.background = '#ffffff33'; });
   }
-  function initAmbientBackgroundStart(){
-    const gctx = bg.getContext('2d');
-    function resize(){ bg.width=Math.floor(innerWidth*DPR); bg.height=Math.floor(innerHeight*DPR); }
-    resize(); addEventListener('resize', resize, {passive:true});
-    const shapes=Array.from({length:16},(_,i)=>({x=Math.random()*bg.width,y=Math.random()*bg.height,s=(40+Math.random()*100)*DPR,a=Math.random()*Math.PI*2,vx:(-0.2+Math.random()*0.4)*DPR,vy:(-0.2+Math.random()*0.4)*DPR,c:COLORS[i%COLORS.length]}));
-    (function loop(){
-      gctx.clearRect(0,0,bg.width,bg.height);
-      const grad=gctx.createLinearGradient(0,0,bg.width,bg.height); grad.addColorStop(0,'#0f1220'); grad.addColorStop(1,'#0b0c12');
-      gctx.fillStyle=grad; gctx.fillRect(0,0,bg.width,bg.height);
-      gctx.globalAlpha=0.28;
-      shapes.forEach(sh=>{ gctx.save(); gctx.translate(sh.x,sh.y); gctx.rotate(sh.a); gctx.fillStyle=sh.c; gctx.fillRect(-sh.s/2,-sh.s/2,sh.s,sh.s); gctx.restore(); sh.x+=sh.vx; sh.y+=sh.vy; sh.a+=0.0015; if(sh.x<-150||sh.x>bg.width+150) sh.vx*=-1; if(sh.y<-150||sh.y>bg.height+150) sh.vy*=-1; });
-      gctx.globalAlpha=1; requestAnimationFrame(loop);
-    })();
-  }
 
-  // ===== GAME AMBIENT BACKGROUND (aurora blobs) =====
-  const aurora = [];
-  function initAurora(){
-    aurora.length = 0;
-    const count = 5;
-    for(let i=0;i<count;i++){
-      aurora.push({
-        x: Math.random()*fx.width, y: Math.random()*fx.height,
-        r: (120 + Math.random()*240),
-        vx: (-0.4 + Math.random()*0.8),
-        vy: (-0.4 + Math.random()*0.8),
-        hue: Math.floor(Math.random()*360)
-      });
-    }
-  }
+  // ===== GAME AURORA (na fx canvasu) =====
+  const gameAurora = makeAuroraEngine(fx, fctx);
+  fx.style.pointerEvents = 'none';
 
-  // ===== LAYOUT (robust) =====
+  // ===== LAYOUT =====
   function sizeToScreen(){
-    // ograniči po širini wrap-a (720) i visini viewporta
     const W = Math.min(document.documentElement.clientWidth, 720) - 32;
-    const H = Math.max(320, Math.floor(window.innerHeight * 0.5)); // malo više prostora
+    const H = Math.max(320, Math.floor(window.innerHeight * 0.5));
     const side = Math.min(W, H);
     const cell = Math.floor(side / BOARD_SIZE);
     const px = cell * BOARD_SIZE;
@@ -154,25 +178,18 @@
     fx.style.width = px + 'px';
     fx.style.height = px + 'px';
 
-    // stvarne piksel dimenzije (DPR)
-    const Wpx = Math.floor(px * DPR);
-    const Hpx = Math.floor(px * DPR);
-    canvas.width = Wpx; canvas.height = Hpx;
-    fx.width = Wpx; fx.height = Hpx;
+    // DPR pikseli
+    canvas.width = Math.floor(px * DPR);
+    canvas.height = Math.floor(px * DPR);
+    fx.width = Math.floor(px * DPR);
+    fx.height = Math.floor(px * DPR);
 
-    // reset transformacija pre crtanja
+    // reset transform
     ctx.setTransform(1,0,0,1,0,0);
     fctx.setTransform(1,0,0,1,0,0);
-
-    // skaliranje samo za game (radimo u CSS pikselima)
     ctx.scale(DPR, DPR);
 
     state.cell = Math.floor(px / BOARD_SIZE);
-
-    // Spriječi FX da ikad prima input
-    fx.style.pointerEvents = 'none';
-
-    initAurora();
     draw();
   }
   addEventListener('resize', sizeToScreen, {passive:true});
@@ -231,6 +248,7 @@
     return false;
   }
   function anyFits(){ return state.hand.some(p => !p.used && canFitAnywhere(p)); }
+
   function scoreForClear(c){ return c*10 + (c>1 ? (c-1)*5 : 0); }
 
   // ===== FX / OVERLAYS =====
@@ -254,36 +272,9 @@
     }
   }
 
-  function drawAurora(){
-    // očisti & tamna baza
-    fctx.setTransform(1,0,0,1,0,0);
-    fctx.clearRect(0,0,fx.width,fx.height);
-    const grd = fctx.createLinearGradient(0,0,fx.width,fx.height);
-    grd.addColorStop(0,'rgba(8,10,16,0.55)');
-    grd.addColorStop(1,'rgba(4,6,10,0.55)');
-    fctx.fillStyle = grd;
-    fctx.fillRect(0,0,fx.width,fx.height);
-
-    // blobovi
-    aurora.forEach(b=>{
-      b.x += b.vx; b.y += b.vy;
-      if(b.x<-200 || b.x>fx.width+200) b.vx*=-1;
-      if(b.y<-200 || b.y>fx.height+200) b.vy*=-1;
-      const rad = fctx.createRadialGradient(b.x,b.y,0, b.x,b.y,b.r);
-      const c1 = `hsla(${b.hue}, 85%, 62%, 0.12)`;
-      const c2 = `hsla(${(b.hue+40)%360}, 85%, 62%, 0.06)`;
-      rad.addColorStop(0, c1);
-      rad.addColorStop(1, c2);
-      fctx.fillStyle = rad;
-      fctx.beginPath();
-      fctx.arc(b.x,b.y,b.r,0,Math.PI*2);
-      fctx.fill();
-    });
-  }
-
-  function tickFX(){
-    drawAurora();
-
+  function drawGameAuroraAndFX(){
+    // aurora pozadina (fx)
+    // (baznu auroru već crta engine; ovde crtamo dodatne FX slojeve)
     // particles
     fctx.fillStyle='#ffffffaa';
     particles.forEach(p=>{
@@ -293,7 +284,7 @@
     });
     for(let i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
 
-    // confetti (best)
+    // confetti
     confetti.forEach(c=>{
       c.x+=c.vx; c.y+=c.vy; c.vy+=0.06; c.life--;
       fctx.globalAlpha = Math.max(0, c.life/120);
@@ -307,10 +298,8 @@
     scorePopups.forEach(p=>{ p.y-=0.4; p.life--; const a=Math.max(0,p.life/40); fctx.globalAlpha=a; fctx.font=`${Math.max(12,12*DPR)}px system-ui,sans-serif`; fctx.textAlign='center'; fctx.fillStyle='#ffffff'; fctx.fillText(p.txt, p.x, p.y); });
     for(let i=scorePopups.length-1;i>=0;i--) if(scorePopups[i].life<=0) scorePopups.splice(i,1);
 
-    // combo timer
+    // combo overlay
     if(state.comboTimer>0){ state.comboTimer--; if(state.comboTimer<=0) state.combo=0; }
-
-    // big combo overlay
     if(comboFlash>0 && state.combo>1 && comboFlashText){
       const total=48, t=Math.max(0,Math.min(1,comboFlash/total));
       const alpha=Math.min(0.22,0.22*t);
@@ -335,9 +324,9 @@
       pcFlash--;
     }
 
-    requestAnimationFrame(tickFX);
+    requestAnimationFrame(drawGameAuroraAndFX);
   }
-  tickFX();
+  requestAnimationFrame(drawGameAuroraAndFX);
 
   // ===== DRAW HELPERS =====
   function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); r=Math.min(r,w/2,h/2); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
@@ -477,7 +466,6 @@
   // ===== RENDER BOARD =====
   function draw(){
     const s=state.cell;
-    // reset transform i skaliraj na DPR (u CSS px)
     ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.scale(DPR, DPR);
@@ -511,13 +499,12 @@
   }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  // ===== POINTER (novi: Pointer Events + global move/up) =====
+  // ===== POINTER (Pointer Events + global move/up) =====
   const POINTER={active:false,fromSlotIndex:null};
   function getCanvasPosFromClient(clientX, clientY){
     const rect=canvas.getBoundingClientRect();
     return { x: clientX - rect.left, y: clientY - rect.top };
   }
-
   function startDragFromSlot(e){
     const target=e.currentTarget; // .slot
     const idx=Number(target.dataset.index);
@@ -526,11 +513,9 @@
     POINTER.active=true; POINTER.fromSlotIndex=idx;
     state.dragging={piece,gx:null,gy:null,valid:false};
     target.classList.add('used');
-    // capture pointer za mobilne
-    (target.setPointerCapture?.(e.pointerId));
+    target.setPointerCapture?.(e.pointerId);
     e.preventDefault();
   }
-
   function onGlobalPointerMove(e){
     if(!POINTER.active||!state.dragging) return;
     const {x,y}=getCanvasPosFromClient(e.clientX, e.clientY);
@@ -543,7 +528,6 @@
     draw();
     e.preventDefault();
   }
-
   function onGlobalPointerUp(){
     if(!POINTER.active||!state.dragging) return;
     const d=state.dragging;
@@ -554,7 +538,7 @@
     state.dragging=null;
   }
 
-  // prikaci pointer down na slotove pri renderu
+  // ===== TRAY =====
   function renderTray(){
     trayEl.innerHTML='';
     state.hand.forEach((p,i)=>{
@@ -564,15 +548,10 @@
       div.dataset.index=String(i);
       const mini=pieceToCanvas(p);
       div.appendChild(mini);
-      if(!p.used){
-        // pointer events (radi i za mouse i za touch)
-        div.addEventListener('pointerdown', startDragFromSlot);
-      }
+      if(!p.used){ div.addEventListener('pointerdown', startDragFromSlot); }
       trayEl.appendChild(div);
     });
   }
-
-  // globalni handleri da ne gubimo drag
   window.addEventListener('pointermove', onGlobalPointerMove, {passive:false});
   window.addEventListener('pointerup', onGlobalPointerUp, {passive:true});
   window.addEventListener('pointercancel', onGlobalPointerUp, {passive:true});
@@ -591,7 +570,7 @@
     return c;
   }
 
-  // ===== POWER-UPS & ACTIONS =====
+  // ===== POWER-UPS =====
   function updatePowerupCounters(){
     if(cntHammer) cntHammer.textContent = state.powerups.hammer;
     if(cntShuffle) cntShuffle.textContent = state.powerups.shuffle;
@@ -633,7 +612,7 @@
     bombClear(); state.powerups.bomb=Math.max(0,state.powerups.bomb-1); updatePowerupCounters();
   });
 
-  // Hammer klik na tablu (ostaje)
+  // Hammer klik na tablu
   canvas.addEventListener('click', (e)=>{
     if(state.using!=='hammer') return;
     const rect=canvas.getBoundingClientRect();
@@ -658,8 +637,10 @@
   }
 
   // ===== CONTROLS =====
-  document.getElementById('reset')?.addEventListener('click', ()=> newGame());
+  resetBtn.addEventListener('click', ()=> newGame());
   backBtn.addEventListener('click', ()=> goHome());
+
+  // Settings
   settingsBtn.addEventListener('click', ()=> settingsModal.style.display='flex');
   closeSettings.addEventListener('click', ()=> settingsModal.style.display='none');
   settingsModal.querySelector('.backdrop').addEventListener('click', ()=> settingsModal.style.display='none');
@@ -673,6 +654,7 @@
   resetBest.addEventListener('click', ()=>{ localStorage.removeItem('bp10.best'); state.best=0; bestEl.textContent=0; showToast('Best resetovan'); });
   runTestsBtn.addEventListener('click', ()=>{ const {passed,failed}=runTests(); showToast(`Testovi: ${passed} ✅ / ${failed} ❌`); });
 
+  // Start
   startClassic?.addEventListener('click', ()=> startGame('classic'));
   if (achMenuBtn) {
     achMenuBtn.addEventListener('click', () => {
@@ -682,7 +664,7 @@
 
   function startGame(mode){
     settings.mode=mode; LS('bp10.mode',mode);
-    rng = null; // nema daily
+    rng = null; // nema "daily"
     startScreen.style.display='none'; app.style.display='flex';
     if(!settings.onboarded) onboarding.style.display='flex';
     sizeToScreen(); newGame();
@@ -838,6 +820,5 @@
   }
 
   // ===== INIT =====
-  // Pokreće se kada klikneš „Classic Mode“
-  // (sizeToScreen i FX loop su već aktivni)
+  // aurora engine za bg i fx već radi; igra startuje klikom na Classic:
 })();
