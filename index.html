@@ -10,14 +10,13 @@
   <!-- START SCREEN -->
   <div id="startScreen">
     <canvas id="bg"></canvas>
-    <button id="settingsBtn" class="btn">⚙️ Podesavanja</button>
+    <button id="settingsBtn">⚙️ Podesavanja</button>
+    <button id="achBtn" title="Dostignuća">🏆 Dostignuća</button>
     <div class="ss-inner">
       <h1>BLOCK • 10×10</h1>
-      <div class="sub">Jednostavno & minimalistički. Klasičan 10×10 + modovi.</div>
-
+      <div class="ghost-board" id="ghost"></div>
       <div class="cta">
-        <button id="startClassic" class="btn lg">▶ Classic</button>
-        <button id="startDaily" class="btn lg">🌟 Daily</button>
+        <button id="startClassic">▶ Classic Mode</button>
       </div>
     </div>
   </div>
@@ -31,13 +30,12 @@
         <div class="pill">Best: <span id="best">0</span></div>
       </div>
       <div class="toolbar">
-        <button id="backBtn" title="Nazad na meni" class="btn">🏠</button>
+        <button id="backBtn" title="Nazad na meni">🏠</button>
         <button id="reset" class="btn" title="Nova igra">Reset</button>
       </div>
     </header>
 
     <div class="board-area">
-      <div class="board-backdrop"></div>
       <canvas id="game" width="360" height="360" aria-label="10x10 tabla"></canvas>
       <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
     </div>
@@ -54,7 +52,7 @@
       <button id="btnBomb" class="btn sm warn" title="Očisti ceo grid (efekat!)">💣 Bomb <span class="cnt" id="cntBomb">1</span></button>
     </div>
 
-    <div class="footer">Modovi: Classic • Daily • Obstacles • Time • Arcade • Survival • Zen • Puzzle</div>
+    <div class="footer">Modovi: Classic • Obstacles • Time • Arcade • Survival • Zen • Puzzle Pack</div>
   </div>
 
   <!-- SETTINGS -->
@@ -67,13 +65,8 @@
       <div class="row"><span>Mod</span><button id="setMode" class="btn">Classic</button></div>
       <div class="row"><span>Resetuj Best</span><button id="resetBest" class="btn">Obriši</button></div>
       <div class="row"><span>Testovi</span><button id="runTests" class="btn">Pokreni testove</button></div>
-
-      <!-- NOVO: Dostignuća (umesto "Dnevne misije") -->
-      <div class="divider"></div>
-      <h4 style="margin:6px 0 6px">🏆 Dostignuća</h4>
-      <ul id="achievementsList" class="ach-list"></ul>
-
-      <div style="text-align:right; margin-top:10px"><button id="closeSettings" class="btn">Zatvori</button></div>
+      <!-- Red za Dostignuća ubacuje script.js dinamički (openAch) -->
+      <div style="text-align:right; margin-top:8px"><button id="closeSettings" class="btn">Zatvori</button></div>
     </div>
   </div>
 
