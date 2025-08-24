@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Block Puzzle 10×10 — Minimal</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
 </head>
 <body>
   <!-- START SCREEN -->
   <div id="startScreen">
-    <canvas id="bg"></canvas>
     <button id="settingsBtn">⚙️ Podesavanja</button>
     <button id="achBtn" title="Dostignuća">🏆 Dostignuća</button>
     <div class="ss-inner">
@@ -21,7 +21,7 @@
     </div>
   </div>
 
-  <!-- APP -->
+  <!-- APP WRAPPER -->
   <div class="wrap" id="app" style="display:none">
     <header>
       <div class="brand">BLOCK • 10×10</div>
@@ -40,22 +40,11 @@
       <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
     </div>
 
-    <!-- TRAY -->
     <div class="tray" id="tray"></div>
-
-    <!-- ACTION BAR: Power-ups & Rotate -->
-    <div class="actionbar">
-      <button id="btnRotate" class="btn sm" title="Rotiraj selektovani komad">⤿ Rotate</button>
-      <div class="spacer"></div>
-      <button id="btnHammer" class="btn sm" title="Razbij jednu ćeliju (tapni na tabli)">🔨 Hammer <span class="cnt" id="cntHammer">1</span></button>
-      <button id="btnShuffle" class="btn sm" title="Zameni 3 bloka u ruci">🔄 Shuffle <span class="cnt" id="cntShuffle">1</span></button>
-      <button id="btnBomb" class="btn sm warn" title="Očisti ceo grid (efekat!)">💣 Bomb <span class="cnt" id="cntBomb">1</span></button>
-    </div>
-
-    <div class="footer">Modovi: Classic • Obstacles • Time • Arcade • Survival • Zen • Puzzle Pack</div>
+    <div class="footer">Classic mod • Podesavanja • Dostignuća</div>
   </div>
 
-  <!-- SETTINGS -->
+  <!-- Settings Modal -->
   <div id="settingsModal">
     <div class="backdrop"></div>
     <div class="panel">
@@ -65,21 +54,21 @@
       <div class="row"><span>Mod</span><button id="setMode" class="btn">Classic</button></div>
       <div class="row"><span>Resetuj Best</span><button id="resetBest" class="btn">Obriši</button></div>
       <div class="row"><span>Testovi</span><button id="runTests" class="btn">Pokreni testove</button></div>
-      <!-- Red za Dostignuća ubacuje script.js dinamički (openAch) -->
-      <div style="text-align:right; margin-top:8px"><button id="closeSettings" class="btn">Zatvori</button></div>
+      <div style="text-align:right; margin-top:8px">
+        <button id="closeSettings" class="btn">Zatvori</button>
+      </div>
     </div>
   </div>
 
-  <!-- ONBOARDING -->
+  <!-- Onboarding -->
   <div id="onboarding" class="overlay">
     <div class="backdrop"></div>
     <div class="panel">
       <h2>Kako se igra</h2>
       <ol style="text-align:left; line-height:1.5; padding-left:18px">
-        <li>Prevuci blok iz trake na tablu.</li>
+        <li>Prevuci blok iz donje trake na tablu.</li>
         <li>Popuni ceo red ili kolonu da ih očistiš.</li>
-        <li>3 potrošena bloka → dobijaš nova 3 (refill).</li>
-        <li>Power-ups: čekić (razbij), shuffle (zameni), bomba (očisti sve).</li>
+        <li>Kad potrošiš 3 bloka, dobijaš nova 3 (refill).</li>
       </ol>
       <div style="margin-top:10px; display:flex; gap:8px; justify-content:center">
         <button id="skipOnb" class="btn">Preskoči</button>
@@ -88,7 +77,7 @@
     </div>
   </div>
 
-  <!-- GAME OVER -->
+  <!-- Game Over -->
   <div id="gameOver" class="overlay">
     <div class="backdrop"></div>
     <div class="panel">
@@ -100,7 +89,5 @@
       </div>
     </div>
   </div>
-
-  <script src="script.js"></script>
 </body>
 </html>
