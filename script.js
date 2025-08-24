@@ -102,10 +102,11 @@
   function makeAuroraEngine(canvas, ctx){
     const blobs = [];
     function resize(){
-      canvas.width = Math.floor(canvas.clientWidth * DPR || innerWidth * DPR);
-      canvas.height = Math.floor(canvas.clientHeight * DPR || innerHeight * DPR);
-      // fallback: ako canvas nema CSS dimenziju (npr. fullscreen)
-      if(canvas === bg){ canvas.width = Math.floor(innerWidth * DPR); canvas.height = Math.floor(innerHeight * DPR); }
+      // ako je fullscreen (start screen), uzmi ceo viewport
+      const cssW = canvas.clientWidth || window.innerWidth;
+      const cssH = canvas.clientHeight || window.innerHeight;
+      canvas.width = Math.floor(cssW * DPR);
+      canvas.height = Math.floor(cssH * DPR);
       blobs.length = 0;
       const count = canvas===bg ? 9 : 5;
       for(let i=0;i<count;i++){
@@ -273,8 +274,6 @@
   }
 
   function drawGameAuroraAndFX(){
-    // aurora pozadina (fx)
-    // (baznu auroru već crta engine; ovde crtamo dodatne FX slojeve)
     // particles
     fctx.fillStyle='#ffffffaa';
     particles.forEach(p=>{
@@ -298,8 +297,10 @@
     scorePopups.forEach(p=>{ p.y-=0.4; p.life--; const a=Math.max(0,p.life/40); fctx.globalAlpha=a; fctx.font=`${Math.max(12,12*DPR)}px system-ui,sans-serif`; fctx.textAlign='center'; fctx.fillStyle='#ffffff'; fctx.fillText(p.txt, p.x, p.y); });
     for(let i=scorePopups.length-1;i>=0;i--) if(scorePopups[i].life<=0) scorePopups.splice(i,1);
 
-    // combo overlay
+    // combo timer
     if(state.comboTimer>0){ state.comboTimer--; if(state.comboTimer<=0) state.combo=0; }
+
+    // big combo overlay
     if(comboFlash>0 && state.combo>1 && comboFlashText){
       const total=48, t=Math.max(0,Math.min(1,comboFlash/total));
       const alpha=Math.min(0.22,0.22*t);
