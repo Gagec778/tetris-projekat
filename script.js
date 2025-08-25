@@ -39,7 +39,7 @@
   const achMenuBtn   = document.getElementById('achBtn');
   const ghost        = document.getElementById('ghost');
 
-  // Optional action bar hooks
+  // Optional action bar hooks (ako ih dodaš u HTML, radiće)
   const btnRotate = document.getElementById('btnRotate');
   const btnHammer = document.getElementById('btnHammer');
   const btnShuffle= document.getElementById('btnShuffle');
@@ -183,49 +183,70 @@
   function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  // --- PREVIEW CELIJA (bez senke): normalna kad može, blago crvena kad ne može ---
+  // --- PREVIEW CELIJA: bez senke, “moćan” look; crvenkasto kad ne može da se postavi ---
   function drawPreviewCell(c, x, y, s, baseColor, canPlaceFlag){
     c.save();
+    // telo (bez drop-shadowa)
     roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
-    const col = canPlaceFlag ? baseColor : '#b24d4d';
+    const col = canPlaceFlag ? baseColor : '#c65454';
     const body=c.createLinearGradient(x,y, x, y+s);
-    body.addColorStop(0.00, adjustColor(col, .28));
-    body.addColorStop(1.00, darkenColor(col, .18));
-    c.globalAlpha = canPlaceFlag ? 0.92 : 0.85;
+    body.addColorStop(0.00, adjustColor(col, .40));
+    body.addColorStop(0.55, col);
+    body.addColorStop(1.00, darkenColor(col, .22));
+    c.globalAlpha = canPlaceFlag ? 0.96 : 0.90;
     c.fillStyle=body; c.fill();
-    c.globalAlpha = 1;
-    c.lineWidth = Math.max(1, s*.06);
-    c.strokeStyle = canPlaceFlag ? 'rgba(255,255,255,.22)' : 'rgba(255,120,120,.6)';
+
+    // fasete (naglašenije)
+    const facet=c.createLinearGradient(x, y, x+s, y+s);
+    facet.addColorStop(0.0, canPlaceFlag ? 'rgba(255,255,255,.35)' : 'rgba(255,160,160,.35)');
+    facet.addColorStop(0.6, 'rgba(255,255,255,0)');
+    c.globalCompositeOperation='overlay';
+    roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+    c.fillStyle=facet; c.fill();
+
+    // tanka ivica (zlatna kad može)
+    c.globalCompositeOperation='source-over';
+    c.lineWidth = Math.max(1, s*.07);
+    c.strokeStyle = canPlaceFlag ? 'rgba(255,215,130,.75)' : 'rgba(255,120,120,.7)';
     c.stroke();
     c.restore();
   }
 
+  // --- “Moćniji” dijamantski izgled za cell (na tabli i ghost) ---
   function drawGem(c,x,y,s,baseColor,{alpha=1, placed=false}={}){
     c.save(); c.globalAlpha=alpha;
-    c.fillStyle='rgba(0,0,0,.28)';
-    roundRect(c,x+2,y+4,s-4,s-3,Math.max(6,s*.18)); c.fill();
 
+    // (zadržan blag shadow kod postavljenih na tabli radi separacije od pozadine)
+    if(placed){
+      c.fillStyle='rgba(0,0,0,.28)';
+      roundRect(c,x+2,y+4,s-4,s-3,Math.max(6,s*.18)); c.fill();
+    }
+
+    // telo (stakleni gradient)
     roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
     const body=c.createLinearGradient(x,y, x, y+s);
-    body.addColorStop(0.00, adjustColor(baseColor, .35));
-    body.addColorStop(0.45, baseColor);
-    body.addColorStop(1.00, darkenColor(baseColor, .30));
+    body.addColorStop(0.00, adjustColor(baseColor, .38));
+    body.addColorStop(0.50, baseColor);
+    body.addColorStop(1.00, darkenColor(baseColor, .28));
     c.fillStyle=body; c.fill();
 
+    // fasete (malo jače)
     const facet=c.createLinearGradient(x, y, x+s, y+s);
-    facet.addColorStop(0.0, 'rgba(255,255,255,.30)');
+    facet.addColorStop(0.0, 'rgba(255,255,255,.32)');
     facet.addColorStop(0.5, 'rgba(255,255,255,0)');
     c.save(); c.globalCompositeOperation='overlay';
     roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22)); c.fillStyle=facet; c.fill();
     c.restore();
 
+    // specular highlight
     const spec=c.createRadialGradient(x+s*.35,y+s*.25,1, x+s*.25,y+s*.18, s*.65);
-    spec.addColorStop(0,'rgba(255,255,255,.65)');
-    spec.addColorStop(.35,'rgba(255,255,255,.28)');
+    spec.addColorStop(0,'rgba(255,255,255,.68)');
+    spec.addColorStop(.35,'rgba(255,255,255,.30)');
     spec.addColorStop(1,'rgba(255,255,255,0)');
-    c.globalAlpha=.75; c.fillStyle=spec;
+    c.globalAlpha=.85; c.fillStyle=spec;
     c.beginPath(); c.ellipse(x+s*.34, y+s*.26, s*.42, s*.28, -0.25, 0, Math.PI*2); c.fill();
 
+    // border + (po potrebi) zlatni rim
     roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
     c.lineWidth=Math.max(1,s*.06);
     c.strokeStyle='rgba(0,0,0,.40)'; c.stroke();
@@ -250,7 +271,7 @@
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.scale(DPR, DPR);
 
-    // glass panel
+    // stakleni panel preko aurore
     roundRect(ctx,0,0,s*BOARD_SIZE,s*BOARD_SIZE,18);
     const panel=ctx.createLinearGradient(0,0,0,s*BOARD_SIZE);
     panel.addColorStop(0,'rgba(13,16,25,.32)');
@@ -260,7 +281,7 @@
     roundRect(ctx,1,1,s*BOARD_SIZE-2,s*BOARD_SIZE-2,16);
     ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1; ctx.stroke();
 
-    // cells
+    // mreža
     for(let y=0;y<BOARD_SIZE;y++){
       for(let x=0;x<BOARD_SIZE;x++){
         const px=x*s, py=y*s, v=state.grid[y][x];
@@ -273,23 +294,23 @@
       }
     }
 
-    // ghost snap na mreži (ostaje)
+    // ghost snap na mreži (jasan pad)
     if(state.dragging){
       const {piece,gx,gy,valid}=state.dragging;
       if(gx!=null&&gy!=null){
         for(const [dx,dy] of piece.blocks){
           const x=(gx+dx)*s, y=(gy+dy)*s;
-          // ako želiš i ovde flat, zameni sa drawPreviewCell(...)
-          drawPieceCell(ctx,x,y,s, valid?piece.color:'#7a2c2c', valid?0.85:0.55);
+          // koristi moćniji flat preview i na ghostu radi konzistentnosti:
+          drawPreviewCell(ctx, x, y, s, piece.color, valid);
         }
       }
     }
 
-    // floating preview IZNAD prsta (bez senke, jasnije)
+    // floating preview: BLOK umesto senke, podignut iznad prsta
     if(state.dragging && state.dragging.px!=null){
       const {piece, px, py, valid} = state.dragging;
-      const liftY = 36;  // koliko iznad prsta
-      const offsetX = 8; // malo desno
+      const liftY = 48;  // još malo više
+      const offsetX = 10; // blago desno od prsta
       const baseX = px - (piece.w*s)/2 + offsetX;
       const baseY = py - (piece.h*s)/2 - liftY;
       for(const [dx,dy] of piece.blocks){
@@ -298,7 +319,7 @@
     }
   }
 
-  // FX
+  // ================= FX (bez promene logike) =================
   const particles=[]; const scorePopups=[]; let comboFlash=0, comboFlashText=''; let pcFlash=0; let confetti=[];
   const rings=[];
   function spawnParticles(cells){
@@ -389,6 +410,7 @@
   }
   requestAnimationFrame(stepFX);
 
+  // ================= GAME LOGIC (bez promene) =================
   function scoreForClear(c){ return c*10 + (c>1 ? (c-1)*5 : 0); }
   function place(piece,gx,gy){
     for(const [dx,dy] of piece.blocks){ state.grid[gy+dy][gx+dx]=1; }
@@ -468,7 +490,8 @@
     const c=document.createElement('canvas');
     c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
     const cx=c.getContext('2d'); cx.scale(DPR,DPR);
-    cx.fillStyle='rgba(0,0,0,.24)'; roundRect(cx,0,0,w,h,12); cx.fill();
+    // podloga bez naglašene senke (čisto, luksuzno)
+    cx.fillStyle='rgba(0,0,0,.20)'; roundRect(cx,0,0,w,h,12); cx.fill();
     for(const [dx,dy] of piece.blocks){
       const x=pad+dx*scale, y=pad+dy*scale;
       drawPieceCell(cx,x+1,y+1,scale-2,piece.color,1);
@@ -508,7 +531,7 @@
     e.preventDefault(); e.stopPropagation();
   }
 
-  // >>> POVEĆANA OSETLJIVOST: procesuiramo pointermove ODMAH (bez RAF batching-a)
+  // visoka osetljivost: procesuiraj move odmah
   function onGlobalPointerMoveRaw(e){
     if(!POINTER.active||!state.dragging) return;
     const {x,y}=getCanvasPosFromClient(e.clientX, e.clientY);
