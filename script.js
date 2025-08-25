@@ -183,6 +183,23 @@
   function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
+  // --- PREVIEW CELIJA (bez senke): normalna kad može, blago crvena kad ne može ---
+  function drawPreviewCell(c, x, y, s, baseColor, canPlaceFlag){
+    c.save();
+    roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+    const col = canPlaceFlag ? baseColor : '#b24d4d';
+    const body=c.createLinearGradient(x,y, x, y+s);
+    body.addColorStop(0.00, adjustColor(col, .28));
+    body.addColorStop(1.00, darkenColor(col, .18));
+    c.globalAlpha = canPlaceFlag ? 0.92 : 0.85;
+    c.fillStyle=body; c.fill();
+    c.globalAlpha = 1;
+    c.lineWidth = Math.max(1, s*.06);
+    c.strokeStyle = canPlaceFlag ? 'rgba(255,255,255,.22)' : 'rgba(255,120,120,.6)';
+    c.stroke();
+    c.restore();
+  }
+
   function drawGem(c,x,y,s,baseColor,{alpha=1, placed=false}={}){
     c.save(); c.globalAlpha=alpha;
     c.fillStyle='rgba(0,0,0,.28)';
@@ -256,25 +273,27 @@
       }
     }
 
-    // ghost snap na mreži
+    // ghost snap na mreži (ostaje)
     if(state.dragging){
       const {piece,gx,gy,valid}=state.dragging;
       if(gx!=null&&gy!=null){
         for(const [dx,dy] of piece.blocks){
           const x=(gx+dx)*s, y=(gy+dy)*s;
+          // ako želiš i ovde flat, zameni sa drawPreviewCell(...)
           drawPieceCell(ctx,x,y,s, valid?piece.color:'#7a2c2c', valid?0.85:0.55);
         }
       }
     }
 
-    // floating preview IZNAD prsta (pomereno na gore da se vidi cilj)
+    // floating preview IZNAD prsta (bez senke, jasnije)
     if(state.dragging && state.dragging.px!=null){
-      const {piece, px, py} = state.dragging;
-      const lift = 14; // koliko iznad prsta
-      const baseX = px - (piece.w*s)/2;
-      const baseY = py - (piece.h*s)/2 - lift;
+      const {piece, px, py, valid} = state.dragging;
+      const liftY = 36;  // koliko iznad prsta
+      const offsetX = 8; // malo desno
+      const baseX = px - (piece.w*s)/2 + offsetX;
+      const baseY = py - (piece.h*s)/2 - liftY;
       for(const [dx,dy] of piece.blocks){
-        drawPieceCell(ctx, baseX + dx*s, baseY + dy*s, s, piece.color, 0.28);
+        drawPreviewCell(ctx, baseX + dx*s, baseY + dy*s, s, piece.color, valid);
       }
     }
   }
@@ -489,15 +508,9 @@
     e.preventDefault(); e.stopPropagation();
   }
 
-  let moveQueued=false, lastMoveEvent=null;
+  // >>> POVEĆANA OSETLJIVOST: procesuiramo pointermove ODMAH (bez RAF batching-a)
   function onGlobalPointerMoveRaw(e){
     if(!POINTER.active||!state.dragging) return;
-    lastMoveEvent=e;
-    if(!moveQueued){ moveQueued=true; requestAnimationFrame(processPointerMove); }
-  }
-  function processPointerMove(){
-    moveQueued=false;
-    const e=lastMoveEvent; if(!e||!POINTER.active||!state.dragging) return;
     const {x,y}=getCanvasPosFromClient(e.clientX, e.clientY);
     state.dragging.px = x;
     state.dragging.py = y;
