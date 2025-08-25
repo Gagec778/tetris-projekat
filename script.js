@@ -1,406 +1,102 @@
-(function(){
-  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+// ====== Global State ======
+const state = {
+  gridSize: 8,
+  board: [],
+  tray: [],
+  dragging: null,
+  score: 0,
+  best: {classic:0, obstacles:0, zen:0},
+  mode: 'classic',
+  sound: true,
+};
 
-  // ===== DOM =====
-  const canvas = document.getElementById('game');
-  const ctx    = canvas?.getContext('2d', { alpha: true });
-  const fx     = document.getElementById('fx');
-  const fctx   = fx?.getContext('2d', { alpha: true });
-  const app    = document.getElementById('app');
-  const startScreen = document.getElementById('startScreen');
-  const bgCnv  = document.getElementById('bg');
-  if(ctx)  ctx.imageSmoothingEnabled=false;
-  if(fctx) fctx.imageSmoothingEnabled=false;
+const cellSize = 48;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const fx = document.getElementById('fx').getContext('2d');
 
-  // UI
-  const trayEl   = document.getElementById('tray');
-  const scoreEl  = document.getElementById('score');
-  const bestEl   = document.getElementById('best');
-  const resetBtn = document.getElementById('reset');
-  const backBtn  = document.getElementById('backBtn');
-  const settingsBtn   = document.getElementById('settingsBtn');
-  const settingsModal = document.getElementById('settingsModal');
-  const setTheme      = document.getElementById('setTheme');
-  const setSound      = document.getElementById('setSound');
-  const setMode       = document.getElementById('setMode');
-  const resetBest     = document.getElementById('resetBest');
-  const closeSettings = document.getElementById('closeSettings');
-  const runTestsBtn   = document.getElementById('runTests');
-  const startClassic  = document.getElementById('startClassic');
-  const achMenuBtn    = document.getElementById('achBtn');
-  const goStats  = document.getElementById('goStats');
-  const playAgain= document.getElementById('playAgain');
-  const goMenu   = document.getElementById('goMenu');
-  const gameOver = document.getElementById('gameOver');
+// ====== Utils ======
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function playSound(){ if(state.sound) new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg').play(); }
+function saveBest(){ localStorage.setItem('bpBest', JSON.stringify(state.best)); }
+function loadBest(){ const b=localStorage.getItem('bpBest'); if(b) state.best=JSON.parse(b); }
 
-  // ===== CONFIG =====
-  const BOARD_SIZE = 8;
-  const COMBO_WINDOW = 360;
-  const COLORS = ['#FF9F1C','#FFB703','#F77F00','#FFA62B','#FF6B6B','#F94144','#F3722C','#F8961E','#FFD166','#F6BD60','#F28482','#E56B6F'];
-
-  // ===== SETTINGS / LS =====
-  const LS=(k,v)=> (v===undefined? localStorage.getItem(k) : localStorage.setItem(k,v));
-  const settings = {
-    theme: LS('bp10.theme') || 'dark',
-    sound: LS('bp10.sound')!==null ? LS('bp10.sound')==='1' : true,
-    mode:  LS('bp10.mode') || 'classic',
-  };
-  applyTheme(settings.theme); updateSoundLabel(); updateModeLabel();
-
-  // ===== Audio / Haptics =====
-  let audioCtx=null;
-  function ensureAudio(){ if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
-  function beep(freq=600, dur=0.06, type='sine', gain=0.18){
-    if(!settings.sound) return;
-    ensureAudio(); if(!audioCtx) return;
-    const t=audioCtx.currentTime, osc=audioCtx.createOscillator(), g=audioCtx.createGain();
-    osc.type=type; osc.frequency.value=freq;
-    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    osc.connect(g); g.connect(audioCtx.destination); osc.start(t); osc.stop(t+dur);
-  }
-  const hapt=(ms=15)=>{ if(!settings.sound) return; if(navigator.vibrate) navigator.vibrate(ms); };
-
-  // ===== STATE =====
-  let state={ grid:createGrid(), cell:36, score:0, best:Number(LS('bp10.best')||0), hand:[], dragging:null, combo:0, comboTimer:0 };
-  bestEl && (bestEl.textContent=state.best);
-
-  // ===== SIZE / LAYOUT =====
-  function sizeToScreen(){
-    if(!canvas||!ctx) return;
-    const headerH = document.querySelector('header')?.offsetHeight || 60;
-    const trayH   = trayEl?.offsetHeight || 120;
-    const chrome  = 28;
-    const availH  = Math.max(260, window.innerHeight - headerH - trayH - chrome);
-    const availW  = Math.min(document.documentElement.clientWidth, 720) - 32;
-    const side    = Math.max(240, Math.min(availW, availH));
-    const cell    = Math.floor(side/BOARD_SIZE);
-    const px      = cell*BOARD_SIZE;
-
-    canvas.style.width=px+'px'; canvas.style.height=px+'px';
-    if(fx){ fx.style.width=px+'px'; fx.style.height=px+'px'; }
-    canvas.width=Math.floor(px*DPR); canvas.height=Math.floor(px*DPR);
-    if(fx){ fx.width=Math.floor(px*DPR); fx.height=Math.floor(px*DPR); }
-
-    ctx.setTransform(1,0,0,1,0,0); ctx.scale(DPR,DPR);
-    if(fctx){ fctx.setTransform(1,0,0,1,0,0); }
-    state.cell=cell;
-
-    if(bgCnv){ bgCnv.width=Math.floor(window.innerWidth*DPR); bgCnv.height=Math.floor(window.innerHeight*DPR); }
-    requestDraw();
-  }
-  addEventListener('resize', sizeToScreen, {passive:true});
-
-  // ===== HELPERS =====
-  function createGrid(){ return Array.from({length:BOARD_SIZE},()=>Array(BOARD_SIZE).fill(0)); }
-  function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:255,g:200,b:150}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  function adjustColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r+(255-r)*amt),0,255); const ng=clamp(Math.round(g+(255-g)*amt),0,255); const nb=clamp(Math.round(b+(255-b)*amt),0,255); return `rgb(${nr},${ng},${nb})`; }
-  function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
-  function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
-  const snap=(n)=>Math.round(n)+0.5;
-  function rrPath(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); const x0=snap(x),y0=snap(y),x1=snap(x+w),y1=snap(y+h),rr=Math.round(r);
-    c.beginPath(); c.moveTo(x0+rr,y0); c.lineTo(x1-rr,y0); c.quadraticCurveTo(x1,y0,x1,y0+rr);
-    c.lineTo(x1,y1-rr); c.quadraticCurveTo(x1,y1,x1-rr,y1);
-    c.lineTo(x0+rr,y1); c.quadraticCurveTo(x0,y1,x0,y1-rr);
-    c.lineTo(x0,y0+rr); c.quadraticCurveTo(x0,y0,x0+rr,y0); c.closePath(); }
-
-  // ===== AURORA (pozadina, bez “talasa” u samom gridu) =====
-  function drawAurora(c,w,h){
-    c.save();
-    const bg = c.createLinearGradient(0, 0, w, h);
-    bg.addColorStop(0.00, 'rgba(160,210,255,0.33)');
-    bg.addColorStop(0.55, 'rgba(220,255,230,0.31)');
-    bg.addColorStop(1.00, 'rgba(255,210,160,0.29)');
-    c.fillStyle=bg; c.fillRect(0,0,w,h);
-
-    c.globalCompositeOperation='screen';
-    const g1 = c.createRadialGradient(w*0.25, h*0.35, 10, w*0.25, h*0.35, Math.max(w,h)*0.8);
-    g1.addColorStop(0,'rgba(120,200,255,0.34)'); g1.addColorStop(1,'rgba(120,200,255,0)');
-    c.fillStyle=g1; c.fillRect(0,0,w,h);
-    const g2 = c.createRadialGradient(w*0.75, h*0.70, 10, w*0.75, h*0.70, Math.max(w,h)*0.9);
-    g2.addColorStop(0,'rgba(255,180,150,0.30)'); g2.addColorStop(1,'rgba(255,180,150,0)');
-    c.fillStyle=g2; c.fillRect(0,0,w,h);
-    c.restore();
-  }
-  function drawStartAurora(){
-    if(!bgCnv) return;
-    const b=bgCnv.getContext('2d'); b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR);
-    b.clearRect(0,0,bgCnv.width,bgCnv.height);
-    drawAurora(b, window.innerWidth, window.innerHeight);
-    requestAnimationFrame(drawStartAurora);
-  }
-
-  // ===== MAT 3D BLOK =====
-  function drawMatBlock(c, x, y, s, baseColor, {alpha=1, placed=false}={}){
-    c.save(); c.globalAlpha=alpha;
-    rrPath(c, x+1, y+1, s-2, s-2, Math.max(6, s*0.22));
-    const body=c.createLinearGradient(x,y,x,y+s);
-    body.addColorStop(0, adjustColor(baseColor,.12));
-    body.addColorStop(1, darkenColor(baseColor,.16));
-    c.fillStyle=body; c.fill();
-
-    const inner=c.createLinearGradient(x,y,x+s,y+s);
-    inner.addColorStop(0,'rgba(0,0,0,.10)'); inner.addColorStop(0.5,'rgba(0,0,0,0)');
-    rrPath(c, x+1, y+1, s-2, s-2, Math.max(6, s*0.22)); c.save(); c.globalCompositeOperation='multiply'; c.fillStyle=inner; c.fill(); c.restore();
-
-    const light=c.createLinearGradient(x,y,x+s,y+s);
-    light.addColorStop(0,'rgba(255,255,255,.18)'); light.addColorStop(0.35,'rgba(255,255,255,.06)'); light.addColorStop(1,'rgba(255,255,255,0)');
-    rrPath(c, x+1, y+1, s-2, s-2, Math.max(6, s*0.22)); c.fillStyle=light; c.fill();
-
-    rrPath(c, x+1, y+1, s-2, s-2, Math.max(6, s*0.22)); c.lineWidth=Math.max(1,s*.06); c.strokeStyle='rgba(0,0,0,.40)'; c.stroke();
-    rrPath(c, x+2, y+2, s-4, s-4, Math.max(5, s*0.18)); c.lineWidth=Math.max(1,s*.04); c.strokeStyle='rgba(255,255,255,.10)'; c.stroke();
-
-    if(placed){
-      rrPath(c, x+1, y+1, s-2, s-2, Math.max(6, s*0.22));
-      const gold=c.createLinearGradient(x,y,x,y+s); gold.addColorStop(0,'rgba(255,220,150,.70)'); gold.addColorStop(1,'rgba(175,120,40,.35)');
-      c.lineWidth=Math.max(1, s*.07); c.strokeStyle=gold; c.stroke();
+// ====== Init ======
+function newGame(mode){
+  state.mode = mode||'classic';
+  state.board = Array(state.gridSize).fill().map(()=>Array(state.gridSize).fill(null));
+  if(mode==='obstacles'){
+    for(let i=0;i<rnd(3,6);i++){
+      state.board[rnd(0,7)][rnd(0,7)] = {color:'#555',fixed:true};
     }
-    c.restore();
   }
-  const drawPieceCell  = (c,x,y,s,color,alpha)=> drawMatBlock(c,x,y,s,color,{alpha});
-  const drawPlacedCell = (c,x,y,s)=> drawMatBlock(c,x,y,s,getCss('--accent')||'#FFD166',{alpha:.98, placed:true});
-  function drawPreviewCell(c,x,y,s,col,ok){ drawMatBlock(c,x,y,s, ok?col:'#c65454', {alpha: ok?.96:.90}); }
-
-  // ===== PIECES =====
-  const SHAPES = [
-    [[0,0]], [[0,0],[1,0]], [[0,0],[1,0],[2,0]], [[0,0],[1,0],[2,0],[3,0]],
-    [[0,0],[1,0],[2,0],[3,0],[4,0]],
-    [[0,0],[0,1]], [[0,0],[0,1],[0,2]], [[0,0],[0,1],[0,2],[0,3]], [[0,0],[0,1],[0,2],[0,3],[0,4]],
-    [[0,0],[1,0],[0,1],[1,1]],
-    [[0,0],[1,0],[2,0],[0,1]],
-    [[0,0],[1,0],[2,0],[0,1],[0,2]],
-    [[0,0],[1,0],[2,0],[1,1]],
+  state.tray = genTray();
+  state.score=0;
+  draw();
+}
+function genTray(){
+  return [genPiece(), genPiece(), genPiece()];
+}
+function genPiece(){
+  const shapes = [
+    [[1]], [[1,1]], [[1],[1]], [[1,1,1]], [[1],[1],[1]],
+    [[1,1],[1,1]], [[1,1,1,1]], [[1],[1],[1],[1]]
   ];
-  const rndColor=()=>COLORS[Math.floor(Math.random()*COLORS.length)];
-  function newPiece(){
-    const shape=SHAPES[Math.floor(Math.random()*SHAPES.length)];
-    const color=rndColor();
-    const minx=Math.min(...shape.map(b=>b[0])); const miny=Math.min(...shape.map(b=>b[1]));
-    const blocks=shape.map(([x,y])=>[x-minx,y-miny]);
-    const w=Math.max(...blocks.map(b=>b[0]))+1; const h=Math.max(...blocks.map(b=>b[1]))+1;
-    return {blocks,w,h,color,used:false,id:Math.random().toString(36).slice(2)};
-  }
-  function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
+  const shape = shapes[rnd(0,shapes.length-1)];
+  const color = ['#ff7676','#ffb347','#f9f871','#7bed9f','#70a1ff','#e056fd'][rnd(0,5)];
+  return {shape,color};
+}
 
-  // ===== RULES =====
-  function canPlace(piece,gx,gy){
-    for(const [dx,dy] of piece.blocks){
-      const x=gx+dx, y=gy+dy;
-      if(x<0||y<0||x>=BOARD_SIZE||y>=BOARD_SIZE) return false;
-      if(state.grid[y][x]!==0) return false;
-    }
-    return true;
-  }
-  function canFitAnywhere(piece){
-    for(let y=0;y<=BOARD_SIZE-piece.h;y++)
-      for(let x=0;x<=BOARD_SIZE-piece.w;x++)
-        if(canPlace(piece,x,y)) return true;
-    return false;
-  }
-  function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
-
-  // ===== DRAW =====
-  function draw(){
-    if(!canvas||!ctx) return;
-    const s=state.cell, W=s*BOARD_SIZE, H=s*BOARD_SIZE;
-    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.scale(DPR,DPR);
-
-    // 1) aurora
-    drawAurora(ctx, W, H);
-
-    // 2) stakleni panel iznad aurora
-    rrPath(ctx,0,0,W,H,18);
-    const panel=ctx.createLinearGradient(0,0,0,H);
-    panel.addColorStop(0,'rgba(12,16,24,.18)'); panel.addColorStop(1,'rgba(12,16,24,.24)');
-    ctx.fillStyle=panel; ctx.fill();
-    rrPath(ctx,1,1,W-2,H-2,16); ctx.strokeStyle='rgba(255,255,255,.10)'; ctx.lineWidth=1; ctx.stroke();
-
-    // 3) grid — blaga popuna + tanak border; popunjeno = blok
-    for(let y=0;y<BOARD_SIZE;y++){
-      for(let x=0;x<BOARD_SIZE;x++){
-        const px=x*s, py=y*s, v=state.grid[y][x];
-        rrPath(ctx,px+1,py+1,s-2,s-2,9);
-        if(v===1){ drawPlacedCell(ctx,px,py,s); }
-        else{
-          const fill=ctx.createLinearGradient(px,py,px,py+s);
-          fill.addColorStop(0,'rgba(255,255,255,.06)');
-          fill.addColorStop(1,'rgba(0,0,0,.10)');
-          ctx.fillStyle=fill; ctx.fill();
-          rrPath(ctx,px+1.5,py+1.5,s-3,s-3,8);
-          ctx.strokeStyle='var(--grid-border)'; ctx.lineWidth=1; ctx.stroke();
-        }
-      }
-    }
-
-    // 4) preview (iznad prsta, bez senke)
-    if(state.dragging && state.dragging.px!=null){
-      const {piece, px, py, valid} = state.dragging;
-      const liftY=72, offsetX=8;
-      const baseX = px - (piece.w*s)/2 + offsetX;
-      const baseY = py - (piece.h*s)/2 - liftY;
-      for(const [dx,dy] of piece.blocks){
-        drawPreviewCell(ctx, baseX + dx*s, baseY + dy*s, s, piece.color, valid);
-      }
+// ====== Drawing ======
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawAurora(ctx,canvas.width,canvas.height,Date.now()/1000);
+  drawBoard();
+  drawTray();
+  requestAnimationFrame(draw);
+}
+function drawAurora(c,w,h,t){
+  const g = c.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,'#4facfe'); g.addColorStop(1,'#00f2fe');
+  c.fillStyle=g; c.fillRect(0,0,w,h);
+}
+function drawBoard(){
+  const s=cellSize;
+  const offX= (canvas.width - s*state.gridSize)/2;
+  const offY= (canvas.height - s*state.gridSize)/2 - 30;
+  for(let y=0;y<state.gridSize;y++){
+    for(let x=0;x<state.gridSize;x++){
+      const cell = state.board[y][x];
+      ctx.fillStyle = cell? cell.color : 'rgba(255,255,255,0.06)';
+      ctx.beginPath();
+      ctx.roundRect(offX+x*s,offY+y*s,s-2,s-2,8);
+      ctx.fill();
     }
   }
+}
+function drawTray(){
+  const tray = document.getElementById('tray');
+  tray.innerHTML='';
+  state.tray.forEach((p,i)=>{
+    const div=document.createElement('div');
+    div.className='piece';
+    div.innerText='⬛'.repeat(p.shape[0].length*p.shape.length);
+    div.style.color=p.color;
+    tray.appendChild(div);
+  });
+}
 
-  // ===== FX (lagano) =====
-  const particles=[]; const scorePopups=[];
-  function spawnParticles(cells){
-    if(!fx||!fctx) return;
-    const s=state.cell, d=DPR;
-    for(const [x,y] of cells){
-      for(let j=0;j<6;j++){ particles.push({x:(x+0.5)*s*d, y:(y+0.5)*s*d, vx:(Math.random()-0.5)*2, vy:(-Math.random()*2-0.5), life:40}); }
-    }
-  }
-  function stepFX(){
-    if(!fx||!fctx){ requestAnimationFrame(stepFX); return; }
-    fctx.setTransform(1,0,0,1,0,0); fctx.clearRect(0,0,fx.width,fx.height);
-    fctx.fillStyle='#ffffffaa';
-    for(let i=0;i<particles.length;i++){ const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--; fctx.globalAlpha=Math.max(0,p.life/40); fctx.beginPath(); fctx.arc(p.x,p.y,2,0,Math.PI*2); fctx.fill(); }
-    for(let i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
-    for(let i=0;i<scorePopups.length;i++){ const p=scorePopups[i]; p.y-=0.4; p.life--; const a=Math.max(0,p.life/40); fctx.globalAlpha=a; fctx.font=`${Math.max(12,12*DPR)}px system-ui,sans-serif`; fctx.textAlign='center'; fctx.fillStyle='rgba(255,215,130,.95)'; fctx.fillText(p.txt, p.x, p.y); }
-    for(let i=scorePopups.length-1;i>=0;i--) if(scorePopups[i].life<=0) scorePopups.splice(i,1);
-    requestAnimationFrame(stepFX);
-  }
-  requestAnimationFrame(stepFX);
+// ====== Events ======
+document.getElementById('startClassic').onclick=()=>{ startGame('classic') };
+document.getElementById('startObstacles').onclick=()=>{ startGame('obstacles') };
+document.getElementById('startZen').onclick=()=>{ startGame('zen') };
 
-  // ===== PLACE / SCORE =====
-  function scoreForClear(c){ return c*10 + (c>1 ? (c-1)*5 : 0); }
-  function place(piece,gx,gy){
-    for(const [dx,dy] of piece.blocks){ state.grid[gy+dy][gx+dx]=1; }
+function startGame(mode){
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  newGame(mode);
+}
 
-    const fullRows=[], fullCols=[];
-    for(let y=0;y<BOARD_SIZE;y++){ if(state.grid[y].every(v=>v===1)) fullRows.push(y); }
-    for(let x=0;x<BOARD_SIZE;x++){ let ok=true; for(let y=0;y<BOARD_SIZE;y++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullCols.push(x); }
-
-    const cleared=fullRows.length+fullCols.length;
-    if(cleared>0){
-      const cells=[];
-      for(const r of fullRows){ for(let x=0;x<BOARD_SIZE;x++){ cells.push([x,r]); } state.grid[r]=Array(BOARD_SIZE).fill(0); }
-      for(const c of fullCols){ for(let y=0;y<BOARD_SIZE;y++){ cells.push([c,y]); state.grid[y][c]=0; } }
-      spawnParticles(cells); beep(760,.08,'triangle',0.22); hapt(28);
-    } else { beep(520,.05,'sine',0.16); hapt(12); }
-
-    const baseGain=piece.blocks.length, clearBonus=scoreForClear(cleared);
-    state.score += baseGain + clearBonus; scoreEl && (scoreEl.textContent=state.score);
-    if(state.score>state.best){ state.best=state.score; LS('bp10.best', String(state.best)); bestEl && (bestEl.textContent=state.best); }
-
-    piece.used=true; state.hand=state.hand.map(p=>p.id===piece.id? {...p,used:true}:p); renderTray();
-    if(state.hand.every(p=>p.used)) refillHand();
-
-    if(!anyFits()){ goStats && (goStats.textContent=`Score: ${state.score} • Best: ${state.best}`); gameOver && (gameOver.style.display='flex'); beep(220,0.15); hapt(40); }
-    requestDraw();
-  }
-
-  // ===== TRAY =====
-  function drawPieceToCanvas(piece){
-    const scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
-    const c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
-    const cx=c.getContext('2d'); cx.scale(DPR,DPR); cx.imageSmoothingEnabled=false;
-    for(const [dx,dy] of piece.blocks){ drawMatBlock(cx, pad+dx*scale, pad+dy*scale, scale-2, piece.color, {alpha:1}); }
-    return c;
-  }
-  function renderTray(){
-    if(!trayEl) return; trayEl.innerHTML='';
-    state.hand.forEach((p,i)=>{
-      const div=document.createElement('div'); const fits=canFitAnywhere(p);
-      div.className='slot'+(p.used?' used':'')+(p.used?'':(fits?' good':' bad')); div.dataset.index=String(i);
-      div.appendChild(drawPieceToCanvas(p));
-      if(!p.used) div.addEventListener('pointerdown', startDragFromSlot, {passive:false});
-      trayEl.appendChild(div);
-    });
-  }
-
-  // ===== DRAG (blok iznad prsta, bez senke) =====
-  const POINTER={active:false,fromSlotIndex:null};
-  function getCanvasPosFromClient(clientX, clientY){ const r=canvas.getBoundingClientRect(); return {x:clientX-r.left, y:clientY-r.top}; }
-  function startDragFromSlot(e){
-    const idx=Number(e.currentTarget.dataset.index), piece=state.hand[idx]; if(!piece||piece.used) return;
-    POINTER.active=true; POINTER.fromSlotIndex=idx;
-    state.dragging={piece,gx:null,gy:null,valid:false,px:null,py:null};
-    e.currentTarget.classList.add('used');
-    try{ e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-    document.body.style.cursor='grabbing'; e.preventDefault(); e.stopPropagation();
-  }
-  function onPointerMove(e){
-    if(!POINTER.active||!state.dragging) return;
-    const {x,y}=getCanvasPosFromClient(e.clientX, e.clientY);
-    state.dragging.px=x; state.dragging.py=y;
-
-    const s=state.cell, p=state.dragging.piece, liftY=72, offsetX=8;
-    const baseX = x - (p.w*s)/2 + offsetX;
-    const baseY = y - (p.h*s)/2 - liftY;
-
-    let gx=Math.round(baseX/s), gy=Math.round(baseY/s);
-    const maxX=BOARD_SIZE-p.w, maxY=BOARD_SIZE-p.h;
-    if(gx<0||gx>maxX||gy<0||gy>maxY){ state.dragging.valid=false; state.dragging.gx=null; state.dragging.gy=null; }
-    else { const ok=canPlace(p,gx,gy); state.dragging.valid=ok; state.dragging.gx=gx; state.dragging.gy=gy; }
-    requestDraw();
-  }
-  function onPointerUp(){
-    if(!POINTER.active||!state.dragging) return;
-    const d=state.dragging; const slot=trayEl?.querySelector(`.slot[data-index="${POINTER.fromSlotIndex}"]`);
-    POINTER.active=false; document.body.style.cursor='';
-    if(d.valid && d.gx!=null && d.gy!=null) place(d.piece,d.gx,d.gy);
-    else if(slot) slot.classList.remove('used');
-    state.dragging=null;
-  }
-  addEventListener('pointermove', onPointerMove, {passive:false});
-  addEventListener('pointerup', onPointerUp, {passive:true});
-  addEventListener('pointercancel', onPointerUp, {passive:true});
-
-  // ===== NAV =====
-  function showToast(msg){
-    let t=document.getElementById('toast');
-    if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
-      Object.assign(t.style,{position:'fixed',left:'50%',bottom:'24px',transform:'translateX(-50%)',background:'rgba(12,14,22,.82)',color:'#e8ecf1',padding:'10px 14px',borderRadius:'12px',boxShadow:'0 10px 30px rgba(0,0,0,.35)',zIndex:99,transition:'opacity .25s',opacity:'0',border:'1px solid rgba(255,255,255,.06)'}); }
-    t.textContent=msg; t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; }, 1600);
-  }
-  function updateModeLabel(){ setMode && (setMode.textContent='Classic'); }
-  function updateSoundLabel(){ setSound && (setSound.textContent = settings.sound?'🔈 On':'🔇 Off'); }
-  function applyTheme(t){ document.body.classList.toggle('light', t==='light'); }
-
-  resetBtn?.addEventListener('click', ()=> newGame());
-  backBtn?.addEventListener('click', ()=> goHome());
-  settingsBtn?.addEventListener('click', ()=> settingsModal.style.display='flex');
-  closeSettings?.addEventListener('click', ()=> settingsModal.style.display='none');
-  settingsModal?.querySelector('.backdrop')?.addEventListener('click', ()=> settingsModal.style.display='none');
-  setTheme?.addEventListener('click', ()=>{ settings.theme=settings.theme==='dark'?'light':'dark'; LS('bp10.theme',settings.theme); applyTheme(settings.theme); });
-  setSound?.addEventListener('click', ()=>{ settings.sound=!settings.sound; LS('bp10.sound', settings.sound?'1':'0'); updateSoundLabel(); });
-  setMode?.addEventListener('click', ()=> showToast('Classic'));
-  resetBest?.addEventListener('click', ()=>{ localStorage.removeItem('bp10.best'); state.best=0; bestEl && (bestEl.textContent=0); showToast('Best resetovan'); });
-  runTestsBtn?.addEventListener('click', ()=>{ const {passed,failed}=runTests(); showToast(`Testovi: ${passed} ✅ / ${failed} ❌`); });
-
-  startClassic?.addEventListener('click', ()=> startGame());
-  achMenuBtn?.addEventListener('click', ()=> showToast('Dostignuća — uskoro'));
-  playAgain?.addEventListener('click', ()=>{ gameOver.style.display='none'; newGame(); });
-  goMenu?.addEventListener('click', ()=>{ gameOver.style.display='none'; goHome(); });
-
-  function startGame(){ startScreen&&(startScreen.style.display='none'); app&&(app.style.display='flex'); sizeToScreen(); newGame(); }
-  function goHome(){ app&&(app.style.display='none'); startScreen&&(startScreen.style.display='flex'); state.dragging=null; }
-  function newGame(){ state.grid=createGrid(); state.score=0; scoreEl&&(scoreEl.textContent=0); state.hand=[]; state.combo=0; state.comboTimer=0; refillHand(); requestDraw(); showToast('Classic'); }
-
-  // ===== TESTS =====
-  function runTests(){
-    const results=[]; const log=(n,ok)=>{ results.push({n,ok}); (ok?console.log:console.error)(`[TEST] ${n}: ${ok?'PASS':'FAIL'}`); };
-    try{
-      log('anyFits defined', typeof anyFits==='function');
-      const p={blocks:[[0,0],[1,0]], w:2,h:1,color:'#fff',id:'t'};
-      log('canPlace OOB false', canPlace(p,-1,0)===false);
-      state.grid=createGrid(); for(let x=0;x<BOARD_SIZE-1;x++) state.grid[0][x]=1;
-      const s0=state.score; place({blocks:[[0,0]],w:1,h:1,color:'#fff',id:'t2'}, BOARD_SIZE-1, 0);
-      log('row clear adds pts', state.score>s0);
-    }catch(e){ console.error(e); }
-    return {passed:results.filter(r=>r.ok).length, failed:results.filter(r=>!r.ok).length};
-  }
-
-  // ===== DRAW LOOP =====
-  let drawQueued=false;
-  function requestDraw(){ if(!drawQueued){ drawQueued=true; requestAnimationFrame(()=>{ drawQueued=false; draw(); }); } }
-
-  // ===== STARTUP =====
-  sizeToScreen();
-  drawStartAurora();
-  if(!startClassic){ startScreen&&(startScreen.style.display='none'); app&&(app.style.display='flex'); newGame(); }
-})();
+// ====== Bootstrap ======
+loadBest();
+draw();
