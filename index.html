@@ -3,28 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Block • 8×8 — Glass Edition</title>
+  <title>BLOCK • 8×8 — Glass</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Start screen -->
+  <!-- START SCREEN -->
   <div id="startScreen" class="start">
     <canvas id="bg"></canvas>
-    <button id="settingsBtn" class="icon-btn" title="Podešavanja">⚙️</button>
     <div class="ss-inner">
-      <h1>BLOCK • 8×8</h1>
-      <div class="sub">Drag-n-drop • Čisti redove/kolone • Luks minimal</div>
-      <div class="ghost-board" id="ghost"></div>
-      <div class="cta">
-        <button id="startClassic" class="cta-main">▶ Igraj</button>
-      </div>
-      <div class="quick">
+      <div class="top-icons">
+        <button id="settingsBtn" class="icon-btn" title="Podešavanja">⚙️</button>
         <button id="achBtn" class="icon-btn" title="Dostignuća">🏆</button>
       </div>
+      <h1>BLOCK • 8×8</h1>
+      <button id="startClassic" class="cta-main">▶ Igraj</button>
     </div>
   </div>
 
-  <!-- App -->
+  <!-- APP -->
   <div class="wrap" id="app" style="display:none">
     <header>
       <div class="brand">BLOCK • 8×8</div>
@@ -33,7 +29,7 @@
         <div class="pill">Best: <span id="best">0</span></div>
       </div>
       <div class="toolbar">
-        <button id="backBtn" class="icon-btn" title="Nazad na meni">🏠</button>
+        <button id="backBtn" class="icon-btn" title="Meni">🏠</button>
         <button id="reset" class="btn" title="Nova igra">Reset</button>
       </div>
     </header>
@@ -47,7 +43,7 @@
     <div class="footer">Glass blokovi • Grid u aurori • 8×8</div>
   </div>
 
-  <!-- Settings Modal -->
+  <!-- SETTINGS -->
   <div id="settingsModal" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
@@ -61,24 +57,7 @@
     </div>
   </div>
 
-  <!-- Onboarding -->
-  <div id="onboarding" class="overlay" style="display:none">
-    <div class="backdrop"></div>
-    <div class="panel">
-      <h2>Kako se igra</h2>
-      <ol style="text-align:left; line-height:1.5; padding-left:18px">
-        <li>Prevuci blok iz donje trake na tablu.</li>
-        <li>Popuni ceo red ili kolonu da ih očistiš.</li>
-        <li>Kad potrošiš 3 bloka, dobijaš nova 3.</li>
-      </ol>
-      <div style="margin-top:10px; display:flex; gap:8px; justify-content:center">
-        <button id="skipOnb" class="btn">Preskoči</button>
-        <button id="startOnb" class="btn">Kreni!</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Game Over -->
+  <!-- GAME OVER -->
   <div id="gameOver" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
