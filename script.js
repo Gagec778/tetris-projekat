@@ -1,17 +1,17 @@
 (function(){
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
+  // ==== CANVASES ====
   const canvas = document.getElementById('game');
   const ctx = canvas?.getContext('2d', { alpha: true });
   const fx = document.getElementById('fx');
   const fctx = fx?.getContext('2d', { alpha: true });
-
   if (ctx)  ctx.imageSmoothingEnabled = false;
   if (fctx) fctx.imageSmoothingEnabled = false;
 
+  // ==== UI HOOKS (postojeći HTML) ====
   const app = document.getElementById('app');
   const startScreen = document.getElementById('startScreen');
-
   const trayEl = document.getElementById('tray');
   const scoreEl = document.getElementById('score');
   const bestEl  = document.getElementById('best');
@@ -42,7 +42,7 @@
   const achMenuBtn   = document.getElementById('achBtn');
   const ghost        = document.getElementById('ghost');
 
-  // Optional action bar hooks
+  // Optional action bar (ako postoji u tvom HTML-u)
   const btnRotate = document.getElementById('btnRotate');
   const btnHammer = document.getElementById('btnHammer');
   const btnShuffle= document.getElementById('btnShuffle');
@@ -51,15 +51,18 @@
   const cntShuffle= document.getElementById('cntShuffle');
   const cntBomb   = document.getElementById('cntBomb');
 
-  const BOARD_SIZE = 10;
+  // ==== KONFIG ====
+  const BOARD_SIZE = 8; // (prethodno 10) — traženo 8×8
 
-  // Malo prigušenije “mat” boje (i dalje prijatne)
+  // Toplije, svetle nijanse (bez pastela/hladnih)
   const COLORS = [
-    '#7fb8ff','#83df8c','#ffd67e','#f495bd','#88e7ef','#c9b0ff','#ffc68d','#9dd8f2',
-    '#90e0ef','#ffd166','#caffbf','#ffadad'
+    '#FF9F1C','#FFB703','#F77F00','#FFA62B','#FF6B6B',
+    '#F94144','#F3722C','#F8961E','#E56B6F','#FFD166',
+    '#F6BD60','#F4A261','#A7C957','#90BE6D'
   ];
   const COMBO_WINDOW = 360;
 
+  // ==== SETTINGS/LS ====
   const LS = (k,v)=> (v===undefined ? localStorage.getItem(k) : localStorage.setItem(k, v));
   const settings = {
     theme: LS('bp10.theme') || 'dark',
@@ -71,6 +74,7 @@
   updateSoundLabel();
   updateModeLabel();
 
+  // ==== RNG / AUDIO / HAPTICS ====
   function RNG(seed){ this.s = seed>>>0; }
   RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223)>>>0; return this.s/4294967296; };
   let rng = null;
@@ -91,6 +95,7 @@
   }
   const hapt=(ms=15)=>{ if(!settings.sound) return; if(navigator.vibrate) navigator.vibrate(ms); };
 
+  // ==== STATE ====
   let state = {
     grid: createGrid(),
     cell: 32,
@@ -106,6 +111,7 @@
   };
   if(bestEl) bestEl.textContent = state.best;
 
+  // ==== SIZE / LAYOUT ====
   function sizeToScreen(){
     if(!canvas || !ctx) return;
     const headerH = document.querySelector('header')?.offsetHeight || 60;
@@ -134,25 +140,27 @@
   }
   addEventListener('resize', sizeToScreen, {passive:true});
 
+  // ==== GRID HELPERS ====
   function createGrid(){ return Array.from({length:BOARD_SIZE},()=>Array(BOARD_SIZE).fill(0)); }
   function createObstaclesGrid(density=0.10, rngLike=null){
     const g=createGrid(); const R=rngLike||{next:Math.random};
     for(let y=0;y<BOARD_SIZE;y++){
       for(let x=0;x<BOARD_SIZE;x++){
-        const centerDist=Math.hypot(x-5,y-5); if(centerDist<2) continue;
+        const centerDist=Math.hypot(x-(BOARD_SIZE/2),y-(BOARD_SIZE/2)); if(centerDist<2) continue;
         const r=rngLike?R.next():Math.random(); if(r<density) g[y][x]=-1;
       }
     }
     return g;
   }
 
-  // ===== vizuelni helperi =====
-  function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:91,g:140,b:255}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
+  // ==== COLOR UTILS ====
+  function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:255,g:160,b:0}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   function adjustColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r+(255-r)*amt),0,255); const ng=clamp(Math.round(g+(255-g)*amt),0,255); const nb=clamp(Math.round(b+(255-b)*amt),0,255); return `rgb(${nr},${ng},${nb})`; }
   function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
+  // sub-pixel oštrina
   function snap(n){ return Math.round(n) + 0.5; }
   function rrPath(c,x,y,w,h,r){
     r = Math.min(r, w*0.5, h*0.5);
@@ -167,27 +175,27 @@
     c.closePath();
   }
 
-  // ===== MAT 3D BLOK =====
+  // ==== MAT 3D BLOK (topao, svetao, bez sjajne plastike) ====
   function drawMatBlock(c, x, y, s, baseColor, {alpha=1, placed=false}={}){
     c.save();
     c.imageSmoothingEnabled = false;
     c.globalAlpha = alpha;
 
-    // Telo: mat – blagi vertikalni ton
+    // Telo: mat vertikalni ton
     rrPath(c, x+1, y+1, s-2, s-2, Math.max(6, s*0.22));
     const body = c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0.00, adjustColor(baseColor, .15));  // svetlije gore
-    body.addColorStop(1.00, darkenColor(baseColor, .18));  // tamnije dole
+    body.addColorStop(0.00, adjustColor(baseColor, .12));  // mrvu svetlije gore
+    body.addColorStop(1.00, darkenColor(baseColor, .16));  // malo tamnije dole
     c.fillStyle = body; c.fill();
 
-    // Unutrašnja senka (subtilni “depth”)
+    // Unutrašnja meka senka (depth)
     const inner = c.createLinearGradient(x, y, x+s, y+s);
     inner.addColorStop(0.00,'rgba(0,0,0,.10)');
     inner.addColorStop(0.50,'rgba(0,0,0,0)');
     rrPath(c, x+1, y+1, s-2, s-2, Math.max(6, s*0.22));
     c.save(); c.globalCompositeOperation='multiply'; c.fillStyle=inner; c.fill(); c.restore();
 
-    // Top-left svetlo (soft, mat)
+    // Tihi top-left highlight (mat)
     const light = c.createLinearGradient(x, y, x+s, y+s);
     light.addColorStop(0.00,'rgba(255,255,255,.18)');
     light.addColorStop(0.35,'rgba(255,255,255,.06)');
@@ -201,13 +209,13 @@
     c.strokeStyle='rgba(0,0,0,.40)';
     c.stroke();
 
-    // Tanki unutrašnji rim – daje “skupo” bez sjaja
+    // Tanki unutrašnji rim
     rrPath(c, x+2, y+2, s-4, s-4, Math.max(5, s*0.18));
     c.lineWidth = Math.max(1, s*.04);
     c.strokeStyle='rgba(255,255,255,.10)';
     c.stroke();
 
-    // Zlati rub samo ako je položeno na tablu
+    // Zlatni rim samo kada je položeno na tablu
     if(placed){
       rrPath(c, x+1, y+1, s-2, s-2, Math.max(6, s*0.22));
       const gold=c.createLinearGradient(x,y,x,y+s);
@@ -217,15 +225,14 @@
     }
     c.restore();
   }
-
   const drawPieceCell = (c,x,y,s,color,alpha)=> drawMatBlock(c,x,y,s,color,{alpha});
-  const drawPlacedCell= (c,x,y,s)=> drawMatBlock(c,x,y,s,getCss('--accent')||'#ffd166',{alpha:.98, placed:true});
+  const drawPlacedCell= (c,x,y,s)=> drawMatBlock(c,x,y,s,getCss('--accent')||'#FFD166',{alpha:.98, placed:true});
   function drawPreviewCell(c, x, y, s, baseColor, canPlaceFlag){
     const col = canPlaceFlag ? baseColor : '#bb4a4a';
     drawMatBlock(c, x, y, s, col, {alpha: canPlaceFlag? 0.96 : 0.90, placed:false});
   }
 
-  // ===== SHAPES (bez promene mehanike) =====
+  // ==== SHAPES (ne menjamo mehaniku)
   const SHAPES = [
     [[0,0]], [[0,0],[1,0]], [[0,0],[1,0],[2,0]], [[0,0],[1,0],[2,0],[3,0]],
     [[0,0],[1,0],[2,0],[3,0],[4,0]],
@@ -250,6 +257,7 @@
   }
   function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
+  // ==== RULES HELPERS ====
   function canPlace(piece,gx,gy){
     for(const [dx,dy] of piece.blocks){
       const x=gx+dx,y=gy+dy;
@@ -268,41 +276,39 @@
   }
   function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-  // ===== AURORA (svetlija) =====
+  // ==== AURORA (svetlija; grid bez animacije — miran dizajn)
   function drawAurora(c,w,h,t){
     c.save();
     // svetliji gradient base
     const bg = c.createLinearGradient(0, 0, w, h);
-    bg.addColorStop(0, 'rgba(90,140,255,0.18)');
-    bg.addColorStop(1, 'rgba(120,255,200,0.18)');
+    bg.addColorStop(0, 'rgba(120,190,255,0.20)');
+    bg.addColorStop(1, 'rgba(180,255,210,0.22)');
     c.fillStyle = bg; c.fillRect(0,0,w,h);
 
-    // 3 nežne “trake” – lagano se pomeraju
-    const bands = [
-      {hue:'#6fd7ff', y: h*0.25, amp:18, alpha:0.22},
-      {hue:'#8affc1', y: h*0.55, amp:22, alpha:0.20},
-      {hue:'#d1a6ff', y: h*0.80, amp:20, alpha:0.18},
-    ];
+    // nežne trake (blago, kontinuirano; GRID se ne animira — ovo je samo pozadina)
     c.globalCompositeOperation='screen';
+    const bands = [
+      {hex:'#6fd7ff', y: h*0.28, amp:16, alpha:0.20, sp:0.7},
+      {hex:'#8affc1', y: h*0.56, amp:18, alpha:0.18, sp:0.6},
+      {hex:'#d1a6ff', y: h*0.82, amp:15, alpha:0.16, sp:0.5},
+    ];
     bands.forEach((b,i)=>{
       c.beginPath();
-      const A = b.amp, Y = b.y + Math.sin(t*0.6 + i)*6;
+      const A = b.amp, Y = b.y + Math.sin(t*0.6 + i)*5;
       c.moveTo(0, Y);
       for(let x=0;x<=w;x+=12){
-        const y = Y + Math.sin((x*0.02) + t*0.8 + i)*A;
+        const y = Y + Math.sin((x*0.02) + t*b.sp + i)*A;
         c.lineTo(x, y);
       }
       c.lineTo(w, h); c.lineTo(0,h); c.closePath();
-      c.fillStyle = b.hue.replace(')',','+b.alpha+')').replace('#','rgba(') // fallback ako je #, konvertovaćemo:
-      if (b.hue.startsWith('#')) {
-        const rgb = hexToRgb(b.hue);
-        c.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${b.alpha})`;
-      }
+      const rgb = hexToRgb(b.hex);
+      c.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${b.alpha})`;
       c.fill();
     });
     c.restore();
   }
 
+  // ==== DRAW ====
   function draw(){
     if(!canvas||!ctx) return;
     const s=state.cell, W=s*BOARD_SIZE, H=s*BOARD_SIZE;
@@ -311,11 +317,11 @@
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.scale(DPR, DPR);
 
-    // 1) svetlija aurora u pozadini canvasa (unutar borda)
+    // 1) svetlija aurora kao pozadina u canvasa
     const t = (performance.now? performance.now(): Date.now())/1000;
     drawAurora(ctx, W, H, t);
 
-    // 2) stakleni panel sa diskretnim dubinskim shadow-om (vizuelno skuplje)
+    // 2) stakleni panel (miran, bez “igranja” grida)
     rrPath(ctx,0,0,W,H,18);
     const glass=ctx.createLinearGradient(0,0,0,H);
     glass.addColorStop(0,'rgba(12,16,24,.22)');
@@ -325,30 +331,28 @@
     rrPath(ctx,1,1,W-2,H-2,16);
     ctx.strokeStyle='rgba(255,255,255,.07)'; ctx.lineWidth=1; ctx.stroke();
 
-    // 3) grid ćelije sa suptilnim “depth”-om
+    // 3) pločice grida — statične (nema animacije u samim ćelijama)
     for(let y=0;y<BOARD_SIZE;y++){
       for(let x=0;x<BOARD_SIZE;x++){
         const px=x*s, py=y*s, v=state.grid[y][x];
 
-        // pločica
         rrPath(ctx,px+1,py+1,s-2,s-2,9);
         if(v===1) {
           drawPlacedCell(ctx,px,py,s);
         } else if(v===-1) {
-          // prepreka – mat pločica
           const g=ctx.createLinearGradient(px,py,px,py+s);
           g.addColorStop(0,'rgba(0,0,0,.28)');
           g.addColorStop(1,'rgba(0,0,0,.36)');
           ctx.fillStyle=g; ctx.fill();
           ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1; ctx.stroke();
         } else {
-          // prazno – blaga mat ploča (da grid ne izgleda “jeftino”)
+          // statična mat ploča
           const g=ctx.createLinearGradient(px,py,px,py+s);
           g.addColorStop(0,'rgba(255,255,255,.06)');
           g.addColorStop(1,'rgba(0,0,0,.10)');
           ctx.fillStyle=g; ctx.fill();
 
-          // tanak unutrašnji rub da se pločice čitaju
+          // tanak unutrašnji rub
           rrPath(ctx,px+1.5,py+1.5,s-3,s-3,8);
           ctx.strokeStyle='rgba(255,255,255,.045)';
           ctx.lineWidth=1; ctx.stroke();
@@ -356,11 +360,11 @@
       }
     }
 
-    // 4) floating preview iznad prsta (glatko, bez senke)
+    // 4) floating preview iznad prsta (bez senke)
     if(state.dragging && state.dragging.px!=null){
       const {piece, px, py, valid} = state.dragging;
-      const liftY = 72;
-      const offsetX = 8;
+      const liftY = 72;   // iznad prsta
+      const offsetX = 8;  // mrvu desno
       const baseX = px - (piece.w*s)/2 + offsetX;
       const baseY = py - (piece.h*s)/2 - liftY;
       for(const [dx,dy] of piece.blocks){
@@ -369,7 +373,7 @@
     }
   }
 
-  // ===== FX (ne diramo) =====
+  // ==== FX (kao pre) ====
   const particles=[]; const scorePopups=[]; let comboFlash=0, comboFlashText=''; let pcFlash=0; let confetti=[];
   const rings=[];
   function spawnParticles(cells){
@@ -460,7 +464,7 @@
   }
   requestAnimationFrame(stepFX);
 
-  // ===== gameplay (netaknuto) =====
+  // ==== GAMEPLAY ====
   function scoreForClear(c){ return c*10 + (c>1 ? (c-1)*5 : 0); }
   function place(piece,gx,gy){
     for(const [dx,dy] of piece.blocks){ state.grid[gy+dy][gx+dx]=1; }
@@ -534,7 +538,7 @@
     state.grid[0]=row;
   }
 
-  // tray preview (mat render)
+  // ==== TRAY RENDER ====
   function pieceToCanvas(piece){
     const scale=22, pad=6;
     const w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
@@ -561,6 +565,7 @@
     });
   }
 
+  // ==== DRAGGING ====
   const POINTER={active:false,fromSlotIndex:null};
   function getCanvasPosFromClient(clientX, clientY){
     const rect=canvas.getBoundingClientRect();
@@ -579,8 +584,6 @@
     document.body.style.cursor='grabbing';
     e.preventDefault(); e.stopPropagation();
   }
-
-  // grid pozicija iz vizuelne pozicije bloka (glatko klizi)
   function onGlobalPointerMoveRaw(e){
     if(!POINTER.active||!state.dragging) return;
     const {x,y}=getCanvasPosFromClient(e.clientX, e.clientY);
@@ -589,7 +592,7 @@
 
     const s = state.cell;
     const piece = state.dragging.piece;
-    const liftY  = 72;
+    const liftY  = 72;  // isto kao u draw()
     const offsetX= 8;
 
     const baseX = x - (piece.w*s)/2 + offsetX;
@@ -618,7 +621,6 @@
     }
     requestDraw();
   }
-
   function onGlobalPointerUp(){
     if(!POINTER.active||!state.dragging) return;
     const d=state.dragging;
@@ -633,6 +635,7 @@
   window.addEventListener('pointerup', onGlobalPointerUp, {passive:true});
   window.addEventListener('pointercancel', onGlobalPointerUp, {passive:true});
 
+  // ==== POWERUPS (ako koristiš) ====
   function updatePowerupCounters(){
     if(cntHammer) cntHammer.textContent = state.powerups.hammer;
     if(cntShuffle) cntShuffle.textContent = state.powerups.shuffle;
@@ -649,8 +652,7 @@
     for(let y=0;y<BOARD_SIZE;y++) for(let x=0;x<BOARD_SIZE;x++) if(state.grid[y][x]===1) cells.push([x,y]);
     spawnParticles(cells);
     state.grid = createGrid();
-    let pcFlash=28; // lokalno samo
-    requestDraw();
+    pcFlash=28; requestDraw();
     showToast('💥 Bomb: full clear!'); beep(220,0.1,'sawtooth',0.22); setTimeout(()=>beep(180,0.1,'square',0.18), 100);
     achievementTick('usePower');
   }
@@ -675,6 +677,7 @@
     bombClear(); state.powerups.bomb=Math.max(0,state.powerups.bomb-1); updatePowerupCounters();
   });
 
+  // ==== MISC UI ====
   let toastTimer=null;
   function showToast(msg){
     let t=document.getElementById('toast');
@@ -752,6 +755,7 @@
     });
   })();
 
+  // ==== NAV ====
   resetBtn?.addEventListener('click', ()=> newGame());
   backBtn?.addEventListener('click', ()=> goHome());
 
@@ -776,10 +780,7 @@
     settings.mode=mode; LS('bp10.mode',mode);
     rng=null;
     if(startScreen) startScreen.style.display='none';
-    if(app){
-      app.style.display='flex';
-      app.style.pointerEvents='auto';
-    }
+    if(app){ app.style.display='flex'; app.style.pointerEvents='auto'; }
     sizeToScreen();
     newGame();
   }
@@ -845,10 +846,11 @@
     const g=createGrid();
     for(let x=0;x<BOARD_SIZE;x++){ g[0][x]=-1; g[BOARD_SIZE-1][x]=-1; }
     for(let y=0;y<BOARD_SIZE;y++){ g[y][0]=-1; g[y][BOARD_SIZE-1]=-1; }
-    g[4][4]=-1; g[5][5]=-1; g[4][6]=-1; g[6][4]=-1;
+    if(BOARD_SIZE>=8){ g[3][3]=-1; g[4][4]=-1; g[3][5]=-1; g[5][3]=-1; }
     return g;
   }
 
+  // ==== TESTS (ispravljeno za 8×8) ====
   function runTests(){
     const results=[]; const log=(n,ok)=>{ results.push({n,ok}); (ok?console.log:console.error)(`[TEST] ${n}: ${ok?'PASS':'FAIL'}`); };
     try{
@@ -856,28 +858,31 @@
       const p={blocks:[[0,0],[1,0]], w:2,h:1,color:'#fff',id:'t'};
       log('canPlace rejects OOB', canPlace(p,-1,0)===false);
       state.grid=createGrid(); for(let x=0;x<BOARD_SIZE-1;x++) state.grid[0][x]=1;
-      const s0=state.score; place({blocks:[[0,0]],w:1,h:1,color:'#fff',id:'t2'},9,0);
+      const s0=state.score; place({blocks:[[0,0]],w:1,h:1,color:'#fff',id:'t2'}, BOARD_SIZE-1, 0);
       log('row clear adds points', state.score>s0);
     }catch(e){ console.error(e); }
     return {passed:results.filter(r=>r.ok).length, failed:results.filter(r=>!r.ok).length};
   }
 
+  // ==== DRAW LOOP CONTROL ====
   let drawQueued=false;
   function requestDraw(){ if(!drawQueued){ drawQueued=true; requestAnimationFrame(()=>{ drawQueued=false; draw(); }); } }
 
+  // ==== GHOST MINIBOARD (na start ekranu) — prilagođeno 8×8 ====
   (function initGhost(){
     if(!ghost) return; ghost.innerHTML='';
-    for(let i=0;i<100;i++){ const s=document.createElement('span'); ghost.appendChild(s); }
-    [12,13,14,22,32,42,52,62,72,82].forEach(i=>{ if(ghost.children[i]) ghost.children[i].style.background="#ffffff33"; });
+    const cells = BOARD_SIZE*BOARD_SIZE;
+    for(let i=0;i<cells;i++){ const s=document.createElement('span'); ghost.appendChild(s); }
+    // par diskretnih upaljenih polja radi ambijenta (diagonala)
+    for(let i=0;i<cells;i+= (BOARD_SIZE+1)){ if(ghost.children[i]) ghost.children[i].style.background="#ffffff33"; }
   })();
 
+  // ==== START ====
+  // (parallax tracking nije potreban — grid je miran, aurora glatka)
   sizeToScreen();
   if(!startClassic){
     if(startScreen) startScreen.style.display='none';
-    if(app){
-      app.style.display='flex';
-      app.style.pointerEvents='auto';
-    }
+    if(app){ app.style.display='flex'; app.style.pointerEvents='auto'; }
     newGame();
   }
 })();
