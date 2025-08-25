@@ -33,12 +33,12 @@
   const goMenu   = document.getElementById('goMenu');
   const gameOver = document.getElementById('gameOver');
 
-  // ===== CONFIG (oko “prethodne dobre” baze) =====
+  // ===== CONFIG =====
   const BOARD_SIZE = 8;
   const COMBO_WINDOW = 360;
   const COLORS = ['#FF9F1C','#FFB703','#F77F00','#FFA62B','#FF6B6B','#F94144','#F3722C','#F8961E','#FFD166','#F6BD60','#F28482','#E56B6F'];
 
-  // ===== SETTINGS/LS =====
+  // ===== SETTINGS / LS =====
   const LS=(k,v)=> (v===undefined? localStorage.getItem(k) : localStorage.setItem(k,v));
   const settings = {
     theme: LS('bp10.theme') || 'dark',
@@ -47,7 +47,7 @@
   };
   applyTheme(settings.theme); updateSoundLabel(); updateModeLabel();
 
-  // ===== Audio/Haptics =====
+  // ===== Audio / Haptics =====
   let audioCtx=null;
   function ensureAudio(){ if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
   function beep(freq=600, dur=0.06, type='sine', gain=0.18){
@@ -64,7 +64,7 @@
   let state={ grid:createGrid(), cell:36, score:0, best:Number(LS('bp10.best')||0), hand:[], dragging:null, combo:0, comboTimer:0 };
   bestEl && (bestEl.textContent=state.best);
 
-  // ===== Layout =====
+  // ===== SIZE / LAYOUT =====
   function sizeToScreen(){
     if(!canvas||!ctx) return;
     const headerH = document.querySelector('header')?.offsetHeight || 60;
@@ -90,7 +90,7 @@
   }
   addEventListener('resize', sizeToScreen, {passive:true});
 
-  // ===== Utils =====
+  // ===== HELPERS =====
   function createGrid(){ return Array.from({length:BOARD_SIZE},()=>Array(BOARD_SIZE).fill(0)); }
   function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:255,g:200,b:150}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -104,7 +104,7 @@
     c.lineTo(x0+rr,y1); c.quadraticCurveTo(x0,y1,x0,y1-rr);
     c.lineTo(x0,y0+rr); c.quadraticCurveTo(x0,y0,x0+rr,y0); c.closePath(); }
 
-  // ===== Aurora (lepa, svetlija; bez “talasa” u ćelijama) =====
+  // ===== AURORA (pozadina, bez “talasa” u samom gridu) =====
   function drawAurora(c,w,h){
     c.save();
     const bg = c.createLinearGradient(0, 0, w, h);
@@ -122,7 +122,6 @@
     c.fillStyle=g2; c.fillRect(0,0,w,h);
     c.restore();
   }
-  // Start-screen kontinuirano
   function drawStartAurora(){
     if(!bgCnv) return;
     const b=bgCnv.getContext('2d'); b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR);
@@ -131,7 +130,7 @@
     requestAnimationFrame(drawStartAurora);
   }
 
-  // ===== Mat 3D blok =====
+  // ===== MAT 3D BLOK =====
   function drawMatBlock(c, x, y, s, baseColor, {alpha=1, placed=false}={}){
     c.save(); c.globalAlpha=alpha;
     rrPath(c, x+1, y+1, s-2, s-2, Math.max(6, s*0.22));
@@ -162,7 +161,7 @@
   const drawPlacedCell = (c,x,y,s)=> drawMatBlock(c,x,y,s,getCss('--accent')||'#FFD166',{alpha:.98, placed:true});
   function drawPreviewCell(c,x,y,s,col,ok){ drawMatBlock(c,x,y,s, ok?col:'#c65454', {alpha: ok?.96:.90}); }
 
-  // ===== Shapes / pieces =====
+  // ===== PIECES =====
   const SHAPES = [
     [[0,0]], [[0,0],[1,0]], [[0,0],[1,0],[2,0]], [[0,0],[1,0],[2,0],[3,0]],
     [[0,0],[1,0],[2,0],[3,0],[4,0]],
@@ -183,7 +182,7 @@
   }
   function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
-  // ===== Rules =====
+  // ===== RULES =====
   function canPlace(piece,gx,gy){
     for(const [dx,dy] of piece.blocks){
       const x=gx+dx, y=gy+dy;
@@ -209,14 +208,14 @@
     // 1) aurora
     drawAurora(ctx, W, H);
 
-    // 2) stakleni panel (priguši auroru tek toliko)
+    // 2) stakleni panel iznad aurora
     rrPath(ctx,0,0,W,H,18);
     const panel=ctx.createLinearGradient(0,0,0,H);
     panel.addColorStop(0,'rgba(12,16,24,.18)'); panel.addColorStop(1,'rgba(12,16,24,.24)');
     ctx.fillStyle=panel; ctx.fill();
     rrPath(ctx,1,1,W-2,H-2,16); ctx.strokeStyle='rgba(255,255,255,.10)'; ctx.lineWidth=1; ctx.stroke();
 
-    // 3) grid (statičan): blaga popuna + tanak border; popunjenom ćelijom nacrtaj mat blok
+    // 3) grid — blaga popuna + tanak border; popunjeno = blok
     for(let y=0;y<BOARD_SIZE;y++){
       for(let x=0;x<BOARD_SIZE;x++){
         const px=x*s, py=y*s, v=state.grid[y][x];
@@ -266,7 +265,7 @@
   }
   requestAnimationFrame(stepFX);
 
-  // ===== Scoring / place =====
+  // ===== PLACE / SCORE =====
   function scoreForClear(c){ return c*10 + (c>1 ? (c-1)*5 : 0); }
   function place(piece,gx,gy){
     for(const [dx,dy] of piece.blocks){ state.grid[gy+dy][gx+dx]=1; }
@@ -294,7 +293,7 @@
     requestDraw();
   }
 
-  // ===== Tray =====
+  // ===== TRAY =====
   function drawPieceToCanvas(piece){
     const scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
     const c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -313,7 +312,7 @@
     });
   }
 
-  // ===== Dragging (blok iznad prsta, glatko; bez “senke”) =====
+  // ===== DRAG (blok iznad prsta, bez senke) =====
   const POINTER={active:false,fromSlotIndex:null};
   function getCanvasPosFromClient(clientX, clientY){ const r=canvas.getBoundingClientRect(); return {x:clientX-r.left, y:clientY-r.top}; }
   function startDragFromSlot(e){
@@ -351,7 +350,7 @@
   addEventListener('pointerup', onPointerUp, {passive:true});
   addEventListener('pointercancel', onPointerUp, {passive:true});
 
-  // ===== UI nav =====
+  // ===== NAV =====
   function showToast(msg){
     let t=document.getElementById('toast');
     if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
@@ -380,13 +379,9 @@
 
   function startGame(){ startScreen&&(startScreen.style.display='none'); app&&(app.style.display='flex'); sizeToScreen(); newGame(); }
   function goHome(){ app&&(app.style.display='none'); startScreen&&(startScreen.style.display='flex'); state.dragging=null; }
+  function newGame(){ state.grid=createGrid(); state.score=0; scoreEl&&(scoreEl.textContent=0); state.hand=[]; state.combo=0; state.comboTimer=0; refillHand(); requestDraw(); showToast('Classic'); }
 
-  function newGame(){
-    state.grid=createGrid(); state.score=0; scoreEl&&(scoreEl.textContent=0);
-    state.hand=[]; state.combo=0; state.comboTimer=0; refillHand(); requestDraw(); showToast('Classic');
-  }
-
-  // ===== Tests =====
+  // ===== TESTS =====
   function runTests(){
     const results=[]; const log=(n,ok)=>{ results.push({n,ok}); (ok?console.log:console.error)(`[TEST] ${n}: ${ok?'PASS':'FAIL'}`); };
     try{
@@ -400,11 +395,11 @@
     return {passed:results.filter(r=>r.ok).length, failed:results.filter(r=>!r.ok).length};
   }
 
-  // ===== Draw loop =====
+  // ===== DRAW LOOP =====
   let drawQueued=false;
   function requestDraw(){ if(!drawQueued){ drawQueued=true; requestAnimationFrame(()=>{ drawQueued=false; draw(); }); } }
 
-  // ===== Start =====
+  // ===== STARTUP =====
   sizeToScreen();
   drawStartAurora();
   if(!startClassic){ startScreen&&(startScreen.style.display='none'); app&&(app.style.display='flex'); newGame(); }
