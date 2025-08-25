@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>BLOCK • 8×8 — Glass</title>
+  <title>BLOCK • 8×8</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- START SCREEN -->
+  <!-- START SCREEN (kao pre: aurora pozadina, samo ikone – bez teksta) -->
   <div id="startScreen" class="start">
     <canvas id="bg"></canvas>
     <div class="ss-inner">
@@ -36,14 +36,14 @@
 
     <div class="board-area">
       <canvas id="game" width="360" height="360" aria-label="8×8 tabla"></canvas>
-      <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
+      <canvas id="fx"   width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
     </div>
 
     <div class="tray" id="tray"></div>
-    <div class="footer">Glass blokovi • Grid u aurori • 8×8</div>
+    <div class="footer">Minimal • 8×8 • Aurora • Smooth drag</div>
   </div>
 
-  <!-- SETTINGS -->
+  <!-- SETTINGS (isti ID-jevi koje skripta očekuje) -->
   <div id="settingsModal" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
