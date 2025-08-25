@@ -1,7 +1,4 @@
 (function(){
-  // =========================
-  //  CORE / DOM REFERENCES
-  // =========================
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
   const canvas = document.getElementById('game');
@@ -42,7 +39,7 @@
   const achMenuBtn   = document.getElementById('achBtn');
   const ghost        = document.getElementById('ghost');
 
-  // (Opcioni) Action bar (ako kasnije dodaš u HTML)
+  // Optional action bar hooks
   const btnRotate = document.getElementById('btnRotate');
   const btnHammer = document.getElementById('btnHammer');
   const btnShuffle= document.getElementById('btnShuffle');
@@ -51,20 +48,14 @@
   const cntShuffle= document.getElementById('cntShuffle');
   const cntBomb   = document.getElementById('cntBomb');
 
-  // =========================
-  //  CONSTANTS / SETTINGS
-  // =========================
   const BOARD_SIZE = 10;
-  const COLORS = [
-    '#76b3ff','#7ad37a','#ffd166','#f17fb5','#6ee7f0','#c9a6ff','#ffb86b','#8ecae6'
-  ];
-  const COMBO_WINDOW = 360; // ~6s @60fps
+  const COLORS = ['#76b3ff','#7ad37a','#ffd166','#f17fb5','#6ee7f0','#c9a6ff','#ffb86b','#8ecae6'];
+  const COMBO_WINDOW = 360;
 
   const LS = (k,v)=> (v===undefined ? localStorage.getItem(k) : localStorage.setItem(k, v));
   const settings = {
     theme: LS('bp10.theme') || 'dark',
     sound: LS('bp10.sound')!==null ? LS('bp10.sound')==='1' : true,
-    // classic | obstacles | time | arcade | survival | zen | puzzle
     mode:  LS('bp10.mode') || 'classic',
     onboarded: LS('bp10.onboarded')==='1'
   };
@@ -72,13 +63,11 @@
   updateSoundLabel();
   updateModeLabel();
 
-  // RNG
   function RNG(seed){ this.s = seed>>>0; }
   RNG.prototype.next = function(){ this.s = (this.s*1664525 + 1013904223)>>>0; return this.s/4294967296; };
   let rng = null;
   const rnd = ()=> rng ? rng.next() : Math.random();
 
-  // Audio/Haptics
   let audioCtx = null;
   function ensureAudio(){ if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
   function beep(freq=600, dur=0.06, type='sine', gain=0.18){
@@ -94,9 +83,6 @@
   }
   const hapt=(ms=15)=>{ if(!settings.sound) return; if(navigator.vibrate) navigator.vibrate(ms); };
 
-  // =========================
-  //  STATE
-  // =========================
   let state = {
     grid: createGrid(),
     cell: 32,
@@ -112,9 +98,6 @@
   };
   if(bestEl) bestEl.textContent = state.best;
 
-  // =========================
-  //  LAYOUT / CANVAS SIZING
-  // =========================
   function sizeToScreen(){
     if(!canvas || !ctx) return;
     const headerH = document.querySelector('header')?.offsetHeight || 60;
@@ -140,9 +123,6 @@
   }
   addEventListener('resize', sizeToScreen, {passive:true});
 
-  // =========================
-  //  GRID / PIECES
-  // =========================
   function createGrid(){ return Array.from({length:BOARD_SIZE},()=>Array(BOARD_SIZE).fill(0)); }
   function createObstaclesGrid(density=0.10, rngLike=null){
     const g=createGrid(); const R=rngLike||{next:Math.random};
@@ -196,9 +176,6 @@
   }
   function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-  // =========================
-  //  COLOR UTILS / LUX LOOK
-  // =========================
   function roundRect(c,x,y,w,h,r){ c.beginPath(); r=Math.min(r,w/2,h/2); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
   function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:91,g:140,b:255}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -206,15 +183,11 @@
   function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  // Dragulj blok (fasete + specular + golden rim kod placed)
   function drawGem(c,x,y,s,baseColor,{alpha=1, placed=false}={}){
     c.save(); c.globalAlpha=alpha;
-
-    // soft drop shadow
     c.fillStyle='rgba(0,0,0,.28)';
     roundRect(c,x+2,y+4,s-4,s-3,Math.max(6,s*.18)); c.fill();
 
-    // telo (stakleni gradient)
     roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
     const body=c.createLinearGradient(x,y, x, y+s);
     body.addColorStop(0.00, adjustColor(baseColor, .35));
@@ -222,7 +195,6 @@
     body.addColorStop(1.00, darkenColor(baseColor, .30));
     c.fillStyle=body; c.fill();
 
-    // fasete (dijagonalne)
     const facet=c.createLinearGradient(x, y, x+s, y+s);
     facet.addColorStop(0.0, 'rgba(255,255,255,.30)');
     facet.addColorStop(0.5, 'rgba(255,255,255,0)');
@@ -230,7 +202,6 @@
     roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22)); c.fillStyle=facet; c.fill();
     c.restore();
 
-    // unutrašnji specular (highlight)
     const spec=c.createRadialGradient(x+s*.35,y+s*.25,1, x+s*.25,y+s*.18, s*.65);
     spec.addColorStop(0,'rgba(255,255,255,.65)');
     spec.addColorStop(.35,'rgba(255,255,255,.28)');
@@ -238,12 +209,10 @@
     c.globalAlpha=.75; c.fillStyle=spec;
     c.beginPath(); c.ellipse(x+s*.34, y+s*.26, s*.42, s*.28, -0.25, 0, Math.PI*2); c.fill();
 
-    // border (stakleni)
     roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
     c.lineWidth=Math.max(1,s*.06);
     c.strokeStyle='rgba(0,0,0,.40)'; c.stroke();
 
-    // zlatni rim kada je postavljen
     if(placed){
       roundRect(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
       const gold=c.createLinearGradient(x,y,x,y+s);
@@ -251,15 +220,11 @@
       gold.addColorStop(1,'rgba(180,120,30,.55)');
       c.lineWidth=Math.max(1, s*.07); c.strokeStyle=gold; c.stroke();
     }
-
     c.restore();
   }
   const drawPieceCell = (c,x,y,s,color,alpha)=> drawGem(c,x,y,s,color,{alpha});
   const drawPlacedCell= (c,x,y,s)=> drawGem(c,x,y,s,getCss('--accent')||'#ffd166',{alpha:.98, placed:true});
 
-  // =========================
-  //  RENDER BOARD (glass panel)
-  // =========================
   function draw(){
     if(!canvas||!ctx) return;
     const s=state.cell;
@@ -268,18 +233,17 @@
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.scale(DPR, DPR);
 
-    // stakleni panel preko aurore
+    // glass panel
     roundRect(ctx,0,0,s*BOARD_SIZE,s*BOARD_SIZE,18);
     const panel=ctx.createLinearGradient(0,0,0,s*BOARD_SIZE);
     panel.addColorStop(0,'rgba(13,16,25,.32)');
     panel.addColorStop(1,'rgba(13,16,25,.42)');
     ctx.fillStyle=panel; ctx.fill();
 
-    // unutrašnja bordura
     roundRect(ctx,1,1,s*BOARD_SIZE-2,s*BOARD_SIZE-2,16);
     ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1; ctx.stroke();
 
-    // mreža ćelija (diskretno)
+    // cells
     for(let y=0;y<BOARD_SIZE;y++){
       for(let x=0;x<BOARD_SIZE;x++){
         const px=x*s, py=y*s, v=state.grid[y][x];
@@ -292,24 +256,32 @@
       }
     }
 
-    // ghost tokom drag-a
+    // ghost snap na mreži
     if(state.dragging){
       const {piece,gx,gy,valid}=state.dragging;
       if(gx!=null&&gy!=null){
         for(const [dx,dy] of piece.blocks){
           const x=(gx+dx)*s, y=(gy+dy)*s;
-          valid ? drawPieceCell(ctx,x,y,s,piece.color,.95) : drawGem(ctx,x,y,s,'#7a2c2c',{alpha:.55});
+          drawPieceCell(ctx,x,y,s, valid?piece.color:'#7a2c2c', valid?0.85:0.55);
         }
+      }
+    }
+
+    // floating preview IZNAD prsta (pomereno na gore da se vidi cilj)
+    if(state.dragging && state.dragging.px!=null){
+      const {piece, px, py} = state.dragging;
+      const lift = 14; // koliko iznad prsta
+      const baseX = px - (piece.w*s)/2;
+      const baseY = py - (piece.h*s)/2 - lift;
+      for(const [dx,dy] of piece.blocks){
+        drawPieceCell(ctx, baseX + dx*s, baseY + dy*s, s, piece.color, 0.28);
       }
     }
   }
 
-  // =========================
-  //  FX LAYER (particles, ring, popups)
-  // =========================
+  // FX
   const particles=[]; const scorePopups=[]; let comboFlash=0, comboFlashText=''; let pcFlash=0; let confetti=[];
   const rings=[];
-
   function spawnParticles(cells){
     if(!fx||!fctx) return;
     const s=state.cell, d=DPR;
@@ -330,14 +302,11 @@
     if(!fx) return;
     rings.push({x:x*state.cell*DPR, y:y*state.cell*DPR, r:0, life:26});
   }
-
   function stepFX(){
     if(!fx||!fctx){ requestAnimationFrame(stepFX); return; }
-
     fctx.setTransform(1,0,0,1,0,0);
     fctx.clearRect(0,0,fx.width,fx.height);
 
-    // particles
     fctx.fillStyle='#ffffffaa';
     for(let i=0;i<particles.length;i++){
       const p=particles[i];
@@ -347,11 +316,9 @@
     }
     for(let i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
 
-    // confetti
     confetti.forEach(c=>{ c.x+=c.vx; c.y+=c.vy; c.vy+=0.06; c.life--; fctx.globalAlpha=Math.max(0,c.life/120); fctx.fillStyle=c.c; fctx.fillRect(c.x,c.y,3*DPR,6*DPR); });
     for(let i=confetti.length-1;i>=0;i--) if(confetti[i].life<=0) confetti.splice(i,1);
 
-    // rings (gold ripple)
     for(let i=0;i<rings.length;i++){
       const r=rings[i];
       r.r += 8*DPR; r.life--;
@@ -363,7 +330,6 @@
     }
     for(let i=rings.length-1;i>=0;i--) if(rings[i].life<=0) rings.splice(i,1);
 
-    // score popups (zlatni)
     fctx.globalAlpha=1;
     for(let i=0;i<scorePopups.length;i++){
       const p=scorePopups[i];
@@ -377,7 +343,6 @@
     }
     for(let i=scorePopups.length-1;i>=0;i--) if(scorePopups[i].life<=0) scorePopups.splice(i,1);
 
-    // combo flash
     if(state.comboTimer>0){ state.comboTimer--; if(state.comboTimer<=0) state.combo=0; }
     if(comboFlash>0 && state.combo>1 && comboFlashText){
       const total=48, t=Math.max(0,Math.min(1,comboFlash/total));
@@ -395,30 +360,21 @@
       comboFlash--;
     }
 
-    // perfect clear flash
     if(pcFlash>0){
       const alpha = Math.min(0.35, pcFlash/40 * 0.35);
       fctx.fillStyle = `rgba(255,255,255,${alpha})`;
       fctx.fillRect(0,0,fx.width,fx.height);
       pcFlash--;
     }
-
     requestAnimationFrame(stepFX);
   }
   requestAnimationFrame(stepFX);
 
-  // =========================
-  //  GAME LOGIC
-  // =========================
   function scoreForClear(c){ return c*10 + (c>1 ? (c-1)*5 : 0); }
-
   function place(piece,gx,gy){
     for(const [dx,dy] of piece.blocks){ state.grid[gy+dy][gx+dx]=1; }
-
-    // prsten svetlosti sa centra komada
     spawnRing(gx + piece.w/2, gy + piece.h/2);
 
-    // clean check
     const fullRows=[], fullCols=[];
     for(let y=0;y<BOARD_SIZE;y++){ let ok=true; for(let x=0;x<BOARD_SIZE;x++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullRows.push(y); }
     for(let x=0;x<BOARD_SIZE;x++){ let ok=true; for(let y=0;y<BOARD_SIZE;y++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullCols.push(x); }
@@ -433,14 +389,12 @@
       beep(760,.08,'triangle',0.22); hapt(28);
     } else { beep(520,.05,'sine',0.16); hapt(12); }
 
-    // time bonus
     if (settings.mode==='time' && cleared>0){
       const add = cleared===1?3 : cleared===2?6 : 10;
       state.timeLeft = Math.min(state.timeLeft + add, 120);
       showToast(`+${add}s`); updateTimePill();
     }
 
-    // combo & scoring
     const baseGain=piece.blocks.length, clearBonus=scoreForClear(cleared);
     let comboMult=1;
     if(cleared>0){
@@ -450,10 +404,8 @@
     const gainNow=(baseGain+clearBonus)*comboMult;
     state.score+=gainNow; if(scoreEl) scoreEl.textContent=state.score;
 
-    // golden popup
     if(fx){ const cx=(gx+piece.w/2)*state.cell*DPR, cy=(gy+piece.h/2)*state.cell*DPR; scorePopups.push({x:cx,y:cy,txt:(cleared>0&&comboMult>1)?`+${gainNow} ×${comboMult}`:`+${gainNow}`,life:40}); }
 
-    // perfect clear
     if(isBoardEmpty()){
       state.score+=50; if(scoreEl) scoreEl.textContent=state.score;
       pcFlash=40; showToast('✨ Perfect Clear +50'); beep(880,0.1,'sawtooth',0.18);
@@ -479,7 +431,6 @@
       if(settings.mode==='zen'){ showToast('Zen: nema poteza — reshuffle'); shuffleHand(); renderTray(); }
       else { endTimeMode(); if(goStats) goStats.textContent = `Score: ${state.score} • Best: ${state.best}`; if(gameOver) gameOver.style.display='flex'; beep(220,0.15); hapt(40); }
     }
-
     requestDraw();
   }
 
@@ -492,16 +443,12 @@
     state.grid[0]=row;
   }
 
-  // =========================
-  //  TRAY & MINI CANVAS
-  // =========================
   function pieceToCanvas(piece){
     const scale=18, pad=6;
     const w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
     const c=document.createElement('canvas');
     c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
     const cx=c.getContext('2d'); cx.scale(DPR,DPR);
-    // baršunasta podloga
     cx.fillStyle='rgba(0,0,0,.24)'; roundRect(cx,0,0,w,h,12); cx.fill();
     for(const [dx,dy] of piece.blocks){
       const x=pad+dx*scale, y=pad+dy*scale;
@@ -523,9 +470,6 @@
     });
   }
 
-  // =========================
-  //  POINTER / DRAG
-  // =========================
   const POINTER={active:false,fromSlotIndex:null};
   function getCanvasPosFromClient(clientX, clientY){
     const rect=canvas.getBoundingClientRect();
@@ -538,14 +482,13 @@
     if(!piece||piece.used) return;
 
     POINTER.active=true; POINTER.fromSlotIndex=idx;
-    state.dragging={piece,gx:null,gy:null,valid:false,lastValid:null};
+    state.dragging={piece,gx:null,gy:null,valid:false,lastValid:null,px:null,py:null};
     target.classList.add('used');
     try{ target.setPointerCapture && target.setPointerCapture(e.pointerId); }catch(_){}
     document.body.style.cursor='grabbing';
     e.preventDefault(); e.stopPropagation();
   }
 
-  // raf-batched pointer move (glatko)
   let moveQueued=false, lastMoveEvent=null;
   function onGlobalPointerMoveRaw(e){
     if(!POINTER.active||!state.dragging) return;
@@ -556,10 +499,12 @@
     moveQueued=false;
     const e=lastMoveEvent; if(!e||!POINTER.active||!state.dragging) return;
     const {x,y}=getCanvasPosFromClient(e.clientX, e.clientY);
+    state.dragging.px = x;
+    state.dragging.py = y;
+
     const s=state.cell;
     let gx=Math.floor(x/s), gy=Math.floor(y/s);
 
-    // tolerantno klampovanje uz ivice
     const maxX=BOARD_SIZE - state.dragging.piece.w;
     const maxY=BOARD_SIZE - state.dragging.piece.h;
     if (gx < -0.3) { gx = null; } else if (gx > maxX + 0.3) { gx = null; } else { gx = Math.max(0, Math.min(maxX, gx)); }
@@ -595,9 +540,6 @@
   window.addEventListener('pointerup', onGlobalPointerUp, {passive:true});
   window.addEventListener('pointercancel', onGlobalPointerUp, {passive:true});
 
-  // =========================
-  //  POWER-UPS
-  // =========================
   function updatePowerupCounters(){
     if(cntHammer) cntHammer.textContent = state.powerups.hammer;
     if(cntShuffle) cntShuffle.textContent = state.powerups.shuffle;
@@ -639,24 +581,6 @@
     bombClear(); state.powerups.bomb=Math.max(0,state.powerups.bomb-1); updatePowerupCounters();
   });
 
-  // Hammer tap na tablu
-  canvas?.addEventListener('click', (e)=>{
-    if(state.using!=='hammer') return;
-    const rect=canvas.getBoundingClientRect();
-    const gx=Math.floor((e.clientX-rect.left)/state.cell);
-    const gy=Math.floor((e.clientY-rect.top)/state.cell);
-    if(gx>=0 && gy>=0 && gx<BOARD_SIZE && gy<BOARD_SIZE){
-      if(state.grid[gy][gx]===1){
-        state.grid[gy][gx]=0; requestDraw();
-        state.using=null; state.powerups.hammer=Math.max(0,state.powerups.hammer-1); updatePowerupCounters();
-        showToast('Razbijeno!'); beep(320,0.06,'triangle',0.18); hapt(16); achievementTick('usePower');
-      } else { showToast('Nema šta da se razbije ovde'); }
-    }
-  });
-
-  // =========================
-  //  TOAST
-  // =========================
   let toastTimer=null;
   function showToast(msg){
     let t=document.getElementById('toast');
@@ -665,18 +589,12 @@
     t.textContent=msg; t.style.opacity='1'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ t.style.opacity='0'; }, 1600);
   }
 
-  // =========================
-  //  TIME HUD
-  // =========================
   let timePill=null, timerId=null;
   function ensureTimePill(){ if(!timePill){ timePill=document.createElement('div'); timePill.className='pill'; hud && hud.appendChild(timePill); } timePill.style.display='inline-flex'; updateTimePill(); }
   function hideTimePill(){ if(timePill) timePill.style.display='none'; }
   function updateTimePill(){ if(settings.mode==='time' && timePill) timePill.textContent=`Time: ${Math.max(0,state.timeLeft)}s`; }
   function endTimeMode(){ if(timerId){ clearInterval(timerId); timerId=null; } }
 
-  // =========================
-  //  ACHIEVEMENTS
-  // =========================
   const ACH = [
     {id:'clear2',  title:'Double Clean', desc:'Očisti 2 linije u jednom potezu', done:false},
     {id:'combo3',  title:'Combo Starter', desc:'Dostigni combo x3', done:false},
@@ -697,7 +615,6 @@
     }
   }
 
-  // Ach overlay
   let achOverlay = null;
   function ensureAchOverlay(){
     if(achOverlay) return;
@@ -741,9 +658,6 @@
     });
   })();
 
-  // =========================
-  //  CONTROLS / NAV
-  // =========================
   resetBtn?.addEventListener('click', ()=> newGame());
   backBtn?.addEventListener('click', ()=> goHome());
 
@@ -772,7 +686,6 @@
       app.style.display='flex';
       app.style.pointerEvents='auto';
     }
-    // važno: prvo layout pa tek onda newGame (sprečava "crni" frame)
     sizeToScreen();
     newGame();
   }
@@ -802,9 +715,6 @@
   function updateSoundLabel(){ if(setSound) setSound.textContent = settings.sound?'🔈 On':'🔇 Off'; }
   function applyTheme(t){ document.body.classList.toggle('light', t==='light'); }
 
-  // =========================
-  //  GAME FLOW
-  // =========================
   function newGame(){
     endTimeMode();
     if(settings.mode==='obstacles'){ const r=rng||{next:Math.random}; state.grid=createObstaclesGrid(0.10, r); }
@@ -845,9 +755,6 @@
     return g;
   }
 
-  // =========================
-  //  TESTS
-  // =========================
   function runTests(){
     const results=[]; const log=(n,ok)=>{ results.push({n,ok}); (ok?console.log:console.error)(`[TEST] ${n}: ${ok?'PASS':'FAIL'}`); };
     try{
@@ -861,15 +768,9 @@
     return {passed:results.filter(r=>r.ok).length, failed:results.filter(r=>!r.ok).length};
   }
 
-  // =========================
-  //  DRAW SCHEDULER
-  // =========================
   let drawQueued=false;
   function requestDraw(){ if(!drawQueued){ drawQueued=true; requestAnimationFrame(()=>{ drawQueued=false; draw(); }); } }
 
-  // =========================
-  //  INIT
-  // =========================
   (function initGhost(){
     if(!ghost) return; ghost.innerHTML='';
     for(let i=0;i<100;i++){ const s=document.createElement('span'); ghost.appendChild(s); }
