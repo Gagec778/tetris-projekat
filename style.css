@@ -9,19 +9,24 @@
 
 *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
 html,body{
-  height:100%; margin:0; background:var(--bg); color:var(--text);
+  height:100%; margin:0; color:var(--text);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
   overflow:hidden;
+  /* Fallback AURORA direktno na body (uvek vidljiva) */
+  background:
+    radial-gradient(1200px 900px at 18% 28%, rgba(255,95,190,.35) 0%, rgba(255,95,190,.10) 38%, transparent 65%),
+    radial-gradient(1400px 1000px at 84% 32%, rgba(95,120,255,.35) 0%, rgba(95,120,255,.12) 36%, transparent 66%),
+    radial-gradient(1100px 900px at 58% 82%, rgba(70,255,205,.30) 0%, rgba(70,255,205,.10) 32%, transparent 70%),
+    linear-gradient(180deg, #0b0e14 0%, #0c0f16 40%, #0d1119 100%);
 }
 
-/* --- AURORA: meka, bez oštrih preseka, uvek vidljiva --- */
+/* Animirana AURORA (iznad body background-a, ispod svega) */
 body::before{
-  content:""; position:fixed; inset:-12%; z-index:-3; pointer-events:none;
+  content:""; position:fixed; inset:-12%; z-index:-1; pointer-events:none;
   background:
     radial-gradient(1200px 900px at 18% 28%, rgba(255,95,190,.55) 0%, rgba(255,95,190,.16) 38%, transparent 65%),
     radial-gradient(1400px 1000px at 84% 32%, rgba(95,120,255,.55) 0%, rgba(95,120,255,.18) 36%, transparent 66%),
-    radial-gradient(1100px 900px at 58% 82%, rgba(70,255,205,.45) 0%, rgba(70,255,205,.12) 32%, transparent 70%),
-    conic-gradient(from 210deg at 50% 50%, #0b0e14 0%, #0c0f16 30%, #0d1119 60%, #0e121b 100%);
+    radial-gradient(1100px 900px at 58% 82%, rgba(70,255,205,.45) 0%, rgba(70,255,205,.12) 32%, transparent 70%);
   filter: blur(52px) saturate(1.06);
   animation: auroraFloat 28s ease-in-out infinite alternate;
 }
@@ -31,7 +36,7 @@ body::before{
 }
 
 /* --- Layout --- */
-.wrap{display:flex;flex-direction:column;height:100%;max-width:720px;margin:0 auto; position:relative; z-index:1}
+.wrap{display:flex;flex-direction:column;height:100%;max-width:720px;margin:0 auto; position:relative; z-index:1; background:transparent}
 header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .brand{font-weight:800;letter-spacing:.3px;opacity:.95;text-shadow:0 6px 30px rgba(0,0,0,.25)}
 .hud{display:flex;gap:12px;align-items:center}
@@ -43,7 +48,7 @@ header{padding:12px 16px;display:flex;align-items:center;justify-content:space-b
 
 /* --- Board area --- */
 .board-area{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 8px 0;position:relative}
-canvas{touch-action:none}
+canvas{touch-action:none; background:transparent}
 #fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 
 /* --- Tray --- */
@@ -57,7 +62,7 @@ canvas{touch-action:none}
 
 /* --- START SCREEN --- */
 #startScreen{
-  position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:2;
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:2; background:transparent;
 }
 #startScreen .ss-inner{text-align:center;max-width:680px;padding:0 12px}
 #startScreen h1{margin:0 0 10px;font-size:30px;letter-spacing:1px;text-shadow:0 10px 50px rgba(0,0,0,.5)}
