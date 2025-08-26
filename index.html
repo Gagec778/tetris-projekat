@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Block Puzzle 8×8 — Stable One-File</title>
+<title>Block Puzzle 8×8 — Classic & Obstacles (Levels)</title>
 <style>
 :root{
   --bg:#0e0f12; --text:#e8ecf1; --muted:#a6afc3; --accent:#d4af37;
@@ -46,6 +46,18 @@ button:focus, .btn:focus, .icon-btn:focus{ outline:none; }
 .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:8px 16px 0; position:relative; }
 canvas{ touch-action:none; border-radius:18px; display:block; }
 
+/* >>> DODATO: blok/canvas iznad pozadine <<< */
+#bg{
+  position:fixed; inset:0; width:100%; height:100%;
+  pointer-events:none; z-index:0; /* pozadina uvek ispod */
+}
+#game{
+  position:relative; z-index:2; /* igra iznad pozadine */
+}
+#fx{
+  position:absolute; inset:0; z-index:3; pointer-events:none; /* FX sloj preko igre */
+}
+
 .tray{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; padding:12px 16px 18px; }
 .slot{ background:#141720; border:1px dashed #2b2f3a; border-radius:16px; min-height:96px;
   display:flex; align-items:center; justify-content:center; position:relative; transition:border-color .18s, box-shadow .18s, opacity .18s; }
@@ -63,14 +75,11 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
 /* START SCREEN */
 .start{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-#bg{
-  position:fixed; inset:0; width:100%; height:100%;
-  pointer-events:none; z-index:0; /* aurora stoji ispod svega */
-}
+#bg{ /* već gore definisan, ostaje isto */ }
 .ss-inner{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:16px; padding:16px; }
 .ss-inner h1{ margin:0; font-size:32px; letter-spacing:.6px; text-shadow:0 10px 30px rgba(0,0,0,.35); color:#f6e3a1 }
 
-/* ✅ Ikonice FIXED u sam UGAO (gornji desni) */
+/* Ikonice FIXED u sam UGAO (gornji desni) */
 .top-icons{
   position:fixed; top:8px; right:8px; z-index:5;
   display:flex; flex-direction:column; align-items:flex-end; gap:10px;
@@ -83,15 +92,12 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   border:1px solid #e4bf66; box-shadow: inset 0 0 0 1px #3a2a0b, 0 8px 22px rgba(0,0,0,.35); cursor:pointer;
 }
 
-/* sakriven best na startu */
-.bestBoard{ display:none; }
-
 /* settings modal basic */
 #settingsModal{ display:none; }
 </style>
 </head>
 <body>
-  <!-- GLOBAL AURORA POZADINA (vidljiva i u meniju i u igri) -->
+  <!-- GLOBAL AURORA POZADINA -->
   <canvas id="bg"></canvas>
 
   <!-- START -->
@@ -104,8 +110,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       <h1>BLOCK • 8×8</h1>
       <div class="modes">
         <button id="startClassic" class="btn gold">▶ Classic</button>
-        <button id="startObstacles" class="btn gold">🧱 Obstacles</button>
-        <button id="startZen" class="btn gold">🧘 Zen</button>
+        <button id="startObstacles" class="btn gold">🧱 Obstacles (Levels)</button>
       </div>
     </div>
   </div>
@@ -117,6 +122,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       <div class="hud">
         <div class="pill">Score: <span id="score">0</span></div>
         <div class="pill">Best: <span id="best">0</span> 👑</div>
+        <div class="pill" id="levelPill" style="display:none">Lvl: <span id="lvl">1</span></div>
       </div>
       <div class="toolbar">
         <button id="backBtn" class="icon-btn" title="Meni">🏠</button>
@@ -125,7 +131,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     </header>
     <div class="board-area">
       <canvas id="game" width="360" height="360" aria-label="8×8 tabla"></canvas>
-      <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
+      <canvas id="fx" width="360" height="360"></canvas>
     </div>
     <div class="tray" id="tray"></div>
     <div class="footer">Stable • Aurora • 8×8 • Drag above finger</div>
@@ -172,6 +178,8 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   const trayEl = document.getElementById('tray');
   const scoreEl= document.getElementById('score');
   const bestEl = document.getElementById('best');
+  const levelPill = document.getElementById('levelPill');
+  const lvlEl  = document.getElementById('lvl');
   const resetBtn = document.getElementById('reset');
   const backBtn  = document.getElementById('backBtn');
   const settingsBtn   = document.getElementById('settingsBtn');
@@ -188,21 +196,27 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   const goMenu   = document.getElementById('goMenu');
   const startClassic   = document.getElementById('startClassic');
   const startObstacles = document.getElementById('startObstacles');
-  const startZen       = document.getElementById('startZen');
 
   ctx.imageSmoothingEnabled=false; fctx.imageSmoothingEnabled=false;
 
   const DPR=Math.min(devicePixelRatio||1,2), BOARD=8;
 
-  /* Metalik paleta */
-  const COLORS=['#C0C0C0','#B0C4DE','#E5E4E2','#D4AF37','#CD7F32','#B87333','#C89FA3','#A8B0B9'];
+  /* Paleta boja (tint za staklo) */
+  const COLORS=['#a3d5ff','#ffd089','#ffb3c6','#d4af37','#c0c0c0','#9ad8a5','#caa3ff','#ff9e7d'];
 
   const OBSTACLE_COLOR='#3a404d';
   const LS=(k,v)=> (v===undefined? localStorage.getItem(k) : localStorage.setItem(k,v));
   const settings = { theme: LS('bp8.theme')||'dark', sound: LS('bp8.sound')!==null ? LS('bp8.sound')==='1' : true };
   applyTheme(settings.theme); updateSoundLabel();
-  const bestByMode = loadBest() || {classic:0, obstacles:0, zen:0};
-  const state = { grid:createGrid(BOARD), cell:36, score:0, mode:'classic', best:bestByMode, hand:[], dragging:null };
+
+  const bestByMode = loadBest() || {classic:0, obstacles:0};
+  const maxLevelSaved = parseInt(LS('bp8.level.max')||'1',10);
+
+  const state = {
+    grid:createGrid(BOARD), cell:36, score:0,
+    mode:'classic', best:bestByMode, hand:[],
+    dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved)
+  };
 
   // Utils
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -213,7 +227,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  /* AURORA — tople boje (GLOBAL, i u meniju i u igri) */
+  /* AURORA — tople boje (GLOBAL) */
   function drawAurora(c,w,h){
     c.save();
     const bg=c.createLinearGradient(0,0,w,h);
@@ -234,8 +248,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     c.fillStyle=g2; c.fillRect(0,0,w,h);
     c.restore();
   }
-  // globalni BG loop
-  (function loopBG(){ 
+  (function loopBG(){
     const b=bg.getContext('2d');
     b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR);
     b.clearRect(0,0,bg.width,bg.height);
@@ -285,7 +298,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   function drawPanelAndGridOverlay(c, W, H, s){
     c.save();
     c.lineWidth=1;
-    c.strokeStyle='rgba(255,255,255,.08)'; /* diskretno; po želji .06/.10 */
+    c.strokeStyle='rgba(255,255,255,.08)';
     for(let y=0;y<BOARD;y++){
       for(let x=0;x<BOARD;x++){
         const px=x*s, py=y*s;
@@ -296,85 +309,140 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     c.restore();
   }
 
-  // Metalik blok
-  function drawMatBlock(c,x,y,s,base,{alpha=1,placed=false}={}){
-    c.save(); c.globalAlpha=alpha;
+  // --------- GLASS BLOKOVI ----------
+  function drawGlassBlock(c, x, y, s, hex, { alpha = 1, placed = false } = {}) {
+    function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:200,g:200,b:200}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
+    const {r,g,b}=hexToRgb(hex);
+    c.save();
+    c.globalAlpha = alpha;
+    const R = Math.max(6, s * .22);
 
-    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
-    const body=c.createLinearGradient(x,y,x,y+s);
-    body.addColorStop(0,adjustColor(base,.20));
-    body.addColorStop(0.45,darkenColor(base,.12));
-    body.addColorStop(0.55,adjustColor(base,.08));
-    body.addColorStop(1,darkenColor(base,.22));
-    c.fillStyle=body; c.fill();
+    // telo (translucent)
+    const body = c.createLinearGradient(x, y, x, y + s);
+    body.addColorStop(0, `rgba(${r},${g},${b},0.26)`);
+    body.addColorStop(0.5, `rgba(${r},${g},${b},0.18)`);
+    body.addColorStop(1, `rgba(${r},${g},${b},0.28)`);
+    c.shadowColor = 'rgba(0,0,0,.25)';
+    c.shadowBlur = Math.max(6, s * .12);
+    c.shadowOffsetY = Math.max(2, s * .06);
+    rr(c, x+1, y+1, s-2, s-2, R);
+    c.fillStyle = body; c.fill();
+    c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetY = 0;
 
-    const sheen=c.createLinearGradient(x,y,x+s,y);
-    sheen.addColorStop(0.30,'rgba(255,255,255,0)');
-    sheen.addColorStop(0.47,'rgba(255,255,255,0.35)');
-    sheen.addColorStop(0.53,'rgba(255,255,255,0.10)');
-    sheen.addColorStop(0.70,'rgba(255,255,255,0)');
-    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
-    c.globalCompositeOperation='screen';
-    c.fillStyle=sheen; c.fill();
-    c.globalCompositeOperation='source-over';
+    // frost centar
+    const frost = c.createRadialGradient(x + s*0.52, y + s*0.48, s*0.05, x + s*0.5, y + s*0.5, s*0.55);
+    frost.addColorStop(0, 'rgba(255,255,255,0.18)');
+    frost.addColorStop(0.7, 'rgba(255,255,255,0.06)');
+    frost.addColorStop(1, 'rgba(255,255,255,0)');
+    rr(c, x+1, y+1, s-2, s-2, R);
+    c.globalCompositeOperation = 'screen';
+    c.fillStyle = frost; c.fill();
+    c.globalCompositeOperation = 'source-over';
 
-    const inner=c.createLinearGradient(x,y,x+s,y+s);
-    inner.addColorStop(0,'rgba(0,0,0,.12)');
-    inner.addColorStop(0.5,'rgba(0,0,0,0)');
-    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
-    c.save(); c.globalCompositeOperation='multiply'; c.fillStyle=inner; c.fill(); c.restore();
+    // svetli unutrašnji rub
+    rr(c, x+1, y+1, s-2, s-2, R);
+    c.lineWidth = Math.max(1, s * .06);
+    c.strokeStyle = 'rgba(255,255,255,.22)';
+    c.stroke();
 
-    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
-    c.lineWidth=Math.max(1,s*.06); c.strokeStyle='rgba(0,0,0,.45)'; c.stroke();
-    rr(c,x+2,y+2,s-4,s-4,Math.max(5,s*.18));
-    c.lineWidth=Math.max(1,s*.04); c.strokeStyle='rgba(255,255,255,.12)'; c.stroke();
+    // tamni spoljašnji rub
+    rr(c, x+1.5, y+1.5, s-3, s-3, R-1);
+    c.lineWidth = Math.max(1, s * .05);
+    c.strokeStyle = 'rgba(0,0,0,.25)';
+    c.stroke();
 
-    if(placed){
-      rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
-      const gold=c.createLinearGradient(x,y,x,y+s);
-      gold.addColorStop(0,'rgba(255,220,150,.75)');
-      gold.addColorStop(1,'rgba(175,120,40,.38)');
-      c.lineWidth=Math.max(1,s*.07); c.strokeStyle=gold; c.stroke();
+    // sjaj gornji levo
+    const shine = c.createLinearGradient(x, y, x + s, y + s);
+    shine.addColorStop(0.0, 'rgba(255,255,255,.40)');
+    shine.addColorStop(0.25, 'rgba(255,255,255,.15)');
+    shine.addColorStop(0.45, 'rgba(255,255,255,0)');
+    rr(c, x+2, y+2, s-4, s-4, R-3);
+    c.globalCompositeOperation = 'overlay';
+    c.fillStyle = shine; c.fill();
+    c.globalCompositeOperation = 'source-over';
+
+    // prsten za postavljene
+    if (placed) {
+      rr(c, x+1, y+1, s-2, s-2, R);
+      const gold = c.createLinearGradient(x, y, x, y + s);
+      gold.addColorStop(0, 'rgba(255,215,130,.60)');
+      gold.addColorStop(1, 'rgba(160,110,35,.28)');
+      c.lineWidth = Math.max(1, s * .07);
+      c.strokeStyle = gold; c.stroke();
     }
     c.restore();
   }
-  function drawPlaced(c,x,y,s){ drawMatBlock(c,x,y,s,getCss('--accent')||'#D4AF37',{alpha:.98,placed:true}); }
-  function drawPreview(c,x,y,s,col,ok){ const base = ok ? col : '#c65454'; drawMatBlock(c,x,y,s, base, {alpha: ok?.96:.88, placed:false}); }
+  function drawPlaced(c,x,y,s){
+    const accent = getComputedStyle(document.body).getPropertyValue('--accent') || '#D4AF37';
+    drawGlassBlock(c,x,y,s,accent,{alpha:.98,placed:true});
+  }
+  function drawPreview(c,x,y,s,col,ok){
+    const tint = ok ? col : '#ff5a5a';
+    drawGlassBlock(c,x,y,s,tint,{alpha: ok ? .96 : .88, placed:false});
+  }
+  // -----------------------------------------
 
-  // Tray
+  // Tray: koristi staklo
   function drawPieceToCanvas(piece){
     const scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
     const c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
     const cx=c.getContext('2d'); cx.scale(DPR,DPR); cx.imageSmoothingEnabled=false;
-    for(const [dx,dy] of piece.blocks) drawMatBlock(cx, pad+dx*scale, pad+dy*scale, scale-2, piece.color, {alpha:1});
+    for(const [dx,dy] of piece.blocks) drawGlassBlock(cx, pad+dx*scale, pad+dy*scale, scale-2, piece.color, {alpha:1});
     return c;
   }
-  function renderTray(){
-    trayEl.innerHTML='';
-    state.hand.forEach((p,i)=>{
-      const div=document.createElement('div');
-      const fits=canFitAnywhere(p);
-      div.className='slot'+(p.used?' used':'')+(p.used?'':(fits?' good':' bad'));
-      div.dataset.index=String(i);
-      div.appendChild(drawPieceToCanvas(p));
-      if(!p.used) div.addEventListener('pointerdown', startDragFromSlot, {passive:false});
-      trayEl.appendChild(div);
-    });
+
+  /* Bodovanje (pojačano) */
+  const SCORE_CFG = {
+    perBlock: 50,
+    lineBase: 1200,
+    comboStep: 0.5,
+    levelStep: 0.05
+  };
+  function levelMultiplier(){ return 1 + (state.level - 1) * SCORE_CFG.levelStep; }
+  function scoreForClear(lines){
+    if(lines<=0) return 0;
+    const combo = 1 + (lines - 1) * SCORE_CFG.comboStep;
+    return Math.round(SCORE_CFG.lineBase * lines * combo * levelMultiplier());
   }
 
-  /* draw(): NEMA farbanja panela; grid su samo linije. Preview poslednji. */
+  /* LEVELI (Obstacles) */
+  const LEVELS_MAX = 100;
+  const LEVEL_STEP_SCORE = 10000;
+  function obstaclesForLevel(lvl){
+    const maxCells = BOARD*BOARD;
+    const target = Math.min(Math.round(3 + lvl*1.2), Math.round(maxCells*0.15));
+    return target;
+  }
+  function applyObstacles(targetCount){
+    let placed=0, guard=0;
+    while(placed<targetCount && guard<400){
+      guard++;
+      const x=Math.floor(Math.random()*BOARD), y=Math.floor(Math.random()*BOARD);
+      if(state.grid[y][x]===0){ state.grid[y][x]=2; placed++; }
+    }
+  }
+  function checkLevelUp(){
+    const need = state.level * LEVEL_STEP_SCORE;
+    if(state.score >= need && state.level < LEVELS_MAX && state.mode==='obstacles'){
+      state.level++;
+      state.maxLevel = Math.max(state.maxLevel, state.level);
+      LS('bp8.level.max', String(state.maxLevel));
+      applyObstacles(Math.max(1, Math.floor(obstaclesForLevel(state.level)*0.6)));
+      lvlEl.textContent = state.level;
+      showToast(`Level UP → ${state.level}`);
+      requestDraw();
+    }
+  }
+
+  /* draw(): grid su samo linije; preview poslednji. */
   function draw(){
     const s=state.cell, W=s*BOARD, H=s*BOARD;
     ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.scale(DPR,DPR);
 
-    // 1) (nema lokalne pozadine) – vidi se GLOBALNI aurora #bg
-
-    // 2) Grid (samo linije)
     drawPanelAndGridOverlay(ctx, W, H, s);
 
-    // 3) Već postavljeni blokovi i prepreke (iznad linija)
     for(let y=0;y<BOARD;y++){
       for(let x=0;x<BOARD;x++){
         const v=state.grid[y][x];
@@ -389,7 +457,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       }
     }
 
-    // 4) Preview poslednji (uvek iznad)
     if(state.dragging && state.dragging.px!=null){
       const {piece, px, py, valid} = state.dragging;
       const liftY=72, offsetX=8;
@@ -413,25 +480,36 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   } requestAnimationFrame(stepFX);
 
   // Scoring / placing
-  function scoreForClear(c){ return c*10 + (c>1 ? (c-1)*5 : 0); }
   function place(piece,gx,gy){
     for(const [dx,dy] of piece.blocks) state.grid[gy+dy][gx+dx]=1;
+
     const fullRows=[], fullCols=[];
     for(let y=0;y<BOARD;y++){ let ok=true; for(let x=0;x<BOARD;x++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullRows.push(y); }
     for(let x=0;x<BOARD;x++){ let ok=true; for(let y=0;y<BOARD;y++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullCols.push(x); }
-    const cleared=fullRows.length+fullCols.length;
-    if(cleared>0){
-      const cells=[]; for(const r of fullRows){ for(let x=0;x<BOARD;x++){ cells.push([x,r]); } state.grid[r]=Array(BOARD).fill(0); }
-      for(const c of fullCols){ for(let y=0;y<BOARD;y++){ cells.push([c,y]); state.grid[y][c]=0; } }
-      spawnParticles(cells); hapt(28);
-    } else { hapt(12); }
-    state.score += piece.blocks.length + scoreForClear(cleared); scoreEl.textContent=state.score;
+
+    const cells=[];
+    for(const r of fullRows){ for(let x=0;x<BOARD;x++){ cells.push([x,r]); } state.grid[r]=Array(BOARD).fill(0); }
+    for(const c of fullCols){ for(let y=0;y<BOARD;y++){ cells.push([c,y]); state.grid[y][c]=0; } }
+    if(cells.length) spawnParticles(cells);
+
+    const linesCleared = fullRows.length + fullCols.length;
+    const placePts = 50 * piece.blocks.length;
+    const clearPts = scoreForClear(linesCleared);
+    state.score += (placePts + clearPts);
+    scoreEl.textContent=state.score;
+
     if(state.score>(state.best[state.mode]||0)){ state.best[state.mode]=state.score; saveBest(state.best); bestEl.textContent=state.score; }
+
     piece.used=true; state.hand=state.hand.map(p=>p.id===piece.id? {...p,used:true}:p); renderTray();
     if(state.hand.every(p=>p.used)) refillHand();
-    if(state.mode!=='zen' && !anyFits()){ goStats.textContent=`Score: ${state.score} • Best: ${state.best[state.mode]||0}`; gameOver.style.display='flex'; hapt(40); }
+    if(state.mode!=='obstacles' && !anyFits()){
+      goStats.textContent=`Score: ${state.score} • Best: ${state.best[state.mode]||0}`;
+      gameOver.style.display='flex';
+    }
+    if(state.mode==='obstacles') checkLevelUp();
     requestDraw();
   }
+
   function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
   // Dragging
@@ -464,7 +542,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     else if(slot) slot.classList.remove('used');
 
     state.dragging=null;
-    requestDraw(); /* očisti preview */
+    requestDraw();
   }
   function onPointerCancel(){
     if(!POINTER.active||!state.dragging) return;
@@ -472,7 +550,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     POINTER.active=false; document.body.style.cursor='';
     if(slot) slot.classList.remove('used');
     state.dragging=null;
-    requestDraw(); /* očisti preview */
+    requestDraw();
   }
   addEventListener('pointermove', onPointerMove, {passive:false});
   addEventListener('pointerup', onPointerUp, {passive:true});
@@ -499,26 +577,39 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   closeSettings.addEventListener('click', ()=> settingsModal.style.display='none');
   setTheme.addEventListener('click', ()=>{ settings.theme=settings.theme==='dark'?'light':'dark'; LS('bp8.theme',settings.theme); applyTheme(settings.theme); });
   setSound.addEventListener('click', ()=>{ settings.sound=!settings.sound; LS('bp8.sound', settings.sound?'1':'0'); updateSoundLabel(); });
-  resetBest.addEventListener('click', ()=>{ localStorage.removeItem('bp8.best'); state.best={classic:0,obstacles:0,zen:0}; bestEl.textContent=0; showToast('Best resetovan'); });
+  resetBest.addEventListener('click', ()=>{ localStorage.removeItem('bp8.best'); state.best={classic:0,obstacles:0}; bestEl.textContent=0; showToast('Best resetovan'); });
 
   achBtn.addEventListener('click', ()=> showToast('Dostignuća — uskoro'));
   playAgain.addEventListener('click', ()=>{ gameOver.style.display='none'; newGame(state.mode); });
   goMenu.addEventListener('click', ()=>{ gameOver.style.display='none'; goHome(); });
   startClassic.addEventListener('click', ()=> startGame('classic'));
   startObstacles.addEventListener('click', ()=> startGame('obstacles'));
-  startZen.addEventListener('click', ()=> startGame('zen'));
 
   // Flow
-  function startGame(mode){ state.mode=mode||'classic'; start.style.display='none'; app.style.display='flex'; sizeToScreen(); newGame(mode); }
+  function startGame(mode){
+    state.mode=mode||'classic';
+    start.style.display='none'; app.style.display='flex';
+    sizeToScreen(); newGame(mode);
+  }
   function goHome(){ app.style.display='none'; start.style.display='flex'; state.dragging=null; requestDraw(); }
   function newGame(mode){
     state.grid=createGrid(BOARD);
-    if(mode==='obstacles'){ const n=6+Math.floor(Math.random()*3); for(let i=0;i<n;i++){ const x=Math.floor(Math.random()*BOARD), y=Math.floor(Math.random()*BOARD); if(state.grid[y][x]===0) state.grid[y][x]=2; } }
     state.score=0; scoreEl.textContent=0; bestEl.textContent=String(state.best[mode]||0);
-    state.hand=[]; refillHand(); requestDraw(); showToast(mode[0].toUpperCase()+mode.slice(1));
+    state.hand=[]; refillHand();
+
+    if(mode==='obstacles'){
+      levelPill.style.display='inline-flex';
+      state.level = 1;
+      lvlEl.textContent = state.level;
+      applyObstacles(obstaclesForLevel(state.level));
+      showToast('Obstacles — Level 1');
+    }else{
+      levelPill.style.display='none';
+    }
+    requestDraw();
   }
 
-  // Resize & BG loop
+  // Resize
   function sizeToScreen(){
     const headerH=document.querySelector('header')?.offsetHeight||60;
     const trayH  =trayEl?.offsetHeight||120;
