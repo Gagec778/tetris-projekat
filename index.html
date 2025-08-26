@@ -6,12 +6,12 @@
 <title>Block Puzzle 8×8 — Stable One-File</title>
 <style>
 :root{
-  --bg:#0e0f12; --text:#e8ecf1; --muted:#a6afc3; --accent:#ffd166;
+  --bg:#0e0f12; --text:#e8ecf1; --muted:#a6afc3; --accent:#d4af37;
   --panel: rgba(18,22,30,.35);
   --grid-border: rgba(255,255,255,.10);
 }
 .light{
-  --bg:#f6f8fb; --text:#0e1014; --muted:#4c5672; --accent:#e5b54a;
+  --bg:#f6f8fb; --text:#0e1014; --muted:#4c5672; --accent:#c9a33a;
   --panel: rgba(255,255,255,.45);
   --grid-border: rgba(0,0,0,.12);
 }
@@ -19,8 +19,7 @@
 html,body{
   height:100%; margin:0; background:var(--bg); color:var(--text);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
-  overflow:hidden;
-  -webkit-tap-highlight-color: transparent;
+  overflow:hidden; -webkit-tap-highlight-color: transparent;
 }
 .wrap{ display:flex; flex-direction:column; height:100%; max-width:720px; margin:0 auto; }
 header{ padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -38,7 +37,7 @@ header{ padding:12px 16px; display:flex; align-items:center; justify-content:spa
 .btn{ border:1px solid #2b2f3a; padding:8px 12px; }
 .icon-btn{
   border:none; background:#00000033; backdrop-filter: blur(6px);
-  padding:12px 14px; border-radius:16px; font-weight:800;
+  padding:12px 14px; border-radius:16px; font-weight:800; font-size:22px;
 }
 button:focus, .btn:focus, .icon-btn:focus{ outline:none; }
 *:focus{ outline:none; }
@@ -66,17 +65,16 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 .start{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 #bg{
   position:absolute; inset:0; width:100%; height:100%;
-  pointer-events:none; /* ✅ da aurora ne blokira klik na dugmad */
+  pointer-events:none; /* da aurora ne blokira klik na dugmad */
 }
 .ss-inner{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:16px; padding:16px; }
 .ss-inner h1{ margin:0; font-size:32px; letter-spacing:.6px; text-shadow:0 10px 30px rgba(0,0,0,.35); color:#f6e3a1 }
 
-/* Ikonice gore desno, vertikalno */
+/* Ikonice gore LEVO, vertikalno (⚙️ pa 🏆) */
 .top-icons{
-  position:absolute; top:14px; right:14px;
-  display:flex; flex-direction:column; align-items:flex-end; gap:10px;
+  position:absolute; top:14px; left:14px; right:auto;
+  display:flex; flex-direction:column; align-items:flex-start; gap:10px;
 }
-.top-icons .icon-btn{ font-size:22px; }
 
 /* dugmad za modove */
 .modes{ display:flex; flex-direction:column; gap:10px; }
@@ -192,7 +190,11 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
   ctx.imageSmoothingEnabled=false; fctx.imageSmoothingEnabled=false;
 
-  const DPR=Math.min(devicePixelRatio||1,2), BOARD=8, COLORS=['#FF6B6B','#F94144','#F3722C','#F8961E','#F9844A','#FFD166','#F6BD60','#7BD389','#70C1B3','#4D9DE0','#5B8CFF','#C97FFF','#E56B6F','#FF9F1C'];
+  const DPR=Math.min(devicePixelRatio||1,2), BOARD=8;
+
+  /* Metalik paleta */
+  const COLORS=['#C0C0C0','#B0C4DE','#E5E4E2','#D4AF37','#CD7F32','#B87333','#C89FA3','#A8B0B9'];
+
   const OBSTACLE_COLOR='#3a404d';
   const LS=(k,v)=> (v===undefined? localStorage.getItem(k) : localStorage.setItem(k,v));
   const settings = { theme: LS('bp8.theme')||'dark', sound: LS('bp8.sound')!==null ? LS('bp8.sound')==='1' : true };
@@ -203,7 +205,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   // Utils
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   function createGrid(n){ return Array.from({length:n},()=>Array(n).fill(0)); }
-  function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:255,g:200,b:150}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
+  function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:200,g:200,b:200}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
   function adjustColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r+(255-r)*amt),0,255); const ng=clamp(Math.round(g+(255-g)*amt),0,255); const nb=clamp(Math.round(b+(255-b)*amt),0,255); return `rgb(${nr},${ng},${nb})`; }
   function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
   function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
@@ -222,11 +224,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     g2.addColorStop(0,'rgba(255,180,150,0.30)'); g2.addColorStop(1,'rgba(255,180,150,0)'); c.fillStyle=g2; c.fillRect(0,0,w,h);
     c.restore();
   }
-  function drawStartAurora(){
-    const b=bg.getContext('2d'); b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR);
-    b.clearRect(0,0,bg.width,bg.height); drawAurora(b, innerWidth, innerHeight);
-    requestAnimationFrame(drawStartAurora);
-  }
+  (function loopBG(){ const b=bg.getContext('2d'); b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR); b.clearRect(0,0,bg.width,bg.height); drawAurora(b, innerWidth, innerHeight); requestAnimationFrame(loopBG); })();
 
   // Shapes
   const SHAPES=(function(){
@@ -266,29 +264,82 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   }
   function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-  // Drawing
-  function drawMatBlock(c,x,y,s,base,{alpha=1,placed=false}={}){
-    c.save(); c.globalAlpha=alpha;
-    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
-    const body=c.createLinearGradient(x,y,x,y+s);
-    body.addColorStop(0,adjustColor(base,.12)); body.addColorStop(1,darkenColor(base,.16));
-    c.fillStyle=body; c.fill();
-    const inner=c.createLinearGradient(x,y,x+s,y+s);
-    inner.addColorStop(0,'rgba(0,0,0,.10)'); inner.addColorStop(0.5,'rgba(0,0,0,0)');
-    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22)); c.save(); c.globalCompositeOperation='multiply'; c.fillStyle=inner; c.fill(); c.restore();
-    const light=c.createLinearGradient(x,y,x+s,y+s);
-    light.addColorStop(0,'rgba(255,255,255,.18)'); light.addColorStop(0.35,'rgba(255,255,255,.06)'); light.addColorStop(1,'rgba(255,255,255,0)');
-    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22)); c.fillStyle=light; c.fill();
-    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22)); c.lineWidth=Math.max(1,s*.06); c.strokeStyle='rgba(0,0,0,.40)'; c.stroke();
-    rr(c,x+2,y+2,s-4,s-4,Math.max(5,s*.18)); c.lineWidth=Math.max(1,s*.04); c.strokeStyle='rgba(255,255,255,.10)'; c.stroke();
-    if(placed){ rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
-      const gold=c.createLinearGradient(x,y,x,y+s); gold.addColorStop(0,'rgba(255,220,150,.70)'); gold.addColorStop(1,'rgba(175,120,40,.35)');
-      c.lineWidth=Math.max(1,s*.07); c.strokeStyle=gold; c.stroke(); }
+  /* ===== NOVO: “stakleni” panel i diskretna mreža iste boje kao pozadina ===== */
+  function drawPanelAndGridOverlay(c, W, H, s){
+    // panel (diskretan, kao staklo preko aurora pozadine)
+    rr(c,0,0,W,H,18);
+    const panel=c.createLinearGradient(0,0,0,H);
+    panel.addColorStop(0,'rgba(12,16,24,0.10)');
+    panel.addColorStop(1,'rgba(12,16,24,0.14)');
+    c.fillStyle=panel;
+    c.fill();
+
+    // tanki rub panela
+    rr(c,1,1,W-2,H-2,16);
+    c.strokeStyle='rgba(255,255,255,.08)';
+    c.lineWidth=1;
+    c.stroke();
+
+    // mreža: samo ivice ćelija (bez popunjavanja)
+    c.save();
+    c.lineWidth=1;
+    c.strokeStyle='rgba(255,255,255,.06)'; /* po potrebi .04 ili .10 */
+    for(let y=0;y<BOARD;y++){
+      for(let x=0;x<BOARD;x++){
+        const px=x*s, py=y*s;
+        rr(c,px+1.5,py+1.5,s-3,s-3,8);
+        c.stroke();
+      }
+    }
     c.restore();
   }
-  function drawPlaced(c,x,y,s){ drawMatBlock(c,x,y,s,getCss('--accent')||'#FFD166',{alpha:.98,placed:true}); }
-  function drawPreview(c,x,y,s,col,ok){ drawMatBlock(c,x,y,s, ok?col:'#c65454',{alpha: ok?.96:.88, placed:false}); }
 
+  // Drawing helpers – Metalik
+  function drawMatBlock(c,x,y,s,base,{alpha=1,placed=false}={}){
+    c.save(); c.globalAlpha=alpha;
+
+    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+    const body=c.createLinearGradient(x,y,x,y+s);
+    body.addColorStop(0,adjustColor(base,.20));
+    body.addColorStop(0.45,darkenColor(base,.12));
+    body.addColorStop(0.55,adjustColor(base,.08));
+    body.addColorStop(1,darkenColor(base,.22));
+    c.fillStyle=body; c.fill();
+
+    const sheen=c.createLinearGradient(x,y,x+s,y);
+    sheen.addColorStop(0.30,'rgba(255,255,255,0)');
+    sheen.addColorStop(0.47,'rgba(255,255,255,0.35)');
+    sheen.addColorStop(0.53,'rgba(255,255,255,0.10)');
+    sheen.addColorStop(0.70,'rgba(255,255,255,0)');
+    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+    c.globalCompositeOperation='screen';
+    c.fillStyle=sheen; c.fill();
+    c.globalCompositeOperation='source-over';
+
+    const inner=c.createLinearGradient(x,y,x+s,y+s);
+    inner.addColorStop(0,'rgba(0,0,0,.12)');
+    inner.addColorStop(0.5,'rgba(0,0,0,0)');
+    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+    c.save(); c.globalCompositeOperation='multiply'; c.fillStyle=inner; c.fill(); c.restore();
+
+    rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+    c.lineWidth=Math.max(1,s*.06); c.strokeStyle='rgba(0,0,0,.45)'; c.stroke();
+    rr(c,x+2,y+2,s-4,s-4,Math.max(5,s*.18));
+    c.lineWidth=Math.max(1,s*.04); c.strokeStyle='rgba(255,255,255,.12)'; c.stroke();
+
+    if(placed){
+      rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
+      const gold=c.createLinearGradient(x,y,x,y+s);
+      gold.addColorStop(0,'rgba(255,220,150,.75)');
+      gold.addColorStop(1,'rgba(175,120,40,.38)');
+      c.lineWidth=Math.max(1,s*.07); c.strokeStyle=gold; c.stroke();
+    }
+    c.restore();
+  }
+  function drawPlaced(c,x,y,s){ drawMatBlock(c,x,y,s,getCss('--accent')||'#D4AF37',{alpha:.98,placed:true}); }
+  function drawPreview(c,x,y,s,col,ok){ const base = ok ? col : '#c65454'; drawMatBlock(c,x,y,s, base, {alpha: ok?.96:.88, placed:false}); }
+
+  // Tray
   function drawPieceToCanvas(piece){
     const scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
     const c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -309,32 +360,44 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     });
   }
 
+  /* ===== draw() sa novim redosledom ===== */
   function draw(){
     const s=state.cell, W=s*BOARD, H=s*BOARD;
-    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.scale(DPR,DPR);
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.scale(DPR,DPR);
+
+    // 1) Pozadina
     drawAurora(ctx,W,H);
-    rr(ctx,0,0,W,H,18);
-    const panel=ctx.createLinearGradient(0,0,0,H);
-    panel.addColorStop(0,'rgba(12,16,24,.18)'); panel.addColorStop(1,'rgba(12,16,24,.24)');
-    ctx.fillStyle=panel; ctx.fill(); rr(ctx,1,1,W-2,H-2,16); ctx.strokeStyle='rgba(255,255,255,.10)'; ctx.lineWidth=1; ctx.stroke();
-    for(let y=0;y<BOARD;y++){
-      for(let x=0;x<BOARD;x++){
-        const px=x*s, py=y*s, v=state.grid[y][x];
-        rr(ctx,px+1,py+1,s-2,s-2,9);
-        if(v===1){ drawPlaced(ctx,px,py,s); }
-        else if(v===2){ rr(ctx,px+1,py+1,s-2,s-2,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); }
-        else{
-          const fill=ctx.createLinearGradient(px,py,px,py+s);
-          fill.addColorStop(0,'rgba(255,255,255,.06)'); fill.addColorStop(1,'rgba(0,0,0,.10)');
-          ctx.fillStyle=fill; ctx.fill();
-          rr(ctx,px+1.5,py+1.5,s-3,s-3,8); ctx.strokeStyle='var(--grid-border)'; ctx.lineWidth=1; ctx.stroke();
-        }
-      }
-    }
+
+    // 2) PREVIEW dok vučeš – pre panela => izgleda kao ispod grida na tabli,
+    //    a kad izađe van table, ostaje iznad pozadine (lepiji efekat).
     if(state.dragging && state.dragging.px!=null){
       const {piece, px, py, valid} = state.dragging;
-      const liftY=72, offsetX=8, baseX=px-(piece.w*s)/2+offsetX, baseY=py-(piece.h*s)/2-liftY;
-      for(const [dx,dy] of piece.blocks) drawPreview(ctx, baseX+dx*s, baseY+dy*s, s, piece.color, valid);
+      const liftY=72, offsetX=8;
+      const baseX=px-(piece.w*s)/2+offsetX;
+      const baseY=py-(piece.h*s)/2-liftY;
+      for(const [dx,dy] of piece.blocks){
+        drawPreview(ctx, baseX+dx*s, baseY+dy*s, s, piece.color, valid);
+      }
+    }
+
+    // 3) Stakleni panel + diskretna mreža (ista boja kao pozadina)
+    drawPanelAndGridOverlay(ctx, W, H, s);
+
+    // 4) Već postavljeni blokovi i prepreke – iznad panela
+    for(let y=0;y<BOARD;y++){
+      for(let x=0;x<BOARD;x++){
+        const v=state.grid[y][x];
+        const px=x*s, py=y*s;
+        if(v===1){
+          drawPlaced(ctx,px,py,s);
+        }else if(v===2){
+          rr(ctx,px+1,py+1,s-2,s-2,9);
+          ctx.fillStyle=OBSTACLE_COLOR;
+          ctx.fill();
+        }
+      }
     }
   }
 
@@ -396,13 +459,25 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     if(!POINTER.active||!state.dragging) return;
     const d=state.dragging; const slot=trayEl.querySelector('.slot[data-index="'+POINTER.fromSlotIndex+'"]');
     POINTER.active=false; document.body.style.cursor='';
+
     if(d.valid && d.gx!=null && d.gy!=null) place(d.piece,d.gx,d.gy);
     else if(slot) slot.classList.remove('used');
+
     state.dragging=null;
+    requestDraw(); /* očisti preview */
+  }
+  function onPointerCancel(){
+    if(!POINTER.active||!state.dragging) return;
+    const slot=trayEl.querySelector('.slot[data-index="'+POINTER.fromSlotIndex+'"]');
+    POINTER.active=false; document.body.style.cursor='';
+    if(slot) slot.classList.remove('used');
+    state.dragging=null;
+    requestDraw(); /* očisti preview */
   }
   addEventListener('pointermove', onPointerMove, {passive:false});
   addEventListener('pointerup', onPointerUp, {passive:true});
-  addEventListener('pointercancel', onPointerUp, {passive:true});
+  addEventListener('pointercancel', onPointerCancel, {passive:true});
+  addEventListener('lostpointercapture', onPointerCancel, {passive:true});
 
   // UI helpers
   function showToast(msg){
@@ -435,7 +510,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
   // Flow
   function startGame(mode){ state.mode=mode||'classic'; start.style.display='none'; app.style.display='flex'; sizeToScreen(); newGame(mode); }
-  function goHome(){ app.style.display='none'; start.style.display='flex'; state.dragging=null; }
+  function goHome(){ app.style.display='none'; start.style.display='flex'; state.dragging=null; requestDraw(); }
   function newGame(mode){
     state.grid=createGrid(BOARD);
     if(mode==='obstacles'){ const n=6+Math.floor(Math.random()*3); for(let i=0;i<n;i++){ const x=Math.floor(Math.random()*BOARD), y=Math.floor(Math.random()*BOARD); if(state.grid[y][x]===0) state.grid[y][x]=2; } }
@@ -463,9 +538,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
   addEventListener('resize', sizeToScreen, {passive:true});
   sizeToScreen();
-  (function loopBG(){ const b=bg.getContext('2d'); b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR); b.clearRect(0,0,bg.width,bg.height); drawAurora(b, innerWidth, innerHeight); requestAnimationFrame(loopBG); })();
 
-  // Dev-fallback
   if(!startClassic){ start.style.display='none'; app.style.display='flex'; newGame('classic'); }
 })();
 </script>
