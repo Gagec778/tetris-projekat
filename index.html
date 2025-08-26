@@ -46,7 +46,7 @@ button:focus, .btn:focus, .icon-btn:focus{ outline:none; }
 .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:8px 16px 0; position:relative; }
 canvas{ touch-action:none; border-radius:18px; display:block; }
 
-/* >>> DODATO: blok/canvas iznad pozadine <<< */
+/* Canvasi – slojevi: aurora ispod, igra iznad */
 #bg{
   position:fixed; inset:0; width:100%; height:100%;
   pointer-events:none; z-index:0; /* pozadina uvek ispod */
@@ -75,7 +75,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
 /* START SCREEN */
 .start{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-#bg{ /* već gore definisan, ostaje isto */ }
 .ss-inner{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:16px; padding:16px; }
 .ss-inner h1{ margin:0; font-size:32px; letter-spacing:.6px; text-shadow:0 10px 30px rgba(0,0,0,.35); color:#f6e3a1 }
 
@@ -294,11 +293,12 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   }
   function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-  /* Grid = samo linije preko globalne pozadine (ista boja) */
+  /* Grid = linije + zlatni okvir (POJAČANO) */
   function drawPanelAndGridOverlay(c, W, H, s){
     c.save();
+    // 1) pojačaj vidljivost mreže
     c.lineWidth=1;
-    c.strokeStyle='rgba(255,255,255,.08)';
+    c.strokeStyle='rgba(255,255,255,.16)'; /* bilo .08 → pojačano */
     for(let y=0;y<BOARD;y++){
       for(let x=0;x<BOARD;x++){
         const px=x*s, py=y*s;
@@ -306,6 +306,12 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
         c.stroke();
       }
     }
+    // 2) spoljašnji zlatni okvir oko cele table
+    const gold = getCss('--accent') || '#D4AF37';
+    c.lineWidth = Math.max(2, s*0.08);
+    c.strokeStyle = gold.trim() || '#D4AF37';
+    rr(c, 1.0, 1.0, W-2.0, H-2.0, 14);
+    c.stroke();
     c.restore();
   }
 
@@ -382,13 +388,25 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   }
   // -----------------------------------------
 
-  // Tray: koristi staklo
+  // Tray: koristi staklo (VRACENO — bez ovoga nema blokova u ponudi)
   function drawPieceToCanvas(piece){
     const scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
     const c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
     const cx=c.getContext('2d'); cx.scale(DPR,DPR); cx.imageSmoothingEnabled=false;
     for(const [dx,dy] of piece.blocks) drawGlassBlock(cx, pad+dx*scale, pad+dy*scale, scale-2, piece.color, {alpha:1});
     return c;
+  }
+  function renderTray(){
+    trayEl.innerHTML='';
+    state.hand.forEach((p,i)=>{
+      const div=document.createElement('div');
+      const fits=canFitAnywhere(p);
+      div.className='slot'+(p.used?' used':'')+(p.used?'':(fits?' good':' bad'));
+      div.dataset.index=String(i);
+      div.appendChild(drawPieceToCanvas(p));
+      if(!p.used) div.addEventListener('pointerdown', startDragFromSlot, {passive:false});
+      trayEl.appendChild(div);
+    });
   }
 
   /* Bodovanje (pojačano) */
