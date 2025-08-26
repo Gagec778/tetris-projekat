@@ -3,62 +3,70 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Block Puzzle 10×10 — Minimal</title>
+  <title>Block Puzzle 8×8 — Stable</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="startScreen">
+  <!-- START SCREEN -->
+  <div id="startScreen" class="start">
     <canvas id="bg"></canvas>
-    <button id="settingsBtn">⚙️ Podesavanja</button>
     <div class="ss-inner">
-      <h1>BLOCK • 10×10</h1>
-      <div class="sub">Pomeraj blokove, popuni red/kolonu, osvajaj poene. Jednostavno & minimalistički.</div>
-      <div class="ghost-board" id="ghost"></div>
-      <div class="cta">
-        <button id="startClassic">▶ Classic Mode</button>
-        <button id="startDaily">🌟 Daily Challenge</button>
+      <div class="top-icons">
+        <button id="settingsBtn" class="icon-btn" title="Podešavanja">⚙️</button>
+        <button id="achBtn" class="icon-btn" title="Dostignuća">🏆</button>
+      </div>
+      <h1>BLOCK • 8×8</h1>
+      <div class="modes">
+        <button id="startClassic" class="btn gold">▶ Classic</button>
+        <button id="startObstacles" class="btn gold">🧱 Obstacles</button>
+        <button id="startZen" class="btn gold">🧘 Zen</button>
+      </div>
+      <div class="bestBoard">
+        <div class="bestBox">👑 Classic: <span id="bestClassic">0</span></div>
+        <div class="bestBox">👑 Obstacles: <span id="bestObstacles">0</span></div>
+        <div class="bestBox">👑 Zen: <span id="bestZen">0</span></div>
       </div>
     </div>
   </div>
 
+  <!-- APP -->
   <div class="wrap" id="app" style="display:none">
     <header>
-      <div class="brand">BLOCK • 10×10</div>
+      <div class="brand">BLOCK • 8×8</div>
       <div class="hud">
         <div class="pill">Score: <span id="score">0</span></div>
-        <div class="pill">Best: <span id="best">0</span></div>
+        <div class="pill">Best: <span id="best">0</span> 👑</div>
       </div>
       <div class="toolbar">
-        <button id="backBtn" title="Nazad na meni">🏠</button>
+        <button id="backBtn" class="icon-btn" title="Meni">🏠</button>
         <button id="reset" class="btn" title="Nova igra">Reset</button>
       </div>
     </header>
 
     <div class="board-area">
-      <canvas id="game" width="360" height="360" aria-label="10x10 tabla"></canvas>
-      <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
+      <canvas id="game" width="360" height="360" aria-label="8×8 tabla"></canvas>
+      <canvas id="fx"   width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
     </div>
 
     <div class="tray" id="tray"></div>
-    <div class="footer">Start screen sa ambijentom + Podesavanja • Classic & Daily</div>
+    <div class="footer">Stable • Aurora • 8×8 • Drag above finger</div>
   </div>
 
-  <!-- Settings Modal -->
-  <div id="settingsModal">
+  <!-- SETTINGS -->
+  <div id="settingsModal" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
       <h3>Podešavanja</h3>
       <div class="row"><span>Tema</span><button id="setTheme" class="btn">Prebaci temu</button></div>
       <div class="row"><span>Zvuk</span><button id="setSound" class="btn">🔈 On</button></div>
-      <div class="row"><span>Mod</span><button id="setMode" class="btn">Classic</button></div>
       <div class="row"><span>Resetuj Best</span><button id="resetBest" class="btn">Obriši</button></div>
       <div class="row"><span>Testovi</span><button id="runTests" class="btn">Pokreni testove</button></div>
       <div style="text-align:right; margin-top:8px"><button id="closeSettings" class="btn">Zatvori</button></div>
     </div>
   </div>
 
-  <!-- Game Over -->
-  <div id="gameOver" class="overlay">
+  <!-- GAME OVER -->
+  <div id="gameOver" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
       <h2>Kraj igre</h2>
