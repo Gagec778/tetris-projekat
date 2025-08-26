@@ -64,15 +64,15 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 /* START SCREEN */
 .start{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 #bg{
-  position:absolute; inset:0; width:100%; height:100%;
-  pointer-events:none; /* da aurora ne blokira klik na dugmad */
+  position:fixed; inset:0; width:100%; height:100%;
+  pointer-events:none; z-index:0; /* aurora stoji ispod svega */
 }
 .ss-inner{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:16px; padding:16px; }
 .ss-inner h1{ margin:0; font-size:32px; letter-spacing:.6px; text-shadow:0 10px 30px rgba(0,0,0,.35); color:#f6e3a1 }
 
-/* Ikonice gore DESNO, skroz u ugao (⚙️ pa 🏆) */
+/* ✅ Ikonice FIXED u sam UGAO (gornji desni) */
 .top-icons{
-  position:absolute; top:14px; right:14px; left:auto;
+  position:fixed; top:8px; right:8px; z-index:5;
   display:flex; flex-direction:column; align-items:flex-end; gap:10px;
 }
 
@@ -91,9 +91,11 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 </style>
 </head>
 <body>
+  <!-- GLOBAL AURORA POZADINA (vidljiva i u meniju i u igri) -->
+  <canvas id="bg"></canvas>
+
   <!-- START -->
   <div id="startScreen" class="start">
-    <canvas id="bg"></canvas>
     <div class="ss-inner">
       <div class="top-icons">
         <button id="settingsBtn" class="icon-btn" title="Podešavanja">⚙️</button>
@@ -211,15 +213,14 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  /* AURORA — tople boje (meni + igra) */
+  /* AURORA — tople boje (GLOBAL, i u meniju i u igri) */
   function drawAurora(c,w,h){
     c.save();
     const bg=c.createLinearGradient(0,0,w,h);
-    bg.addColorStop(0,'rgba(255,200,150,0.35)');   // topla narandžasta
-    bg.addColorStop(0.5,'rgba(255,170,200,0.30)'); // roze
-    bg.addColorStop(1,'rgba(200,150,255,0.28)');   // ljubičasta
-    c.fillStyle=bg; 
-    c.fillRect(0,0,w,h);
+    bg.addColorStop(0,'rgba(255,200,150,0.35)');
+    bg.addColorStop(0.5,'rgba(255,170,200,0.30)');
+    bg.addColorStop(1,'rgba(200,150,255,0.28)');
+    c.fillStyle=bg; c.fillRect(0,0,w,h);
 
     c.globalCompositeOperation='screen';
     const g1=c.createRadialGradient(w*.3,h*.3,10,w*.3,h*.3,Math.max(w,h)*.8);
@@ -231,10 +232,16 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     g2.addColorStop(0,'rgba(255,180,220,0.30)');
     g2.addColorStop(1,'rgba(255,180,220,0)');
     c.fillStyle=g2; c.fillRect(0,0,w,h);
-
     c.restore();
   }
-  (function loopBG(){ const b=bg.getContext('2d'); b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR); b.clearRect(0,0,bg.width,bg.height); drawAurora(b, innerWidth, innerHeight); requestAnimationFrame(loopBG); })();
+  // globalni BG loop
+  (function loopBG(){ 
+    const b=bg.getContext('2d');
+    b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR);
+    b.clearRect(0,0,bg.width,bg.height);
+    drawAurora(b, innerWidth, innerHeight);
+    requestAnimationFrame(loopBG);
+  })();
 
   // Shapes
   const SHAPES=(function(){
@@ -274,7 +281,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   }
   function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-  /* Grid iste boje kao pozadina: bez popunjavanja panela, samo diskretne linije */
+  /* Grid = samo linije preko globalne pozadine (ista boja) */
   function drawPanelAndGridOverlay(c, W, H, s){
     c.save();
     c.lineWidth=1;
@@ -355,17 +362,16 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     });
   }
 
-  /* draw(): preview je POSLEDNJI — uvek na vrhu preko grida i pozadine */
+  /* draw(): NEMA farbanja panela; grid su samo linije. Preview poslednji. */
   function draw(){
     const s=state.cell, W=s*BOARD, H=s*BOARD;
     ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.scale(DPR,DPR);
 
-    // 1) Pozadina (topli aurora)
-    drawAurora(ctx,W,H);
+    // 1) (nema lokalne pozadine) – vidi se GLOBALNI aurora #bg
 
-    // 2) Grid (samo linije, ista boja kao pozadina)
+    // 2) Grid (samo linije)
     drawPanelAndGridOverlay(ctx, W, H, s);
 
     // 3) Već postavljeni blokovi i prepreke (iznad linija)
