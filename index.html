@@ -16,42 +16,80 @@
   --grid-border: rgba(0,0,0,.12);
 }
 *{ box-sizing:border-box; }
-html,body{ height:100%; margin:0; background:var(--bg); color:var(--text);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; overflow:hidden; }
+html,body{
+  height:100%; margin:0; background:var(--bg); color:var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+  overflow:hidden;
+  -webkit-tap-highlight-color: transparent;
+}
 .wrap{ display:flex; flex-direction:column; height:100%; max-width:720px; margin:0 auto; }
 header{ padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .brand{ font-weight:800; letter-spacing:.3px; opacity:.92 }
 .hud{ display:flex; gap:12px; align-items:center; }
 .pill{ background:#16192266; padding:6px 10px; border-radius:12px; font-weight:700; opacity:.95 }
 .toolbar{ display:flex; gap:8px; align-items:center; }
-.btn{ background:transparent; border:1px solid #2b2f3a; color:var(--text); padding:8px 12px; border-radius:14px; font-weight:700; cursor:pointer; }
-.icon-btn{ border:none; background:#00000033; backdrop-filter: blur(6px); color:var(--text);
-  padding:8px 10px; border-radius:14px; font-weight:800; cursor:pointer; }
+
+/* Dugmad */
+.btn, .icon-btn, button{
+  background:transparent; color:var(--text); border-radius:14px; font-weight:700; cursor:pointer;
+  outline:none; user-select:none; -webkit-user-select:none; -ms-user-select:none;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn{ border:1px solid #2b2f3a; padding:8px 12px; }
+.icon-btn{
+  border:none; background:#00000033; backdrop-filter: blur(6px);
+  padding:12px 14px; border-radius:16px; font-weight:800;
+}
+button:focus, .btn:focus, .icon-btn:focus{ outline:none; }
+*:focus{ outline:none; }
+
+/* Board */
 .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:8px 16px 0; position:relative; }
 canvas{ touch-action:none; border-radius:18px; display:block; }
+
 .tray{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; padding:12px 16px 18px; }
 .slot{ background:#141720; border:1px dashed #2b2f3a; border-radius:16px; min-height:96px;
   display:flex; align-items:center; justify-content:center; position:relative; transition:border-color .18s, box-shadow .18s, opacity .18s; }
 .slot.used{ opacity:.3 }
 .slot.good{ border-color:#57c857; box-shadow:0 0 0 2px color-mix(in oklab, #57c857 40%, transparent); }
 .slot.bad { border-color:#e06b6b; box-shadow:0 0 0 2px color-mix(in oklab, #e06b6b 40%, transparent); }
+
 .footer{ text-align:center; opacity:.6; font-size:12px; padding-bottom:10px }
+
+/* OVERLAYS */
 .overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:20; }
 .overlay .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 .overlay .panel{ position:relative; background:var(--panel); border:1px solid var(--grid-border); border-radius:16px; padding:16px; width:min(92vw,460px); box-shadow:0 12px 40px rgba(0,0,0,.45) }
 .overlay .row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; }
+
 /* START SCREEN */
 .start{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-#bg{ position:absolute; inset:0; width:100%; height:100%; }
+#bg{
+  position:absolute; inset:0; width:100%; height:100%;
+  pointer-events:none; /* ✅ da aurora ne blokira klik na dugmad */
+}
 .ss-inner{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:16px; padding:16px; }
 .ss-inner h1{ margin:0; font-size:32px; letter-spacing:.6px; text-shadow:0 10px 30px rgba(0,0,0,.35); color:#f6e3a1 }
-.top-icons{ position:absolute; top:14px; right:14px; display:flex; gap:10px; }
+
+/* Ikonice gore desno, vertikalno */
+.top-icons{
+  position:absolute; top:14px; right:14px;
+  display:flex; flex-direction:column; align-items:flex-end; gap:10px;
+}
+.top-icons .icon-btn{ font-size:22px; }
+
+/* dugmad za modove */
 .modes{ display:flex; flex-direction:column; gap:10px; }
-.btn.gold{ padding:12px 20px; border-radius:14px; font-weight:800; color:#e8ecf1; background:#0b0d12;
-  border:1px solid #e4bf66; box-shadow: inset 0 0 0 1px #3a2a0b, 0 8px 22px rgba(0,0,0,.35); cursor:pointer; }
-.bestBoard{ display:flex; flex-direction:column; gap:4px; align-items:center; font-size:14px; opacity:.9 }
-.bestBox{ background:#0b0d12aa; border:1px solid #2c2b24; padding:6px 10px; border-radius:10px; }
-/* settings modal basic */ #settingsModal{ display:none; }
+.btn.gold{
+  padding:12px 20px; border-radius:14px; font-weight:800; color:#e8ecf1; background:#0b0d12;
+  border:1px solid #e4bf66; box-shadow: inset 0 0 0 1px #3a2a0b, 0 8px 22px rgba(0,0,0,.35); cursor:pointer;
+}
+
+/* sakriven best na startu */
+.bestBoard{ display:none; }
+
+/* settings modal basic */
+#settingsModal{ display:none; }
 </style>
 </head>
 <body>
@@ -68,11 +106,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
         <button id="startClassic" class="btn gold">▶ Classic</button>
         <button id="startObstacles" class="btn gold">🧱 Obstacles</button>
         <button id="startZen" class="btn gold">🧘 Zen</button>
-      </div>
-      <div class="bestBoard">
-        <div class="bestBox">👑 Classic: <span id="bestClassic">0</span></div>
-        <div class="bestBox">👑 Obstacles: <span id="bestObstacles">0</span></div>
-        <div class="bestBox">👑 Zen: <span id="bestZen">0</span></div>
       </div>
     </div>
   </div>
@@ -139,9 +172,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   const trayEl = document.getElementById('tray');
   const scoreEl= document.getElementById('score');
   const bestEl = document.getElementById('best');
-  const bestClassicEl   = document.getElementById('bestClassic');
-  const bestObstaclesEl = document.getElementById('bestObstacles');
-  const bestZenEl       = document.getElementById('bestZen');
   const resetBtn = document.getElementById('reset');
   const backBtn  = document.getElementById('backBtn');
   const settingsBtn   = document.getElementById('settingsBtn');
@@ -162,27 +192,24 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
   ctx.imageSmoothingEnabled=false; fctx.imageSmoothingEnabled=false;
 
-  // Config
   const DPR=Math.min(devicePixelRatio||1,2), BOARD=8, COLORS=['#FF6B6B','#F94144','#F3722C','#F8961E','#F9844A','#FFD166','#F6BD60','#7BD389','#70C1B3','#4D9DE0','#5B8CFF','#C97FFF','#E56B6F','#FF9F1C'];
   const OBSTACLE_COLOR='#3a404d';
   const LS=(k,v)=> (v===undefined? localStorage.getItem(k) : localStorage.setItem(k,v));
   const settings = { theme: LS('bp8.theme')||'dark', sound: LS('bp8.sound')!==null ? LS('bp8.sound')==='1' : true };
   applyTheme(settings.theme); updateSoundLabel();
-  const bestByMode = loadBest() || {classic:0, obstacles:0, zen:0}; updateBestBoard();
-
-  // State
+  const bestByMode = loadBest() || {classic:0, obstacles:0, zen:0};
   const state = { grid:createGrid(BOARD), cell:36, score:0, mode:'classic', best:bestByMode, hand:[], dragging:null };
 
   // Utils
-  function createGrid(n){ return Array.from({length:n},()=>Array(n).fill(0)); }
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  function createGrid(n){ return Array.from({length:n},()=>Array(n).fill(0)); }
   function hexToRgb(hex){ const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim()); if(!m) return {r:255,g:200,b:150}; return {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)}; }
   function adjustColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r+(255-r)*amt),0,255); const ng=clamp(Math.round(g+(255-g)*amt),0,255); const nb=clamp(Math.round(b+(255-b)*amt),0,255); return `rgb(${nr},${ng},${nb})`; }
   function darkenColor(hex,amt){ const {r,g,b}=hexToRgb(hex); const nr=clamp(Math.round(r*(1-amt)),0,255); const ng=clamp(Math.round(g*(1-amt)),0,255); const nb=clamp(Math.round(b*(1-amt)),0,255); return `rgb(${nr},${ng},${nb})`; }
   function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  // Aurora BG
+  // Aurora
   function drawAurora(c,w,h){
     c.save();
     const bg=c.createLinearGradient(0,0,w,h);
@@ -201,7 +228,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     requestAnimationFrame(drawStartAurora);
   }
 
-  // Pieces
+  // Shapes
   const SHAPES=(function(){
     const raw=[
       [[0,0]],
@@ -239,7 +266,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   }
   function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-  // Drawing helpers
+  // Drawing
   function drawMatBlock(c,x,y,s,base,{alpha=1,placed=false}={}){
     c.save(); c.globalAlpha=alpha;
     rr(c,x+1,y+1,s-2,s-2,Math.max(6,s*.22));
@@ -262,7 +289,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   function drawPlaced(c,x,y,s){ drawMatBlock(c,x,y,s,getCss('--accent')||'#FFD166',{alpha:.98,placed:true}); }
   function drawPreview(c,x,y,s,col,ok){ drawMatBlock(c,x,y,s, ok?col:'#c65454',{alpha: ok?.96:.88, placed:false}); }
 
-  // Tray
   function drawPieceToCanvas(piece){
     const scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
     const c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -283,7 +309,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     });
   }
 
-  // Board draw
   function draw(){
     const s=state.cell, W=s*BOARD, H=s*BOARD;
     ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.scale(DPR,DPR);
@@ -338,7 +363,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       spawnParticles(cells); hapt(28);
     } else { hapt(12); }
     state.score += piece.blocks.length + scoreForClear(cleared); scoreEl.textContent=state.score;
-    if(state.score>(state.best[state.mode]||0)){ state.best[state.mode]=state.score; saveBest(state.best); updateBestBoard(); bestEl.textContent=state.score; }
+    if(state.score>(state.best[state.mode]||0)){ state.best[state.mode]=state.score; saveBest(state.best); bestEl.textContent=state.score; }
     piece.used=true; state.hand=state.hand.map(p=>p.id===piece.id? {...p,used:true}:p); renderTray();
     if(state.hand.every(p=>p.used)) refillHand();
     if(state.mode!=='zen' && !anyFits()){ goStats.textContent=`Score: ${state.score} • Best: ${state.best[state.mode]||0}`; gameOver.style.display='flex'; hapt(40); }
@@ -379,7 +404,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   addEventListener('pointerup', onPointerUp, {passive:true});
   addEventListener('pointercancel', onPointerUp, {passive:true});
 
-  // UI
+  // UI helpers
   function showToast(msg){
     let t=document.getElementById('toast');
     if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
@@ -388,7 +413,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   }
   function updateSoundLabel(){ setSound && (setSound.textContent = settings.sound?'🔈 On':'🔇 Off'); }
   function applyTheme(t){ document.body.classList.toggle('light', t==='light'); }
-  function updateBestBoard(){ bestClassicEl.textContent=state.best.classic||0; bestObstaclesEl.textContent=state.best.obstacles||0; bestZenEl.textContent=state.best.zen||0; }
   function saveBest(b){ LS('bp8.best', JSON.stringify(b)); }
   function loadBest(){ const s=LS('bp8.best'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 
@@ -400,8 +424,8 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   closeSettings.addEventListener('click', ()=> settingsModal.style.display='none');
   setTheme.addEventListener('click', ()=>{ settings.theme=settings.theme==='dark'?'light':'dark'; LS('bp8.theme',settings.theme); applyTheme(settings.theme); });
   setSound.addEventListener('click', ()=>{ settings.sound=!settings.sound; LS('bp8.sound', settings.sound?'1':'0'); updateSoundLabel(); });
-  resetBest.addEventListener('click', ()=>{ localStorage.removeItem('bp8.best'); state.best={classic:0,obstacles:0,zen:0}; bestEl.textContent=0; updateBestBoard(); showToast('Best resetovan'); });
-  runTestsBtn.addEventListener('click', ()=>{ const {passed,failed}=runTests(); showToast(`Testovi: ${passed} ✅ / ${failed} ❌`); });
+  resetBest.addEventListener('click', ()=>{ localStorage.removeItem('bp8.best'); state.best={classic:0,obstacles:0,zen:0}; bestEl.textContent=0; showToast('Best resetovan'); });
+
   achBtn.addEventListener('click', ()=> showToast('Dostignuća — uskoro'));
   playAgain.addEventListener('click', ()=>{ gameOver.style.display='none'; newGame(state.mode); });
   goMenu.addEventListener('click', ()=>{ gameOver.style.display='none'; goHome(); });
@@ -419,24 +443,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     state.hand=[]; refillHand(); requestDraw(); showToast(mode[0].toUpperCase()+mode.slice(1));
   }
 
-  // Tests
-  function runTests(){
-    const results=[]; const log=(n,ok)=>{ results.push({n,ok}); (ok?console.log:console.error)(`[TEST] ${n}: ${ok?'PASS':'FAIL'}`); };
-    try{
-      log('anyFits defined', typeof anyFits==='function');
-      const p={blocks:[[0,0],[1,0]], w:2,h:1,color:'#fff',id:'t'};
-      log('canPlace OOB false', canPlace(p,-1,0)===false);
-      state.grid=createGrid(BOARD); for(let x=0;x<BOARD-1;x++) state.grid[0][x]=1;
-      const s0=state.score; place({blocks:[[0,0]],w:1,h:1,color:'#fff',id:'t2'}, BOARD-1, 0);
-      log('row clear adds pts', state.score>s0);
-      state.grid=createGrid(BOARD); for(let y=0;y<BOARD;y++) for(let x=0;x<BOARD;x++) state.grid[y][x]=1;
-      state.hand=[{blocks:[[0,0]],w:1,h:1,used:false,color:'#fff',id:'z'}];
-      log('anyFits=false on full board', anyFits()===false);
-    }catch(e){ console.error(e); }
-    return {passed:results.filter(r=>r.ok).length, failed:results.filter(r=>!r.ok).length};
-  }
-
-  // Resize/draw
+  // Resize & BG loop
   function sizeToScreen(){
     const headerH=document.querySelector('header')?.offsetHeight||60;
     const trayH  =trayEl?.offsetHeight||120;
@@ -452,14 +459,13 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     state.cell=cell; bg.width=Math.floor(innerWidth*DPR); bg.height=Math.floor(innerHeight*DPR); requestDraw();
   }
   let drawQueued=false; function requestDraw(){ if(!drawQueued){ drawQueued=true; requestAnimationFrame(()=>{ drawQueued=false; draw(); }); } }
-
-  // Haptics placeholder
   function hapt(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
 
-  // Boot
   addEventListener('resize', sizeToScreen, {passive:true});
-  sizeToScreen(); (function loopBG(){ const b=bg.getContext('2d'); b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR); b.clearRect(0,0,bg.width,bg.height); drawAurora(b, innerWidth, innerHeight); requestAnimationFrame(loopBG); })();
+  sizeToScreen();
+  (function loopBG(){ const b=bg.getContext('2d'); b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR); b.clearRect(0,0,bg.width,bg.height); drawAurora(b, innerWidth, innerHeight); requestAnimationFrame(loopBG); })();
 
+  // Dev-fallback
   if(!startClassic){ start.style.display='none'; app.style.display='flex'; newGame('classic'); }
 })();
 </script>
