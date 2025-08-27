@@ -9,6 +9,7 @@
   --bg:#0a0f1a; --text:#e8ecf1; --muted:#a6afc3; --accent:#2ec5ff; /* plavi akcenat */
   --panel: rgba(14,18,28,.45);
   --grid-border: rgba(255,255,255,.10);
+  --gold:#d4af37;
 }
 .light{
   --bg:#f6f8fb; --text:#0e1014; --muted:#4c5672; --accent:#2aa8e6;
@@ -66,7 +67,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 /* OVERLAYS */
 .overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:20; }
 .overlay .backdrop{ position:absolute; inset:0; background:rgba(3,6,12,.55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
-.overlay .panel{ position:relative; background:var(--panel); border:1px solid var(--grid-border); border-radius:16px; padding:16px; width:min(92vw,460px); box-shadow:0 12px 40px rgba(0,0,0,.45) }
+.overlay .panel{ position:relative; background:var(--panel); border:1px solid var(--grid-border); border-radius:16px; padding:16px; width:min(92vw,640px); box-shadow:0 12px 40px rgba(0,0,0,.45) }
 .overlay .row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; }
 
 /* START SCREEN */
@@ -87,8 +88,25 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   border:1px solid #66d1ff; box-shadow: inset 0 0 0 1px #13334d, 0 8px 22px rgba(0,0,0,.35); cursor:pointer;
 }
 
-/* settings modal basic */
+/* SETTINGS modal */
 #settingsModal{ display:none; }
+
+/* ACHIEVEMENTS overlay */
+#achievementsModal{ display:none; }
+.ach-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+.ach-grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px; max-height:50vh; overflow:auto; }
+.ach-card{ background:rgba(8,12,20,.55); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; }
+.ach-card h4{ margin:0 0 4px 0; font-size:14px; }
+.ach-card .meta{ font-size:12px; opacity:.8; display:flex; gap:8px; }
+.progress{ height:8px; width:100%; background:rgba(255,255,255,.08); border-radius:6px; overflow:hidden; margin-top:8px; }
+.progress > i{ display:block; height:100%; background:linear-gradient(90deg, var(--accent), #66d1ff); width:0%; }
+.badge{ padding:4px 8px; border-radius:999px; background:#0f1a2b; border:1px solid #123; font-size:11px; }
+.milestone{ border-color: var(--gold); }
+.milestone h4{ color: var(--gold); }
+.ach-controls{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.small{ font-size:12px; opacity:.85; }
+.kit{ display:flex; gap:6px; align-items:center; }
+
 </style>
 </head>
 <body>
@@ -145,6 +163,39 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     </div>
   </div>
 
+  <!-- ACHIEVEMENTS -->
+  <div id="achievementsModal" class="overlay" style="display:none">
+    <div class="backdrop"></div>
+    <div class="panel">
+      <div class="ach-header">
+        <h3>🏆 Dostignuća (1–1000)</h3>
+        <div class="kit">
+          <button id="achPrev" class="btn">◀</button>
+          <div class="small"><span id="achPageLbl">1</span>/20</div>
+          <button id="achNext" class="btn">▶</button>
+        </div>
+      </div>
+
+      <!-- Milestone blok (uvek vrh) -->
+      <div id="milestoneBox" class="ach-card milestone">
+        <h4 id="msTitle">Milestone 50 • Nova tema</h4>
+        <div class="small" id="msDesc">Pogledaj 5 reklama (min 20% u Dostignućima)</div>
+        <div class="progress"><i id="msBar" style="width:0%"></i></div>
+        <div class="ach-controls">
+          <span class="small" id="msCounters">Spolja 0/4 • Unutra 0/1 • Ukupno 0/5</span>
+          <button id="btnWatchAd" class="btn">🎬 Gledaj reklamu</button>
+          <button id="btnClaim" class="btn" disabled>✅ Preuzmi nagradu</button>
+        </div>
+      </div>
+
+      <div class="ach-grid" id="achList"></div>
+
+      <div style="text-align:right; margin-top:10px">
+        <button id="closeAch" class="btn">Zatvori</button>
+      </div>
+    </div>
+  </div>
+
   <!-- GAME OVER -->
   <div id="gameOver" class="overlay" style="display:none">
     <div class="backdrop"></div>
@@ -162,7 +213,9 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 (function(){
   'use strict';
 
-  // DOM
+  /* =========================================================
+     DOM & OSNOVNA IGRA (NE DIRANO, samo dodate kuke za stats)
+  ========================================================== */
   const canvas = document.getElementById('game');
   const ctx    = canvas.getContext('2d', {alpha:true});
   const fxCnv  = document.getElementById('fx');
@@ -185,6 +238,21 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   const closeSettings = document.getElementById('closeSettings');
   const runTestsBtn   = document.getElementById('runTests');
   const achBtn   = document.getElementById('achBtn');
+  const achievementsModal = document.getElementById('achievementsModal');
+  const closeAch = document.getElementById('closeAch');
+  const achPrev = document.getElementById('achPrev');
+  const achNext = document.getElementById('achNext');
+  const achList = document.getElementById('achList');
+  const achPageLbl = document.getElementById('achPageLbl');
+
+  const msBox = document.getElementById('milestoneBox');
+  const msTitle = document.getElementById('msTitle');
+  const msDesc  = document.getElementById('msDesc');
+  const msBar   = document.getElementById('msBar');
+  const msCounters = document.getElementById('msCounters');
+  const btnWatchAd = document.getElementById('btnWatchAd');
+  const btnClaim   = document.getElementById('btnClaim');
+
   const gameOver = document.getElementById('gameOver');
   const goStats  = document.getElementById('goStats');
   const playAgain= document.getElementById('playAgain');
@@ -196,9 +264,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
   const DPR=Math.min(devicePixelRatio||1,2), BOARD=8;
 
-  /* Paleta boja za blokove (ostaje ista, sada ne-providni) */
   const COLORS=['#a3d5ff','#ffd089','#ffb3c6','#d4af37','#c0c0c0','#9ad8a5','#caa3ff','#ff9e7d'];
-
   const OBSTACLE_COLOR='#2a3344';
   const LS=(k,v)=> (v===undefined? localStorage.getItem(k) : localStorage.setItem(k,v));
   const settings = { theme: LS('bp8.theme')||'dark', sound: LS('bp8.sound')!==null ? LS('bp8.sound')==='1' : true };
@@ -213,6 +279,13 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved)
   };
 
+  // stats za dostignuća
+  const stats = loadStats() || { totalScore:0, blocksPlaced:0, linesCleared:0, externalAds:0, themesUnlocked:0, skinsUnlocked:0 };
+
+  // Achievements sistem
+  const ach = loadAch() || createAchievementsModel(); // 1000 kom + milestone
+  let achPage = 1;
+
   // Utils
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   function createGrid(n){ return Array.from({length:n},()=>Array(n).fill(0)); }
@@ -222,13 +295,11 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   /* AURORA — PLAVA varijanta (meni + igra, isti canvas) */
   function drawAurora(c,w,h){
     c.save();
-    // Blagi tamni gradient base
     const base=c.createLinearGradient(0,0,w,h);
     base.addColorStop(0,'rgba(8,14,28,0.85)');
     base.addColorStop(1,'rgba(10,20,40,0.85)');
     c.fillStyle=base; c.fillRect(0,0,w,h);
 
-    // Plavi “mist” slojevi
     c.globalCompositeOperation='screen';
     const a=c.createRadialGradient(w*.3,h*.35,8,w*.35,h*.35,Math.max(w,h)*.8);
     a.addColorStop(0,'rgba(60,140,255,0.45)');
@@ -244,7 +315,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     cgrad.addColorStop(0,'rgba(120,80,255,0.30)');
     cgrad.addColorStop(1,'rgba(120,80,255,0)');
     c.fillStyle=cgrad; c.fillRect(0,0,w,h);
-
     c.restore();
   }
   (function loopBG(){
@@ -279,7 +349,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     return { blocks:s.blocks.map(b=>[b[0],b[1]]), w:s.w, h:s.h, color:rndColor(), used:false, id:Math.random().toString(36).slice(2) };
   }
 
-  // Rules
+  // Pravila
   function canPlace(piece,gx,gy){
     for(const [dx,dy] of piece.blocks){
       const x=gx+dx, y=gy+dy;
@@ -293,7 +363,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   }
   function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-  /* Grid: linije + zlatni okvir, malo jače */
+  /* Grid: linije + okvir */
   function drawPanelAndGridOverlay(c, W, H, s){
     c.save();
     c.lineWidth=1;
@@ -313,19 +383,15 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     c.restore();
   }
 
-  /* ---------- BLOKOVI: ne-providni “polished” ---------- */
+  /* BLOKOVI – puni sa blagim sjajem (ostalo ne diramo) */
   function drawSolidBlock(c, x, y, s, hex, {placed=false}={}){
     c.save();
     const R=Math.max(6, s*.22);
-
-    // telo (ne-providno) – dvoslojni gradijent
     const body=c.createLinearGradient(x, y, x, y+s);
     body.addColorStop(0, hex);
     body.addColorStop(1, shade(hex, -18));
     rr(c,x+1,y+1,s-2,s-2,R);
     c.fillStyle=body; c.fill();
-
-    // unutrašnji sjaj
     rr(c,x+2,y+2,s-4,s-4,R-3);
     const inner=c.createLinearGradient(x,y,x+s,y+s);
     inner.addColorStop(0,'rgba(255,255,255,.35)');
@@ -334,13 +400,10 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     c.globalCompositeOperation='overlay';
     c.fillStyle=inner; c.fill();
     c.globalCompositeOperation='source-over';
-
-    // rubovi
     rr(c,x+1,y+1,s-2,s-2,R);
     c.lineWidth=Math.max(1, s*.06);
     c.strokeStyle='rgba(0,0,0,.28)';
     c.stroke();
-
     if(placed){
       rr(c,x+1.2,y+1.2,s-2.4,s-2.4,R-1);
       c.lineWidth=Math.max(1, s*.06);
@@ -350,7 +413,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     c.restore();
   }
   function shade(hex, amt){
-    // hex #RRGGBB → tamnije/svetlije
     const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     if(!m) return hex;
     let [r,g,b]=[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)];
@@ -419,7 +481,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     }
   }
 
-  /* draw */
+  /* DRAW */
   function draw(){
     const s=state.cell, W=s*BOARD, H=s*BOARD;
     ctx.setTransform(1,0,0,1,0,0);
@@ -453,7 +515,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     }
   }
 
-  // FX
+  /* FX */
   const particles=[]; function spawnParticles(cells){
     const s=state.cell,d=DPR; for(const [x,y] of cells){ for(let j=0;j<6;j++){ particles.push({x:(x+0.5)*s*d,y:(y+0.5)*s*d,vx:(Math.random()-0.5)*2,vy:(-Math.random()*2-0.5),life:40}); } }
   }
@@ -464,8 +526,9 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     requestAnimationFrame(stepFX);
   } requestAnimationFrame(stepFX);
 
-  // Scoring / placing
+  /* PLACE */
   function place(piece,gx,gy){
+    const placedBlocks = piece.blocks.length;
     for(const [dx,dy] of piece.blocks) state.grid[gy+dy][gx+dx]=1;
 
     const fullRows=[], fullCols=[];
@@ -478,12 +541,23 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     if(cells.length) spawnParticles(cells);
 
     const linesCleared = fullRows.length + fullCols.length;
-    const placePts = 50 * piece.blocks.length;
+    const placePts = 50 * placedBlocks;
     const clearPts = scoreForClear(linesCleared);
-    state.score += (placePts + clearPts);
+    const gained = (placePts + clearPts);
+
+    state.score += gained;
     scoreEl.textContent=state.score;
 
+    // stats update
+    stats.totalScore += gained;
+    stats.blocksPlaced += placedBlocks;
+    stats.linesCleared += linesCleared;
+    saveStats(stats);
+
     if(state.score>(state.best[state.mode]||0)){ state.best[state.mode]=state.score; saveBest(state.best); bestEl.textContent=state.score; }
+
+    // achievements tick
+    achievementsTick();
 
     piece.used=true; state.hand=state.hand.map(p=>p.id===piece.id? {...p,used:true}:p); renderTray();
     if(state.hand.every(p=>p.used)) refillHand();
@@ -497,7 +571,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
   function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
-  // Dragging
+  /* DRAG */
   const POINTER={active:false,fromSlotIndex:null};
   function getCanvasPos(e){ const r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; }
   function startDragFromSlot(e){
@@ -540,7 +614,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   addEventListener('pointercancel', onPointerCancel, {passive:true});
   addEventListener('lostpointercapture', onPointerCancel, {passive:true});
 
-  // UI helpers
+  /* UI helpers */
   function showToast(msg){
     let t=document.getElementById('toast');
     if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
@@ -552,7 +626,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   function saveBest(b){ LS('bp8.best', JSON.stringify(b)); }
   function loadBest(){ const s=LS('bp8.best'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 
-  // Events
+  // Events – postojeći
   resetBtn.addEventListener('click', ()=> newGame(state.mode));
   backBtn.addEventListener('click', ()=> goHome());
   settingsBtn.addEventListener('click', ()=> settingsModal.style.display='flex');
@@ -562,11 +636,20 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   setSound.addEventListener('click', ()=>{ settings.sound=!settings.sound; LS('bp8.sound', settings.sound?'1':'0'); updateSoundLabel(); });
   resetBest.addEventListener('click', ()=>{ localStorage.removeItem('bp8.best'); state.best={classic:0,obstacles:0}; bestEl.textContent=0; showToast('Best resetovan'); });
 
-  achBtn.addEventListener('click', ()=> showToast('Dostignuća — uskoro'));
   playAgain.addEventListener('click', ()=>{ gameOver.style.display='none'; newGame(state.mode); });
   goMenu.addEventListener('click', ()=>{ gameOver.style.display='none'; goHome(); });
   startClassic.addEventListener('click', ()=> startGame('classic'));
   startObstacles.addEventListener('click', ()=> startGame('obstacles'));
+
+  // Achievements UI
+  achBtn.addEventListener('click', ()=>{ achievementsModal.style.display='flex'; renderAchievementsPage(); renderMilestoneBox(); });
+  achievementsModal.querySelector('.backdrop').addEventListener('click', ()=> achievementsModal.style.display='none');
+  closeAch.addEventListener('click', ()=> achievementsModal.style.display='none');
+  achPrev.addEventListener('click', ()=>{ achPage=Math.max(1, achPage-1); renderAchievementsPage(); });
+  achNext.addEventListener('click', ()=>{ achPage=Math.min(20, achPage+1); renderAchievementsPage(); });
+
+  btnWatchAd.addEventListener('click', watchAdInAchievements);
+  btnClaim.addEventListener('click', claimMilestoneReward);
 
   // Flow
   function startGame(mode){
@@ -613,6 +696,212 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   sizeToScreen();
 
   if(!startClassic){ start.style.display='none'; app.style.display='flex'; newGame('classic'); }
+
+  /* =========================================================
+      DOSTIGNUĆA + REKLAME (80/20) — SVE NOVO
+  ========================================================== */
+
+  function createAchievementsModel(){
+    // 1000 dostignuća, mešamo kriterijume po statistikama
+    const list=[];
+    for(let i=1;i<=1000;i++){
+      let title='', kind='', target=0, key='';
+      if(i%3===1){ kind='blocks'; target=10*i; title=`Postavi ${target} blokova ukupno`; key='blocksPlaced'; }
+      else if(i%3===2){ kind='lines'; target=2*i; title=`Očisti ${target} linija ukupno`; key='linesCleared'; }
+      else{ kind='score'; target=1000*i; title=`Osvoji ukupno ${target.toLocaleString('sr-RS')} poena`; key='totalScore'; }
+
+      const node = { id:i, title, kind, key, target, done:false };
+
+      // Milestone na svakih 50 (tema) / svakih 100 (skin)
+      if(i%50===0){
+        const adsNeeded = (i/50)*5; // 50→5, 100→10, 150→15...
+        node.milestone = {
+          type: (i%100===0) ? 'skin' : 'theme',
+          adsRequired: adsNeeded,
+          adsExtMax: Math.floor(adsNeeded*0.8),
+          adsExt: 0,
+          adsInt: 0,
+          claimed:false
+        };
+        node.title += (node.milestone.type==='skin' ? ' • Milestone: Skin' : ' • Milestone: Tema');
+      }
+      list.push(node);
+    }
+    const model = {
+      list,
+      currentMilestoneIndex: findFirstOpenMilestoneIndex(list)
+    };
+    saveAch(model);
+    return model;
+  }
+  function findFirstOpenMilestoneIndex(list){
+    for(let i=0;i<list.length;i++){
+      const a=list[i];
+      if(a.milestone && !(a.milestone.claimed)) return i;
+    }
+    return -1;
+  }
+
+  // Render lista (strane po 50)
+  function renderAchievementsPage(){
+    const perPage=50;
+    const startIdx=(achPage-1)*perPage;
+    const endIdx=Math.min(startIdx+perPage, ach.list.length);
+    achPageLbl.textContent=String(achPage);
+
+    achList.innerHTML='';
+    for(let i=startIdx;i<endIdx;i++){
+      const a=ach.list[i];
+      const progress=Math.min(1, getStat(a.key)/a.target);
+      const card=document.createElement('div');
+      card.className='ach-card'+(a.milestone?' milestone':'');
+      card.innerHTML=`
+        <h4>#${a.id} — ${a.title}</h4>
+        <div class="meta">
+          <span class="badge">${a.kind}</span>
+          <span class="small">${Math.min(getStat(a.key), a.target).toLocaleString('sr-RS')} / ${a.target.toLocaleString('sr-RS')}</span>
+          ${a.milestone ? `<span class="badge" style="background:#1a1420;border-color:#4a2;">🎁 ${a.milestone.type==='skin'?'Skin':'Tema'}</span>`:''}
+        </div>
+        <div class="progress"><i style="width:${(progress*100).toFixed(1)}%"></i></div>
+      `;
+      achList.appendChild(card);
+    }
+  }
+
+  function getStat(key){ return stats[key]||0; }
+  function saveStats(s){ LS('bp8.stats', JSON.stringify(s)); }
+  function loadStats(){ const s=LS('bp8.stats'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+  function saveAch(a){ LS('bp8.ach', JSON.stringify(a)); }
+  function loadAch(){ const s=LS('bp8.ach'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+
+  // Tick – poziva se posle svakog poteza
+  function achievementsTick(){
+    // markiraj završene „obične“ po kriterijumu
+    for(const a of ach.list){
+      if(a.done) continue;
+      if(!a.milestone){
+        if(getStat(a.key)>=a.target) a.done=true;
+      }else{
+        // milestone se ne označava done preko statistike, već preko reklama (claim)
+      }
+    }
+    saveAch(ach);
+    // Osveži milestone UI ako je otvoren
+    if(achievementsModal.style.display==='flex') renderMilestoneBox();
+  }
+
+  /* =========================
+        MILESTONE / REKLAME
+     ========================= */
+  function getCurrentMilestone(){
+    const idx=ach.currentMilestoneIndex>=0 ? ach.currentMilestoneIndex : findFirstOpenMilestoneIndex(ach.list);
+    if(idx===-1) return null;
+    return { idx, node: ach.list[idx] };
+  }
+
+  function renderMilestoneBox(){
+    const cur = getCurrentMilestone();
+    if(!cur){ // nema više milestone-a
+      msTitle.textContent = 'Svi milestone-i završeni 🎉';
+      msDesc.textContent = 'Uživaj u igri — ništa te ne koči!';
+      msCounters.textContent = '';
+      msBar.style.width='100%';
+      btnWatchAd.disabled = true;
+      btnClaim.disabled = true;
+      return;
+    }
+    const a = cur.node;
+    const ms = a.milestone;
+    const need = ms.adsRequired, extMax=ms.adsExtMax;
+    const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
+    const pct = Math.min(100, (total/need)*100);
+
+    msTitle.textContent = `Milestone ${a.id} • ${ms.type==='skin'?'Novi SKIN':'Nova TEMA'}`;
+    msDesc.textContent = `Pogledaj ${need} reklama • min 20% u Dostignućima (max ${extMax} van)`;
+    msCounters.textContent = `Spolja ${Math.min(ms.adsExt, extMax)}/${extMax} • Unutra ${ms.adsInt}/${need - extMax} • Ukupno ${total}/${need}`;
+    msBar.style.width = pct.toFixed(1)+'%';
+
+    btnWatchAd.disabled = (total>=need);
+    btnClaim.disabled = !(total>=need);
+  }
+
+  // 80/20 raspodela — spoljašnji (van Dostignuća)
+  function addExternalAd(){
+    const cur=getCurrentMilestone(); if(!cur) return;
+    const ms=cur.node.milestone; if(ms.claimed) return;
+    const extMax=ms.adsExtMax;
+    if(ms.adsExt < extMax){
+      ms.adsExt++;
+      saveAch(ach);
+      if(achievementsModal.style.display==='flex') renderMilestoneBox();
+    }
+  }
+
+  // Unutrašnji (u Dostignućima) — puni samo „untrašnji“ deo
+  function addInternalAd(){
+    const cur=getCurrentMilestone(); if(!cur) return;
+    const ms=cur.node.milestone; if(ms.claimed) return;
+    const need = ms.adsRequired;
+    const extMax = ms.adsExtMax;
+    const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
+    if(total>=need) return;
+    ms.adsInt++;
+    saveAch(ach);
+    renderMilestoneBox();
+  }
+
+  // Claim nagrade → otključaj temu / skin, pređi na sledeći milestone
+  function claimMilestoneReward(){
+    const cur=getCurrentMilestone(); if(!cur) return;
+    const a=cur.node, ms=a.milestone;
+    const need = ms.adsRequired, extMax=ms.adsExtMax;
+    const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
+    if(total<need) return;
+
+    ms.claimed=true;
+    if(ms.type==='theme'){ stats.themesUnlocked++; showToast('🎨 Nova tema otključana!'); }
+    else { stats.skinsUnlocked++; showToast('🧊 Novi skin blokova otključan!'); }
+    saveStats(stats);
+
+    // sledeći milestone
+    ach.currentMilestoneIndex = findFirstOpenMilestoneIndex(ach.list);
+    saveAch(ach);
+    renderMilestoneBox();
+    renderAchievementsPage();
+  }
+
+  // UI: dugme „Gledaj reklamu“ u Dostignućima
+  function watchAdInAchievements(){
+    btnWatchAd.disabled = true;
+    // stub simulacija prikaza oglasa (zameniti pravim SDK callback-om)
+    setTimeout(()=>{
+      addInternalAd();
+      btnWatchAd.disabled = false;
+    }, 900);
+  }
+
+  // EXTERNAL ad hook (namerna reklama van Dostignuća, npr. pomoć)
+  window.simulateExternalAd = function(){
+    // pozovi ovo kada igrač svesno gleda rewarded oglas van dostignuća
+    addExternalAd();
+    stats.externalAds++; saveStats(stats);
+    showToast('🎬 +1 rewarded ad (spolja)');
+  };
+
+  /* Persist helpers */
+  function saveAchAndStats(){ saveAch(ach); saveStats(stats); }
+
+  /* =========================================================
+     OSTALO — ne dirano
+  ========================================================== */
+
+  function showToast(msg){
+    let t=document.getElementById('toast');
+    if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
+      Object.assign(t.style,{position:'fixed',left:'50%',bottom:'24px',transform:'translateX(-50%)',background:'rgba(8,14,28,.9)',color:'#e8ecf1',padding:'10px 14px',borderRadius:'12px',boxShadow:'0 10px 30px rgba(0,0,0,.35)',zIndex:99,transition:'opacity .25s',opacity:'0',border:'1px solid rgba(255,255,255,.06)'}); }
+    t.textContent=msg; t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; }, 1600);
+  }
+
 })();
 </script>
 </body>
