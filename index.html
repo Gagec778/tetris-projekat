@@ -99,6 +99,9 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
 /* ACHIEVEMENTS overlay */
 #achievementsModal{ display:none; }
+.ach-tabs{ display:flex; gap:8px; margin:0 0 10px 0; }
+.ach-tabs .tab{ padding:8px 12px; border:1px solid rgba(255,255,255,.10); border-radius:12px; cursor:pointer; }
+.ach-tabs .tab.active{ background:rgba(255,255,255,.08); }
 .ach-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
 .ach-grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px; max-height:50vh; overflow:auto; }
 .ach-card{ background:rgba(8,12,20,.55); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; position:relative; }
@@ -127,6 +130,30 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 .ach-controls{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
 .small{ font-size:12px; opacity:.85; }
 .kit{ display:flex; gap:6px; align-items:center; }
+
+/* KOLEKCIJA */
+#collectionView{ display:none; }
+.collection-empty{
+  text-align:center; opacity:.8; padding:16px; border:1px dashed rgba(255,255,255,.12);
+  border-radius:12px; margin-bottom:10px;
+}
+.collection-section{ margin:8px 0 14px 0; }
+.collection-section h4{ margin:0 0 8px 0; font-size:14px; opacity:.9 }
+.collection-grid{
+  display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:8px; max-height:46vh; overflow:auto;
+}
+.col-card{
+  position:relative; background:rgba(8,12,20,.55); border:1px solid rgba(255,255,255,.08);
+  border-radius:12px; padding:12px; min-height:76px; display:flex; align-items:center; justify-content:center;
+  text-align:center; font-weight:800; letter-spacing:.3px;
+}
+.col-card.locked{ filter:saturate(.2); opacity:.6; }
+.col-card .badge{
+  position:absolute; top:6px; right:6px; padding:4px 8px; border-radius:999px; background:#0f1a2b; border:1px solid #123; font-size:11px;
+}
+.col-card .lock{
+  position:absolute; bottom:6px; right:6px; font-size:14px; opacity:.8;
+}
 </style>
 </head>
 <body>
@@ -183,37 +210,65 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     </div>
   </div>
 
-  <!-- ACHIEVEMENTS -->
+  <!-- ACHIEVEMENTS + KOLEKCIJA -->
   <div id="achievementsModal" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
-      <div class="ach-header">
-        <h3>🏆 Dostignuća</h3>
-        <div class="kit">
-          <button id="achPrev" class="btn">◀</button>
-          <div class="small"><span id="achPageLbl">1</span>/20</div>
-          <button id="achNext" class="btn">▶</button>
+      <div class="ach-tabs">
+        <div id="tabAchievements" class="tab active">Dostignuća</div>
+        <div id="tabCollection"   class="tab">Kolekcija</div>
+      </div>
+
+      <!-- View: Dostignuća -->
+      <div id="achView">
+        <div class="ach-header">
+          <h3>🏆 Dostignuća</h3>
+          <div class="kit">
+            <button id="achPrev" class="btn">◀</button>
+            <div class="small"><span id="achPageLbl">1</span>/20</div>
+            <button id="achNext" class="btn">▶</button>
+          </div>
+        </div>
+
+        <div class="ach-grid" id="achList"></div>
+
+        <!-- Milestone na dnu — uprošćen tekst -->
+        <div id="milestoneBox" class="ach-card milestone milestone-box">
+          <h4 id="msTitle">Milestone 50</h4>
+          <div class="small" id="msDesc">🎁 Nagrada: nova tema/skin</div>
+          <div class="progress"><i id="msBar" style="width:0%"></i></div>
+          <div class="ach-controls">
+            <span class="small" id="msBlockProg">📦 Blok: 0/50</span>
+            <span class="small" id="msCounters">🎬 Reklame: 0/0</span>
+            <button id="btnWatchAd" class="btn">🎬 Gledaj</button>
+            <button id="btnClaim" class="btn" aria-disabled="true">✅ Preuzmi</button>
+          </div>
+        </div>
+
+        <div style="text-align:right, margin-top:10px">
+          <button id="closeAch" class="btn">Zatvori</button>
         </div>
       </div>
 
-      <div class="ach-grid" id="achList"></div>
+      <!-- View: Kolekcija (10 tema + 10 skinova) -->
+      <div id="collectionView">
+        <h3>🎨 Kolekcija (Teme & Skinovi)</h3>
 
-      <!-- Milestone na dnu — sa uprošćenim tekstom -->
-      <div id="milestoneBox" class="ach-card milestone milestone-box">
-        <h4 id="msTitle">Milestone 50</h4>
-        <div class="small" id="msDesc">🎁 Nagrada: nova tema/skin</div>
-        <div class="progress"><i id="msBar" style="width:0%"></i></div>
-        <div class="ach-controls">
-          <span class="small" id="msBlockProg">📦 Blok: 0/49</span>
-          <span class="small" id="msCounters">🎬 Reklame: 0/0</span>
-          <button id="btnWatchAd" class="btn">🎬 Gledaj</button>
-          <button id="btnClaim" class="btn" aria-disabled="true">✅ Preuzmi</button>
+        <div class="collection-section">
+          <h4>TEME</h4>
+          <div id="themesGrid" class="collection-grid"></div>
+        </div>
+
+        <div class="collection-section">
+          <h4>SKINOVI</h4>
+          <div id="skinsGrid" class="collection-grid"></div>
+        </div>
+
+        <div style="text-align:right; margin-top:10px">
+          <button id="closeCollection" class="btn">Zatvori</button>
         </div>
       </div>
 
-      <div style="text-align:right; margin-top:10px">
-        <button id="closeAch" class="btn">Zatvori</button>
-      </div>
     </div>
   </div>
 
@@ -260,8 +315,19 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   const runTestsBtn   = document.getElementById('runTests');
   const achBtn   = document.getElementById('achBtn');
 
+  // Achievements modal refs
   const achievementsModal = document.getElementById('achievementsModal');
+  const tabAchievements = document.getElementById('tabAchievements');
+  const tabCollection   = document.getElementById('tabCollection');
+  const achView         = document.getElementById('achView');
+  const collectionView  = document.getElementById('collectionView');
+
+  const themesGrid = document.getElementById('themesGrid');
+  const skinsGrid  = document.getElementById('skinsGrid');
+
   const closeAch = document.getElementById('closeAch');
+  const closeCollection = document.getElementById('closeCollection');
+
   const achPrev = document.getElementById('achPrev');
   const achNext = document.getElementById('achNext');
   const achList = document.getElementById('achList');
@@ -302,7 +368,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved)
   };
 
-  // statistika (za ach.)
   const stats = loadStats() || { totalScore:0, blocksPlaced:0, linesCleared:0, externalAds:0, themesUnlocked:0, skinsUnlocked:0 };
 
   // Achievements model (1000) + milestone
@@ -348,7 +413,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     requestAnimationFrame(loopBG);
   })();
 
-  // Shapes
+  // Shapes (osnovni set)
   const SHAPES=(function(){
     const raw=[
       [[0,0]],
@@ -662,17 +727,38 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   startClassic.addEventListener('click', ()=> startGame('classic'));
   startObstacles.addEventListener('click', ()=> startGame('obstacles'));
 
+  // Tabs u modalu
+  function openAchievementsTab(){
+    tabAchievements.classList.add('active');
+    tabCollection.classList.remove('active');
+    achView.style.display='block';
+    collectionView.style.display='none';
+  }
+  function openCollectionTab(){
+    tabCollection.classList.add('active');
+    tabAchievements.classList.remove('active');
+    achView.style.display='none';
+    collectionView.style.display='block';
+    renderCollection();
+  }
+
   // Events – achievements
   achBtn.addEventListener('click', ()=>{
+    achievementsModal.style.display='flex';
+    openAchievementsTab();
     const curIdx = getCurrentMilestoneIndex();
     const block = indexToBlock(curIdx>=0?curIdx:0);
     achPage = Math.max(1, Math.min(20, block));
-    achievementsModal.style.display='flex';
     renderAchievementsPage();
     renderMilestoneBoxForBlock(block);
   });
   achievementsModal.querySelector('.backdrop').addEventListener('click', ()=> achievementsModal.style.display='none');
   closeAch.addEventListener('click', ()=> achievementsModal.style.display='none');
+  closeCollection.addEventListener('click', ()=> achievementsModal.style.display='none');
+
+  tabAchievements.addEventListener('click', openAchievementsTab);
+  tabCollection.addEventListener('click', openCollectionTab);
+
   achPrev.addEventListener('click', ()=>{
     achPage=Math.max(1, achPage-1);
     renderAchievementsPage();
@@ -684,10 +770,12 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     renderMilestoneBoxForBlock(achPage);
   });
 
+  const btnWatchAd = document.getElementById('btnWatchAd');
+  const btnClaim   = document.getElementById('btnClaim');
   btnWatchAd.addEventListener('click', watchAdInAchievements);
   btnClaim.addEventListener('click', ()=>{
     if(btnClaim.getAttribute('aria-disabled')==='true'){
-      showToast('Završi 49/49 ciljeva i reklame za ovaj blok.');
+      showToast('Završi 50/50 ciljeva i reklame za ovaj blok.');
       return;
     }
     claimMilestoneReward();
@@ -743,11 +831,11 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       DOSTIGNUĆA + REKLAME 80/20
      ============================== */
 
-  // POJAČANI ciljevi — ekstremno teški
+  // EXTREME ciljevi — znatno teži (SVA dostignuća)
   const TARGETS = {
-    blocks: (i)=> 150*i,      // značajno teže
-    lines:  (i)=> 24*i,       // dvostruko u odnosu na prethodni tuning
-    score:  (i)=> 20000*i     // visoki pragovi ukupnog skora
+    blocks: (i)=> 300*i,
+    lines:  (i)=> 40*i,
+    score:  (i)=> 50000*i
   };
 
   function createAchievementsModel(){
@@ -792,24 +880,19 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
   // Mapiranje indeksa → blok (1..20), i opseg bloka
   function indexToBlock(idx){ return Math.max(1, Math.ceil((idx+1)/50)); }
-  function blockRange(block){ const start=(block-1)*50; const end=block*50-1; return {start,end}; } // end je milestone index
+  function blockRange(block){ const start=(block-1)*50; const end=block*50-1; return {start,end}; } // end = milestone
 
-  // Da li su SVI obični ciljevi (49) u bloku završeni?
-  function isBlockCompleted(block){
-    const {start,end}=blockRange(block);
-    for(let i=start;i<end;i++){
-      if(!ach.list[i].done) return false;
-    }
-    return true;
-  }
-  function blockProgress(block){
+  // Blok progres: sada 0..50 (računamo milestone kao +1 kad je CLAIMED)
+  function blockProgress50(block){
     const {start,end}=blockRange(block);
     let done=0;
     for(let i=start;i<end;i++) if(ach.list[i].done) done++;
-    return {done, total: (end-start)};
+    const ms = ach.list[end].milestone;
+    if(ms && ms.claimed) done += 1; // milestone = 50/50
+    return {done, total: 50};
   }
 
-  // Render lista (po 50) — dodata klasa .done i zeleni ček
+  // Render lista (po 50) — .done + zeleni check
   function renderAchievementsPage(){
     const perPage=50;
     const startIdx=(achPage-1)*perPage;
@@ -837,7 +920,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   // Milestone box za KONKRETAN blok (na dnu)
   function renderMilestoneBoxForBlock(block){
     const {start,end}=blockRange(block);
-    const node=ach.list[end]; // milestone je poslednji (50., 100., …)
+    const node=ach.list[end];
     const ms=node?.milestone;
 
     if(!ms){
@@ -856,20 +939,18 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
     const pct = Math.min(100, (total/need)*100);
 
-    const blk = blockProgress(block); // 0..49
-    const blkOK = (blk.done >= blk.total);
+    const blk50 = blockProgress50(block);
+    const blkOK = (blk50.done >= 49); // 49 ciljeva (milestone je 50. korak)
 
     msTitle.textContent = `Milestone ${node.id}`;
     msDesc.textContent  = ms.type==='skin' ? '🎁 Nagrada: SKIN blokova' : '🎁 Nagrada: TEMA';
     msCounters.textContent = `🎬 ${total}/${need} (van max ${extMax})`;
-    msBlockProg.textContent = `📦 ${blk.done}/${blk.total}`;
+    msBlockProg.textContent = `📦 ${blk50.done}/${blk50.total}`;
     msBar.style.width = pct.toFixed(1)+'%';
 
-    // Watch dugme aktivno dokle god reklame nisu pune
     if(total>=need) btnWatchAd.setAttribute('aria-disabled','true');
     else btnWatchAd.setAttribute('aria-disabled','false');
 
-    // Claim „neaktivan“ dok oba uslova nisu true; klik u tom stanju daje poruku (već obrađeno)
     const ready = (total>=need && blkOK);
     btnClaim.setAttribute('aria-disabled', ready ? 'false' : 'true');
 
@@ -877,7 +958,36 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     saveAch(ach);
   }
 
-  // Stat
+  // KOLEKCIJA — 10 tema + 10 skinova (placeholderi; označi otključane na osnovu stats.*Unlocked)
+  function renderCollection(){
+    const THEME_SLOTS=10, SKIN_SLOTS=10;
+
+    // TEME
+    themesGrid.innerHTML='';
+    for(let i=1;i<=THEME_SLOTS;i++){
+      const unlocked = i <= (stats.themesUnlocked||0);
+      const d=document.createElement('div');
+      d.className='col-card'+(unlocked?'':' locked');
+      d.innerHTML = `<span>${unlocked? 'TEMA '+i : 'TEMA '+i}</span>
+                     <span class="badge">Tema</span>
+                     ${unlocked?'':'<span class="lock">🔒</span>'}`;
+      themesGrid.appendChild(d);
+    }
+
+    // SKINOVI
+    skinsGrid.innerHTML='';
+    for(let i=1;i<=SKIN_SLOTS;i++){
+      const unlocked = i <= (stats.skinsUnlocked||0);
+      const d=document.createElement('div');
+      d.className='col-card'+(unlocked?'':' locked');
+      d.innerHTML = `<span>${unlocked? 'SKIN '+i : 'SKIN '+i}</span>
+                     <span class="badge">Skin</span>
+                     ${unlocked?'':'<span class="lock">🔒</span>'}`;
+      skinsGrid.appendChild(d);
+    }
+  }
+
+  // Stat & persist
   function getStat(key){ return stats[key]||0; }
   function saveStats(s){ LS('bp8.stats', JSON.stringify(s)); }
   function loadStats(){ const s=LS('bp8.stats'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
@@ -892,7 +1002,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     }
     saveAch(ach);
 
-    if(achievementsModal.style.display==='flex'){
+    if(achievementsModal.style.display==='flex' && tabAchievements.classList.contains('active')){
       renderAchievementsPage();
       renderMilestoneBoxForBlock(achPage);
     }
@@ -915,7 +1025,9 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     if(ms.adsExt < ms.adsExtMax){
       ms.adsExt++;
       saveAch(ach);
-      if(achievementsModal.style.display==='flex') renderMilestoneBoxForBlock(indexToBlock(idx));
+      if(achievementsModal.style.display==='flex' && tabAchievements.classList.contains('active')){
+        renderMilestoneBoxForBlock(indexToBlock(idx));
+      }
     }
   }
 
@@ -936,7 +1048,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     renderMilestoneBoxForBlock(indexToBlock(idx));
   }
 
-  // Claim (samo ako blok 49/49 + reklame full)
+  // Claim (49/49 običnih + reklame full; milestone -> puni „50/50“)
   function claimMilestoneReward(){
     const idx = getCurrentMilestoneIndex();
     if(idx<0) return;
@@ -944,8 +1056,8 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     const ms = node.milestone;
 
     const block = indexToBlock(idx);
-    const blk = blockProgress(block);
-    const blkOK = (blk.done >= blk.total);
+    const blk50 = blockProgress50(block);
+    const blkOK = (blk50.done >= 49);
 
     const need = ms.adsRequired;
     const extMax = ms.adsExtMax;
@@ -965,13 +1077,13 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   }
 
   // Dugme u UI (unutrašnje reklame)
+  const btnWatchAdRef = document.getElementById('btnWatchAd');
   function watchAdInAchievements(){
-    if(btnWatchAd.getAttribute('aria-disabled')==='true') return;
-    // simulacija; zameni pravim SDK callback-om
-    btnWatchAd.setAttribute('aria-disabled','true');
+    if(btnWatchAdRef.getAttribute('aria-disabled')==='true') return;
+    btnWatchAdRef.setAttribute('aria-disabled','true');
     setTimeout(()=>{
       addInternalAd();
-      btnWatchAd.setAttribute('aria-disabled','false');
+      btnWatchAdRef.setAttribute('aria-disabled','false');
     }, 900);
   }
 
@@ -982,10 +1094,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     showToast('🎬 +1 rewarded ad');
   };
 
-  /* Persist helpers */
-  function saveAchAndStats(){ saveAch(ach); saveStats(stats); }
-
-  /* helper toast (duplikat svestan – ostavljeno zbog lokalne references) */
+  /* ====== Size & start ====== */
   function showToast(msg){
     let t=document.getElementById('toast');
     if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
@@ -1000,4 +1109,4 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 })();
 </script>
 </body>
-</html>
+  </html>
