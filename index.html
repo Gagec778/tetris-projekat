@@ -10,6 +10,7 @@
   --panel: rgba(14,18,28,.45);
   --grid-border: rgba(255,255,255,.10);
   --gold:#d4af37;
+  --good:#39d27c;
 }
 .light{
   --bg:#f6f8fb; --text:#0e1014; --muted:#4c5672; --accent:#2aa8e6;
@@ -100,7 +101,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 #achievementsModal{ display:none; }
 .ach-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
 .ach-grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px; max-height:50vh; overflow:auto; }
-.ach-card{ background:rgba(8,12,20,.55); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; }
+.ach-card{ background:rgba(8,12,20,.55); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; position:relative; }
 .ach-card h4{ margin:0 0 4px 0; font-size:14px; }
 .ach-card .meta{ font-size:12px; opacity:.8; display:flex; gap:8px; flex-wrap:wrap;}
 .progress{ height:8px; width:100%; background:rgba(255,255,255,.08); border-radius:6px; overflow:hidden; margin-top:8px; }
@@ -108,6 +109,18 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 .badge{ padding:4px 8px; border-radius:999px; background:#0f1a2b; border:1px solid #123; font-size:11px; }
 .milestone{ border-color: var(--gold); }
 .milestone h4{ color: var(--gold); }
+
+/* COMPLETED ACHIEVEMENT – vizuelno različito */
+.ach-card.done{
+  opacity:.45; filter:saturate(.2); cursor:default;
+}
+.ach-card.done .progress > i{ background:linear-gradient(90deg, var(--good), #7ef2b5); }
+.ach-card.done::after{
+  content:'✓'; position:absolute; right:8px; top:8px;
+  width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+  background:var(--good); color:#082016; font-weight:900; border-radius:50%;
+  box-shadow:0 4px 12px rgba(0,0,0,.4);
+}
 
 /* Milestone box je ISPOD liste (na dnu) */
 .milestone-box{ margin-top:10px; }
@@ -175,7 +188,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     <div class="backdrop"></div>
     <div class="panel">
       <div class="ach-header">
-        <h3>🏆 Dostignuća</h3> <!-- uklonjen (1–1000) -->
+        <h3>🏆 Dostignuća</h3>
         <div class="kit">
           <button id="achPrev" class="btn">◀</button>
           <div class="small"><span id="achPageLbl">1</span>/20</div>
@@ -185,7 +198,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
       <div class="ach-grid" id="achList"></div>
 
-      <!-- Milestone je na dnu (ispod 50 stavki) — pojednostavljen tekst -->
+      <!-- Milestone na dnu — sa uprošćenim tekstom -->
       <div id="milestoneBox" class="ach-card milestone milestone-box">
         <h4 id="msTitle">Milestone 50</h4>
         <div class="small" id="msDesc">🎁 Nagrada: nova tema/skin</div>
@@ -222,7 +235,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   'use strict';
 
   /* =====================
-     DOM & OSNOVA (isto)
+     DOM & OSNOVA
   ====================== */
   const canvas = document.getElementById('game');
   const ctx    = canvas.getContext('2d', {alpha:true});
@@ -672,7 +685,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   });
 
   btnWatchAd.addEventListener('click', watchAdInAchievements);
-  // Claim — hvata i kad je "zaključano" (aria-disabled="true")
   btnClaim.addEventListener('click', ()=>{
     if(btnClaim.getAttribute('aria-disabled')==='true'){
       showToast('Završi 49/49 ciljeva i reklame za ovaj blok.');
@@ -731,11 +743,11 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       DOSTIGNUĆA + REKLAME 80/20
      ============================== */
 
-  // POJAČANI ciljevi (značajno teži)
+  // POJAČANI ciljevi — ekstremno teški
   const TARGETS = {
-    blocks: (i)=> 80*i,       // ranije 40*i
-    lines:  (i)=> 12*i,       // ranije 6*i
-    score:  (i)=> 8000*i      // ranije 3000*i
+    blocks: (i)=> 150*i,      // značajno teže
+    lines:  (i)=> 24*i,       // dvostruko u odnosu na prethodni tuning
+    score:  (i)=> 20000*i     // visoki pragovi ukupnog skora
   };
 
   function createAchievementsModel(){
@@ -797,7 +809,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     return {done, total: (end-start)};
   }
 
-  // Render lista (po 50)
+  // Render lista (po 50) — dodata klasa .done i zeleni ček
   function renderAchievementsPage(){
     const perPage=50;
     const startIdx=(achPage-1)*perPage;
@@ -809,9 +821,9 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       const a=ach.list[i];
       const progress=Math.min(1, getStat(a.key)/a.target);
       const card=document.createElement('div');
-      card.className='ach-card'+(a.milestone?' milestone':'');
+      card.className='ach-card'+(a.milestone?' milestone':'')+(a.done?' done':'');
       card.innerHTML=`
-        <h4>#${a.id} — ${a.title}${a.milestone? ' • 🎁':''}</h4>
+        <h4>${a.done?'✅ ':''}#${a.id} — ${a.title}${a.milestone? ' • 🎁':''}</h4>
         <div class="meta">
           <span class="badge">${a.kind}</span>
           <span class="small">${Math.min(getStat(a.key), a.target).toLocaleString('sr-RS')} / ${a.target.toLocaleString('sr-RS')}</span>
@@ -857,7 +869,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     if(total>=need) btnWatchAd.setAttribute('aria-disabled','true');
     else btnWatchAd.setAttribute('aria-disabled','false');
 
-    // Claim „deluje neaktivan“ dok uslovi nisu oba true; klik prikazuje poruku
+    // Claim „neaktivan“ dok oba uslova nisu true; klik u tom stanju daje poruku (već obrađeno)
     const ready = (total>=need && blkOK);
     btnClaim.setAttribute('aria-disabled', ready ? 'false' : 'true');
 
@@ -973,7 +985,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   /* Persist helpers */
   function saveAchAndStats(){ saveAch(ach); saveStats(stats); }
 
-  /* ============== helperi koji su već gore ============== */
+  /* helper toast (duplikat svestan – ostavljeno zbog lokalne references) */
   function showToast(msg){
     let t=document.getElementById('toast');
     if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
