@@ -2,91 +2,98 @@
 'use strict';
 
 /* ===== DOM REFS ===== */
-const canvas = document.getElementById('game');
-const ctx    = canvas?.getContext?.('2d', {alpha:true});
-const fxCnv  = document.getElementById('fx');
-const fctx   = fxCnv?.getContext?.('2d', {alpha:true});
-const app    = document.getElementById('app');
-const start  = document.getElementById('startScreen');
-const bg     = document.getElementById('bg');
-const trayEl = document.getElementById('tray');
-const scoreEl= document.getElementById('score');
-const bestEl = document.getElementById('best');
-const levelPill = document.getElementById('levelPill');
-const lvlEl  = document.getElementById('lvl');
-const resetBtn = document.getElementById('reset');
-const backBtn  = document.getElementById('backBtn');
+var canvas = document.getElementById('game');
+var ctx    = (canvas && canvas.getContext) ? canvas.getContext('2d', {alpha:true}) : null;
+var fxCnv  = document.getElementById('fx');
+var fctx   = (fxCnv && fxCnv.getContext) ? fxCnv.getContext('2d', {alpha:true}) : null;
+var app    = document.getElementById('app');
+var start  = document.getElementById('startScreen');
+var bg     = document.getElementById('bg');
+var trayEl = document.getElementById('tray');
+var scoreEl= document.getElementById('score');
+var bestEl = document.getElementById('best');
+var levelPill = document.getElementById('levelPill');
+var lvlEl  = document.getElementById('lvl');
+var resetBtn = document.getElementById('reset');
+var backBtn  = document.getElementById('backBtn');
 
-const settingsBtn   = document.getElementById('settingsBtn');
-const settingsModal = document.getElementById('settingsModal');
-const setThemeBtn   = document.getElementById('setTheme');
-const setSound      = document.getElementById('setSound');
-const resetBest     = document.getElementById('resetBest');
-const closeSettings = document.getElementById('closeSettings');
-const runTestsBtn   = document.getElementById('runTests'); // ako postoji
+var settingsBtn   = document.getElementById('settingsBtn');
+var settingsModal = document.getElementById('settingsModal');
+var setThemeBtn   = document.getElementById('setTheme');
+var setSound      = document.getElementById('setSound');
+var resetBest     = document.getElementById('resetBest');
+var closeSettings = document.getElementById('closeSettings');
+var runTestsBtn   = document.getElementById('runTests');
 
-/* Dostignuća (ostaje samo Achievements modal) */
-const achBtn   = document.getElementById('achBtn');
-const achievementsModal = document.getElementById('achievementsModal');
-const achView         = document.getElementById('achView');        // lista ach kartica
-const achPrev = document.getElementById('achPrev');
-const achNext = document.getElementById('achNext');
-const achList = document.getElementById('achList');
-const achPageLbl = document.getElementById('achPageLbl');
-const msTitle = document.getElementById('msTitle');
-const msDesc  = document.getElementById('msDesc');
-const msBar   = document.getElementById('msBar');
-const msCounters = document.getElementById('msCounters');
-const msBlockProg = document.getElementById('msBlockProg');
-const btnWatchAd = document.getElementById('btnWatchAd');
-const btnClaim   = document.getElementById('btnClaim');
-const closeAch = document.getElementById('closeAch');
+var achBtn   = document.getElementById('achBtn');
+var achievementsModal = document.getElementById('achievementsModal');
+var achView         = document.getElementById('achView');
+var achPrev = document.getElementById('achPrev');
+var achNext = document.getElementById('achNext');
+var achList = document.getElementById('achList');
+var achPageLbl = document.getElementById('achPageLbl');
+var msTitle = document.getElementById('msTitle');
+var msDesc  = document.getElementById('msDesc');
+var msBar   = document.getElementById('msBar');
+var msCounters = document.getElementById('msCounters');
+var msBlockProg = document.getElementById('msBlockProg');
+var btnWatchAd = document.getElementById('btnWatchAd');
+var btnClaim   = document.getElementById('btnClaim');
+var closeAch = document.getElementById('closeAch');
 
-/* NOVO: Kolekcija izdvojena u poseban modal na start ekranu */
-const collectionBtn   = document.getElementById('collectionBtn');   // 🎨 na start ekranu
-const collectionModal = document.getElementById('collectionModal'); // overlay za kolekciju
-const themesGrid = document.getElementById('themesGrid');
-const skinsGrid  = document.getElementById('skinsGrid');
-const closeCollection = document.getElementById('closeCollection');
+/* NOVO: Kolekcija (poseban modal) */
+var collectionBtn   = document.getElementById('collectionBtn');
+var collectionModal = document.getElementById('collectionModal');
+var themesGrid = document.getElementById('themesGrid');
+var skinsGrid  = document.getElementById('skinsGrid');
+var closeCollection = document.getElementById('closeCollection');
 
 /* Game Over */
-const gameOver = document.getElementById('gameOver');
-const goStats  = document.getElementById('goStats');
-const playAgain= document.getElementById('playAgain');
-const goMenu   = document.getElementById('goMenu');
+var gameOver = document.getElementById('gameOver');
+var goStats  = document.getElementById('goStats');
+var playAgain= document.getElementById('playAgain');
+var goMenu   = document.getElementById('goMenu');
 
 /* Mode dugmad */
-const startClassic   = document.getElementById('startClassic');
-const startObstacles = document.getElementById('startObstacles');
+var startClassic   = document.getElementById('startClassic');
+var startObstacles = document.getElementById('startObstacles');
 
 /* ===== SAFETY ===== */
 if(ctx){ ctx.imageSmoothingEnabled=false; }
 if(fctx){ fctx.imageSmoothingEnabled=false; }
 
 /* ===== CONSTS & STATE ===== */
-const DPR=Math.min(devicePixelRatio||1,2);
-const BOARD=8;
+var DPR=Math.min(window.devicePixelRatio||1,2);
+var BOARD=8;
 
-const COLORS=['#a3d5ff','#ffd089','#ffb3c6','#d4af37','#c0c0c0','#9ad8a5','#caa3ff','#ff9e7d'];
-const OBSTACLE_COLOR='#2a3344';
-const LS=(k,v)=> (v===undefined? localStorage.getItem(k) : localStorage.setItem(k,v));
-const settings = { theme: LS('bp8.theme')||'dark', sound: LS('bp8.sound')!==null ? LS('bp8.sound')==='1' : true };
+var COLORS=['#a3d5ff','#ffd089','#ffb3c6','#d4af37','#c0c0c0','#9ad8a5','#caa3ff','#ff9e7d'];
+var OBSTACLE_COLOR='#2a3344';
+
+/* safe localStorage wrapper */
+function makeSafeStorage(){
+  try{
+    localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return localStorage;
+  }catch(e){ return {getItem:function(){return null;}, setItem:function(){}}; }
+}
+var SAFE = makeSafeStorage();
+function LS(k,v){ return (v===undefined ? SAFE.getItem(k) : SAFE.setItem(k,v)); }
+
+var settings = { theme: (LS('bp8.theme')||'dark'), sound: (LS('bp8.sound')!==null ? LS('bp8.sound')==='1' : true) };
 applyTheme(settings.theme); updateSoundLabel();
 
-const bestByMode = loadBest() || {classic:0, obstacles:0};
-const maxLevelSaved = parseInt(LS('bp8.level.max')||'1',10);
+var bestByMode = loadBest() || {classic:0, obstacles:0};
+var maxLevelSaved = parseInt(LS('bp8.level.max')||'1',10);
 
-const state = {
+var state = {
   grid:createGrid(BOARD), cell:36, score:0,
   mode:'classic', best:bestByMode, hand:[],
   dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved)
 };
 
-const stats = loadStats() || { totalScore:0, blocksPlaced:0, linesCleared:0, externalAds:0, themesUnlocked:0, skinsUnlocked:0 };
+var stats = loadStats() || { totalScore:0, blocksPlaced:0, linesCleared:0, externalAds:0, themesUnlocked:0, skinsUnlocked:0 };
 
 /* ===== TEME & SKINOVI ===== */
-/* Aurora(t00)/Aurora+(t01) ostaju pojačane; ostale vraćene na “tiši” stil. */
-const THEMES = [
+var THEMES = [
   { id:'t00', name:'Starter Aurora', accent:'#2ec5ff', palette:'starterAurora' },
   { id:'t01', name:'Aurora Blue+',  accent:'#35d7ff', palette:'auroraPlus'     },
   { id:'t02', name:'Sunset Bloom',  accent:'#ffb86c', palette:'sunset' },
@@ -100,7 +107,7 @@ const THEMES = [
   { id:'t10', name:'Crimson Pulse', accent:'#ff6b6b', palette:'crimson' }
 ];
 
-const SKINS = [
+var SKINS = [
   { id:'s00', name:'Starter Classic', style:'metal' },
   { id:'s01', name:'Glass Lux',      style:'glass' },
   { id:'s02', name:'Metallic Matte', style:'metal' },
@@ -114,15 +121,15 @@ const SKINS = [
   { id:'s10', name:'Stone Marble',   style:'marble' }
 ];
 
-const applied = loadApplied() || { theme:'t00', skin:'s00' };
+var applied = loadApplied() || { theme:'t00', skin:'s00' };
 applyAccentFromTheme(applied.theme);
 
 /* ===== Achievements model ===== */
-const ach = loadAch() || createAchievementsModel(); 
-let achPage = 1;
+var ach = loadAch() || createAchievementsModel();
+var achPage = 1;
 
 /* TEST: unlock all (ostavljeno) */
-const TEST_UNLOCK_ALL = true;
+var TEST_UNLOCK_ALL = true;
 if(TEST_UNLOCK_ALL){
   stats.themesUnlocked = THEMES.length;
   stats.skinsUnlocked  = SKINS.length;
@@ -130,23 +137,23 @@ if(TEST_UNLOCK_ALL){
 }
 
 /* ===== Utils ===== */
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-function createGrid(n){ return Array.from({length:n},()=>Array(n).fill(0)); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function createGrid(n){ var arr=[]; for(var i=0;i<n;i++){ var row=[]; for(var j=0;j<n;j++) row.push(0); arr.push(row);} return arr; }
 function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v); }
 
 /* ===== Aurora BG ===== */
 function drawAurora(c,w,h){
-  const pal = THEMES.find(x=>x.id===applied.theme)?.palette || 'starterAurora';
+  var pal = (function(){ for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===applied.theme) return THEMES[i].palette; } return 'starterAurora'; })();
   c.save();
-  const base=c.createLinearGradient(0,0,w,h);
+  var base=c.createLinearGradient(0,0,w,h);
   if(pal==='starterAurora'){ base.addColorStop(0,'rgba(8,14,28,0.85)'); base.addColorStop(1,'rgba(10,20,40,0.85)'); }
   else if(pal==='auroraPlus'){ base.addColorStop(0,'rgba(6,12,22,0.90)'); base.addColorStop(1,'rgba(10,26,46,0.92)'); }
   else { base.addColorStop(0,'rgba(8,12,20,0.90)'); base.addColorStop(1,'rgba(10,18,28,0.90)'); }
   c.fillStyle=base; c.fillRect(0,0,w,h);
 
   c.globalCompositeOperation='screen';
-  function blob(cx,cy,r,color,a1=0.40,a0=0){ const g=c.createRadialGradient(cx,cy,10,cx,cy,r); g.addColorStop(0,`rgba(${color},${a1})`); g.addColorStop(1,`rgba(${color},${a0})`); c.fillStyle=g; c.fillRect(0,0,w,h); }
+  function blob(cx,cy,r,color,a1,a0){ if(a1===void 0)a1=0.40; if(a0===void 0)a0=0; var g=c.createRadialGradient(cx,cy,10,cx,cy,r); g.addColorStop(0,'rgba('+color+','+a1+')'); g.addColorStop(1,'rgba('+color+','+a0+')'); c.fillStyle=g; c.fillRect(0,0,w,h); }
 
   if(pal==='starterAurora'){
     blob(w*.34,h*.42,Math.max(w,h)*.75,'60,140,255',0.38);
@@ -154,12 +161,11 @@ function drawAurora(c,w,h){
     blob(w*.28,h*.36,Math.max(w,h)*.85,'60,160,255',0.52);
     blob(w*.72,h*.70,Math.max(w,h)*.95,'0,220,255',0.42);
     blob(w*.18,h*.86,Math.max(w,h)*.65,'120,80,255',0.38);
-    // diskretne trake
-    function streak(x1,y1,x2,y2,wid,a){ c.save(); c.translate(x1,y1); c.rotate(Math.atan2(y2-y1,x2-x1)); const g=c.createLinearGradient(0,-wid,0,wid); g.addColorStop(0,`rgba(255,255,255,0)`); g.addColorStop(0.5,`rgba(255,255,255,${a})`); g.addColorStop(1,`rgba(255,255,255,0)`); c.fillStyle=g; c.fillRect(0,-wid, Math.hypot(x2-x1,y2-y1), wid*2); c.restore(); }
+    function streak(x1,y1,x2,y2,wid,a){ c.save(); c.translate(x1,y1); c.rotate(Math.atan2(y2-y1,x2-x1)); var g=c.createLinearGradient(0,-wid,0,wid); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(0.5,'rgba(255,255,255,'+a+')'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(0,-wid, Math.hypot(x2-x1,y2-y1), wid*2); c.restore(); }
     streak(w*.15,h*.25,w*.85,h*.45, 40, 0.18);
     streak(w*.10,h*.70,w*.90,h*.85, 36, 0.14);
   }else{
-    const map = {
+    var map = {
       sunset:  ['255,120,80','255,190,120'],
       noirGold:['212,175,55','255,220,120'],
       neon:    ['0,255,217','80,140,255'],
@@ -170,9 +176,9 @@ function drawAurora(c,w,h){
       desert:  ['215,162,87','255,210,140'],
       crimson: ['255,80,110','255,140,160']
     };
-    const [c1,c2] = map[pal] || ['60,150,255','0,220,255'];
-    blob(w*.30,h*.35,Math.max(w,h)*.80, c1, 0.40);
-    blob(w*.75,h*.72,Math.max(w,h)*.90, c2, 0.32);
+    var m = map[pal] || ['60,150,255','0,220,255'];
+    blob(w*.30,h*.35,Math.max(w,h)*.80, m[0], 0.40);
+    blob(w*.75,h*.72,Math.max(w,h)*.90, m[1], 0.32);
   }
   c.restore();
 }
@@ -180,17 +186,18 @@ function drawAurora(c,w,h){
 /* petlja pozadine */
 if(bg){
   (function loopBG(){
-    const b=bg.getContext('2d');
+    var b=bg.getContext('2d');
+    if(!b){ requestAnimationFrame(loopBG); return; }
     b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR);
     b.clearRect(0,0,bg.width,bg.height);
-    drawAurora(b, innerWidth, innerHeight);
+    drawAurora(b, window.innerWidth, window.innerHeight);
     requestAnimationFrame(loopBG);
   })();
 }
 
 /* ===== Shapes ===== */
-const SHAPES=(function(){
-  const raw=[
+var SHAPES=(function(){
+  var raw=[
     [[0,0]],
     [[0,0],[1,0]], [[0,0],[1,0],[2,0]], [[0,0],[1,0],[2,0],[3,0]], [[0,0],[1,0],[2,0],[3,0],[4,0]],
     [[0,0],[0,1]], [[0,0],[0,1],[0,2]], [[0,0],[0,1],[0,2],[0,3]], [[0,0],[0,1],[0,2],[0,3],[0,4]],
@@ -198,33 +205,40 @@ const SHAPES=(function(){
     [[0,0],[1,0],[2,0],[0,1]],
     [[0,0],[1,0],[2,0],[1,1]],
     [[0,0],[1,0],[0,1],[0,2]],
-    [[0,0],[1,0],[1,1],[1,2]],
+    [[0,0],[1,0],[1,1],[1,2]]
   ];
-  return raw.map(shape=>{
-    const minx=Math.min(...shape.map(b=>b[0])), miny=Math.min(...shape.map(b=>b[1]));
-    const blocks=shape.map(([x,y])=>[x-minx,y-miny]);
-    const w=Math.max(...blocks.map(b=>b[0]))+1, h=Math.max(...blocks.map(b=>b[1]))+1;
-    return {blocks,w,h};
+  return raw.map(function(shape){
+    var minx=Infinity,miny=Infinity,i;
+    for(i=0;i<shape.length;i++){ if(shape[i][0]<minx)minx=shape[i][0]; if(shape[i][1]<miny)miny=shape[i][1]; }
+    var blocks=shape.map(function(b){ return [b[0]-minx,b[1]-miny]; });
+    var w=0,h=0; for(i=0;i<blocks.length;i++){ if(blocks[i][0]>w)w=blocks[i][0]; if(blocks[i][1]>h)h=blocks[i][1]; }
+    return {blocks:blocks,w:w+1,h:h+1};
   });
 })();
 function rndColor(){ return COLORS[Math.floor(Math.random()*COLORS.length)]; }
-function newPiece(){ const s=SHAPES[Math.floor(Math.random()*SHAPES.length)];
-  return { blocks:s.blocks.map(b=>[b[0],b[1]]), w:s.w, h:s.h, color:rndColor(), used:false, id:Math.random().toString(36).slice(2) };
+function newPiece(){ var s=SHAPES[Math.floor(Math.random()*SHAPES.length)];
+  return { blocks:s.blocks.map(function(b){return [b[0],b[1]];}), w:s.w, h:s.h, color:rndColor(), used:false, id:Math.random().toString(36).slice(2) };
 }
 
 /* ===== Pravila ===== */
 function canPlace(piece,gx,gy){
-  for(const [dx,dy] of piece.blocks){
-    const x=gx+dx, y=gy+dy;
+  var i, dx,dy,x,y;
+  for(i=0;i<piece.blocks.length;i++){
+    dx=piece.blocks[i][0]; dy=piece.blocks[i][1];
+    x=gx+dx; y=gy+dy;
     if(x<0||y<0||x>=BOARD||y>=BOARD) return false;
     if(state.grid[y][x]!==0) return false;
   } return true;
 }
 function canFitAnywhere(piece){
-  for(let y=0;y<=BOARD-piece.h;y++){ for(let x=0;x<=BOARD-piece.w;x++){ if(canPlace(piece,x,y)) return true; } }
+  var y,x;
+  for(y=0;y<=BOARD-piece.h;y++){ for(x=0;x<=BOARD-piece.w;x++){ if(canPlace(piece,x,y)) return true; } }
   return false;
 }
-function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
+function anyFits(){
+  for(var i=0;i<state.hand.length;i++){ var p=state.hand[i]; if(!p.used && canFitAnywhere(p)) return true; }
+  return false;
+}
 
 /* ===== GRID panel + overlay ===== */
 function isAuroraPlus(){ return applied.theme==='t01'; }
@@ -232,15 +246,15 @@ function drawPanelAndGridOverlay(c, W, H, s){
   c.save();
   c.lineWidth=1;
   c.strokeStyle='rgba(255,255,255,.16)';
-  for(let y=0;y<BOARD;y++){
-    for(let x=0;x<BOARD;x++){
-      const px=x*s, py=y*s;
+  for(var y=0;y<BOARD;y++){
+    for(var x=0;x<BOARD;x++){
+      var px=x*s, py=y*s;
       rr(c,px+1.5,py+1.5,s-3,s-3,8);
       c.stroke();
     }
   }
-  const accent = getCss('--accent') || '#2ec5ff';
-  const outerColor = isAuroraPlus() ? '#d4af37' : (accent.trim() || '#2ec5ff');
+  var accent = getCss('--accent') || '#2ec5ff';
+  var outerColor = isAuroraPlus() ? '#d4af37' : (accent.trim() || '#2ec5ff');
   c.lineWidth = isAuroraPlus() ? Math.max(2.2, s*0.10) : Math.max(2, s*0.08);
   c.strokeStyle = outerColor;
   rr(c, 1.0, 1.0, W-2.0, H-2.0, 14);
@@ -249,16 +263,17 @@ function drawPanelAndGridOverlay(c, W, H, s){
 }
 
 /* ===== SKIN PATTERN ENGINE ===== */
-const patternCache = new Map();
-function makePatternCanvas(drawFn, size=24){
-  const key = drawFn.name + ':' + size;
+var patternCache = new Map();
+function makePatternCanvas(drawFn, size){
+  if(size==null) size=24;
+  var key = (drawFn && drawFn.name ? drawFn.name : 'p') + ':' + size;
   if(patternCache.has(key)) return patternCache.get(key);
-  const c = document.createElement('canvas');
+  var c = document.createElement('canvas');
   c.width = c.height = size;
-  const g = c.getContext('2d');
+  var g = c.getContext('2d');
   g.clearRect(0,0,size,size);
   drawFn(g, size);
-  const pat = g.createPattern(c, 'repeat');
+  var pat = g.createPattern(c, 'repeat');
   patternCache.set(key, pat);
   return pat;
 }
@@ -271,7 +286,7 @@ function patGlass(g,s){
 }
 function patBrushed(g,s){
   g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=0.9;
-  for(let x=0;x<s;x+=3){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,s); g.stroke(); }
+  for(var x=0;x<s;x+=3){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,s); g.stroke(); }
 }
 function patFacet(g,s){
   g.strokeStyle='rgba(255,255,255,0.16)'; g.lineWidth=1.0;
@@ -284,7 +299,7 @@ function patSatin(g,s){
   g.beginPath(); g.moveTo(0,s*0.3); g.bezierCurveTo(s*0.3,s*0.2, s*0.6,s*0.5, s,s*0.42); g.stroke();
 }
 function patChrome(g,s){
-  const grd=g.createLinearGradient(0,s*0.28,0,s*0.72);
+  var grd=g.createLinearGradient(0,s*0.28,0,s*0.72);
   grd.addColorStop(0,'rgba(255,255,255,0.45)');
   grd.addColorStop(0.5,'rgba(255,255,255,0.00)');
   grd.addColorStop(1,'rgba(255,255,255,0.45)');
@@ -292,32 +307,32 @@ function patChrome(g,s){
 }
 function patSpeckle(g,s){
   g.fillStyle='rgba(255,255,255,0.08)';
-  for(let i=0;i<Math.floor(s*1.0);i++){ g.fillRect(Math.random()*s, Math.random()*s, 1,1); }
+  for(var i=0;i<Math.floor(s*1.0);i++){ g.fillRect(Math.random()*s, Math.random()*s, 1,1); }
 }
 function patWeave(g,s){
   g.strokeStyle='rgba(255,255,255,0.08)'; g.lineWidth=1;
-  for(let x=0;x<s;x+=4){ g.beginPath(); g.moveTo(x,0); g.lineTo(x+2,s); g.stroke(); }
-  for(let y=0;y<s;y+=4){ g.beginPath(); g.moveTo(0,y); g.lineTo(s,y+2); g.stroke(); }
+  for(var x=0;x<s;x+=4){ g.beginPath(); g.moveTo(x,0); g.lineTo(x+2,s); g.stroke(); }
+  for(var y=0;y<s;y+=4){ g.beginPath(); g.moveTo(0,y); g.lineTo(s,y+2); g.stroke(); }
 }
 function patCrackle(g,s){
   g.strokeStyle='rgba(255,255,255,0.12)'; g.lineWidth=0.8;
-  for(let i=0;i<3;i++){
+  for(var i=0;i<3;i++){
     g.beginPath();
     g.moveTo(Math.random()*s, Math.random()*s);
-    for(let k=0;k<3;k++){ g.lineTo(Math.random()*s, Math.random()*s); }
+    for(var k=0;k<3;k++){ g.lineTo(Math.random()*s, Math.random()*s); }
     g.stroke();
   }
 }
 function patBubbles(g,s){
   g.strokeStyle='rgba(255,255,255,0.12)'; g.lineWidth=0.8;
-  for(let i=0;i<3;i++){
-    const r=2+Math.random()*3, x=Math.random()*s, y=Math.random()*s;
+  for(var i=0;i<3;i++){
+    var r=2+Math.random()*3, x=Math.random()*s, y=Math.random()*s;
     g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.stroke();
   }
 }
 function patVeins(g,s){
   g.strokeStyle='rgba(255,255,255,0.16)'; g.lineWidth=1.0;
-  for(let i=0;i<2;i++){
+  for(var i=0;i<2;i++){
     g.beginPath();
     g.moveTo(0, Math.random()*s);
     g.bezierCurveTo(s*0.3,Math.random()*s, s*0.6,Math.random()*s, s,Math.random()*s);
@@ -340,120 +355,128 @@ function getSkinPattern(style){
   }
 }
 function shade(hex, amt){
-  const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  var m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if(!m) return hex;
-  let [r,g,b]=[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)];
+  var r=parseInt(m[1],16), g=parseInt(m[2],16), b=parseInt(m[3],16);
   r=Math.max(0,Math.min(255,r+amt)); g=Math.max(0,Math.min(255,g+amt)); b=Math.max(0,Math.min(255,b+amt));
-  return `rgb(${r},${g},${b})`;
+  return 'rgb('+r+','+g+','+b+')';
 }
-function currentSkinStyle(){ return SKINS.find(s=>s.id===applied.skin)?.style || 'metal'; }
+function currentSkinStyle(){
+  for(var i=0;i<SKINS.length;i++){ if(SKINS[i].id===applied.skin) return SKINS[i].style; }
+  return 'metal';
+}
 
 /* Blok render */
-function drawBlockStyle(c, x, y, s, baseHex, style, {placed=false}={}){
-  const R=Math.max(6, s*.22);
-  const drawRim=(alpha=0.30,color='rgba(0,0,0,.30)', wMul=0.05)=>{
+function drawBlockStyle(c, x, y, s, baseHex, style, opt){
+  var placed = opt && opt.placed;
+  var R=Math.max(6, s*.22);
+  function drawRim(alpha,color,wMul){
+    if(alpha==null) alpha=0.30; if(color==null) color='rgba(0,0,0,.30)'; if(wMul==null) wMul=0.05;
     rr(c,x+1,y+1,s-2,s-2,R);
     c.lineWidth=Math.max(1, s*wMul);
     c.strokeStyle=color; c.globalAlpha=alpha; c.stroke(); c.globalAlpha=1;
-  };
-  const glint=(ox,oy,rad,a=0.35)=>{
-    const g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad);
-    g.addColorStop(0,`rgba(255,255,255,${a})`);
+  }
+  function glint(ox,oy,rad,a){
+    if(a==null) a=0.35;
+    var g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad);
+    g.addColorStop(0,'rgba(255,255,255,'+a+')');
     g.addColorStop(1,'rgba(255,255,255,0)');
     c.fillStyle=g; rr(c,x+1,y+1,s-2,s-2,R); c.fill();
-  };
+  }
 
   if(style==='glass'){
-    const body=c.createLinearGradient(x, y, x, y+s);
+    var body=c.createLinearGradient(x, y, x, y+s);
     body.addColorStop(0, 'rgba(255,255,255,0.30)');
     body.addColorStop(0.35, baseHex);
     body.addColorStop(1, shade(baseHex, -22));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('glass'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.32; c.fill(); c.restore(); }
+    var pat=getSkinPattern('glass'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.32; c.fill(); c.restore(); }
     drawRim(0.35,'rgba(0,0,0,.35)',0.06);
     glint(s*0.25, s*0.22, s*0.46, 0.28);
 
   }else if(style==='metal'){
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 14));
-    body.addColorStop(1, shade(baseHex, -26));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('metal'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.55; c.fill(); c.restore(); }
+    var body2=c.createLinearGradient(x, y, x, y+s);
+    body2.addColorStop(0, shade(baseHex, 14));
+    body2.addColorStop(1, shade(baseHex, -26));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body2; c.fill();
+    var pat2=getSkinPattern('metal'); if(pat2){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat2; c.globalAlpha=0.55; c.fill(); c.restore(); }
     drawRim(0.28,'rgba(0,0,0,.40)',0.06);
     rr(c,x+2,y+2,s-4,s-4,R-3); c.strokeStyle='rgba(255,255,255,.12)'; c.lineWidth=1; c.stroke();
 
   }else if(style==='gem'){
-    const body=c.createLinearGradient(x, y, x+s, y+s);
-    body.addColorStop(0, shade(baseHex, 30));
-    body.addColorStop(0.5, baseHex);
-    body.addColorStop(1, shade(baseHex, -30));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('gem'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.38; c.fill(); c.restore(); }
+    var body3=c.createLinearGradient(x, y, x+s, y+s);
+    body3.addColorStop(0, shade(baseHex, 30));
+    body3.addColorStop(0.5, baseHex);
+    body3.addColorStop(1, shade(baseHex, -30));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body3; c.fill();
+    var pat3=getSkinPattern('gem'); if(pat3){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat3; c.globalAlpha=0.38; c.fill(); c.restore(); }
     drawRim(0.34,'rgba(0,0,0,.38)',0.06);
 
   }else if(style==='satin'){
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 12));
-    body.addColorStop(0.5, baseHex);
-    body.addColorStop(1, shade(baseHex, -12));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('satin'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.26; c.fill(); c.restore(); }
+    var body4=c.createLinearGradient(x, y, x, y+s);
+    body4.addColorStop(0, shade(baseHex, 12));
+    body4.addColorStop(0.5, baseHex);
+    body4.addColorStop(1, shade(baseHex, -12));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body4; c.fill();
+    var pat4=getSkinPattern('satin'); if(pat4){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat4; c.globalAlpha=0.26; c.fill(); c.restore(); }
     drawRim(0.25,'rgba(0,0,0,.28)',0.05);
 
   }else if(style==='chrome'){
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, 'rgba(255,255,255,.65)');
-    body.addColorStop(0.2, shade(baseHex, 28));
-    body.addColorStop(0.5, shade(baseHex, -22));
-    body.addColorStop(0.8, shade(baseHex, 24));
-    body.addColorStop(1, 'rgba(255,255,255,.48)');
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('chrome'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.38; c.fill(); c.restore(); }
+    var body5=c.createLinearGradient(x, y, x, y+s);
+    body5.addColorStop(0, 'rgba(255,255,255,.65)');
+    body5.addColorStop(0.2, shade(baseHex, 28));
+    body5.addColorStop(0.5, shade(baseHex, -22));
+    body5.addColorStop(0.8, shade(baseHex, 24));
+    body5.addColorStop(1, 'rgba(255,255,255,.48)');
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body5; c.fill();
+    var pat5=getSkinPattern('chrome'); if(pat5){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat5; c.globalAlpha=0.38; c.fill(); c.restore(); }
     drawRim(0.36,'rgba(0,0,0,.34)',0.06);
     glint(s*0.5, s*0.25, s*0.55, 0.24);
 
   }else if(style==='porcelain'){
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 10));
-    body.addColorStop(1, shade(baseHex, -10));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('porcelain'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.24; c.fill(); c.restore(); }
+    var body6=c.createLinearGradient(x, y, x, y+s);
+    body6.addColorStop(0, shade(baseHex, 10));
+    body6.addColorStop(1, shade(baseHex, -10));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body6; c.fill();
+    var pat6=getSkinPattern('porcelain'); if(pat6){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat6; c.globalAlpha=0.24; c.fill(); c.restore(); }
     drawRim(0.22,'rgba(0,0,0,.22)',0.045);
 
   }else if(style==='carbon'){
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 8));
-    body.addColorStop(1, shade(baseHex, -18));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('carbon'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.42; c.fill(); c.restore(); }
+    var body7=c.createLinearGradient(x, y, x, y+s);
+    body7.addColorStop(0, shade(baseHex, 8));
+    body7.addColorStop(1, shade(baseHex, -18));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body7; c.fill();
+    var pat7=getSkinPattern('carbon'); if(pat7){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat7; c.globalAlpha=0.42; c.fill(); c.restore(); }
     drawRim(0.32,'rgba(0,0,0,.40)',0.06);
 
   }else if(style==='frost'){
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 18));
-    body.addColorStop(1, shade(baseHex, -26));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('frost'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.26; c.fill(); c.restore(); }
+    var body8=c.createLinearGradient(x, y, x, y+s);
+    body8.addColorStop(0, shade(baseHex, 18));
+    body8.addColorStop(1, shade(baseHex, -26));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body8; c.fill();
+    var pat8=getSkinPattern('frost'); if(pat8){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat8; c.globalAlpha=0.26; c.fill(); c.restore(); }
     drawRim(0.30,'rgba(0,0,0,.32)',0.055);
 
   }else if(style==='velvet'){
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 16));
-    body.addColorStop(1, shade(baseHex, -16));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('velvet'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.22; c.fill(); c.restore(); }
+    var body9=c.createLinearGradient(x, y, x, y+s);
+    body9.addColorStop(0, shade(baseHex, 16));
+    body9.addColorStop(1, shade(baseHex, -16));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body9; c.fill();
+    var pat9=getSkinPattern('velvet'); if(pat9){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat9; c.globalAlpha=0.22; c.fill(); c.restore(); }
+
   }else if(style==='marble'){
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 8));
-    body.addColorStop(1, shade(baseHex, -16));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    const pat=getSkinPattern('marble'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.28; c.fill(); c.restore(); }
+    var body10=c.createLinearGradient(x, y, x, y+s);
+    body10.addColorStop(0, shade(baseHex, 8));
+    body10.addColorStop(1, shade(baseHex, -16));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body10; c.fill();
+    var pat10=getSkinPattern('marble'); if(pat10){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat10; c.globalAlpha=0.28; c.fill(); c.restore(); }
     drawRim(0.30,'rgba(0,0,0,.30)',0.055);
+
   }else{
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, baseHex);
-    body.addColorStop(1, shade(baseHex, -18));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
+    var body11=c.createLinearGradient(x, y, x, y+s);
+    body11.addColorStop(0, baseHex);
+    body11.addColorStop(1, shade(baseHex, -18));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body11; c.fill();
     drawRim(0.28,'rgba(0,0,0,.30)',0.06);
   }
 
@@ -464,94 +487,100 @@ function drawBlockStyle(c, x, y, s, baseHex, style, {placed=false}={}){
     c.stroke();
   }
 }
-
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
 /* ===== Tray render ===== */
 function drawPieceToCanvas(piece){
-  const scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
-  const c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
-  const cx=c.getContext('2d'); cx.scale(DPR,DPR); cx.imageSmoothingEnabled=false;
-  for(const [dx,dy] of piece.blocks) drawBlockStyle(cx, pad+dx*scale, pad+dy*scale, scale-2, piece.color, currentSkinStyle());
+  var scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
+  var c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
+  var cx=c.getContext('2d'); cx.scale(DPR,DPR); cx.imageSmoothingEnabled=false;
+  for(var i=0;i<piece.blocks.length;i++){ var dx=piece.blocks[i][0],dy=piece.blocks[i][1]; drawBlockStyle(cx, pad+dx*scale, pad+dy*scale, scale-2, piece.color, currentSkinStyle()); }
   return c;
 }
 function renderTray(){
   if(!trayEl) return;
   trayEl.innerHTML='';
-  state.hand.forEach((p,i)=>{
-    const div=document.createElement('div');
-    const fits=canFitAnywhere(p);
+  for(var i=0;i<state.hand.length;i++){
+    var p=state.hand[i];
+    var div=document.createElement('div');
+    var fits=canFitAnywhere(p);
     div.className='slot'+(p.used?' used':'')+(p.used?'':(fits?' good':' bad'));
-    div.dataset.index=String(i);
+    div.setAttribute('data-index', String(i));
     div.appendChild(drawPieceToCanvas(p));
-    if(!p.used) div.addEventListener('pointerdown', startDragFromSlot, {passive:false});
+    if(!p.used){
+      div.addEventListener('pointerdown', startDragFromSlot, {passive:false});
+    }
     trayEl.appendChild(div);
-  });
+  }
 }
 
 /* ===== Scoring ===== */
-const SCORE_CFG = { perBlock: 8, lineBase: 300, comboStep: 0.3, levelStep: 0.05 };
+var SCORE_CFG = { perBlock: 8, lineBase: 300, comboStep: 0.3, levelStep: 0.05 };
 function levelMultiplier(){ return 1 + (state.level - 1) * SCORE_CFG.levelStep; }
 function scoreForClear(lines){
   if(lines<=0) return 0;
-  const combo = 1 + (lines - 1) * SCORE_CFG.comboStep;
+  var combo = 1 + (lines - 1) * SCORE_CFG.comboStep;
   return Math.round(SCORE_CFG.lineBase * lines * combo * levelMultiplier());
 }
 
 /* ===== Obstacles Mode ===== */
-const LEVELS_MAX = 100;
-const LEVEL_STEP_SCORE = 10000;
-function obstaclesForLevel(lvl){ const maxCells = BOARD*BOARD; return Math.min(Math.round(3 + lvl*1.2), Math.round(maxCells*0.15)); }
-function applyObstacles(n){ let p=0,g=0; while(p<n && g<400){ g++; const x=Math.floor(Math.random()*BOARD), y=Math.floor(Math.random()*BOARD); if(state.grid[y][x]===0){ state.grid[y][x]=2; p++; } } }
+var LEVELS_MAX = 100;
+var LEVEL_STEP_SCORE = 10000;
+function obstaclesForLevel(lvl){ var maxCells = BOARD*BOARD; return Math.min(Math.round(3 + lvl*1.2), Math.round(maxCells*0.15)); }
+function applyObstacles(n){ var p=0,g=0; while(p<n && g<400){ g++; var x=Math.floor(Math.random()*BOARD), y=Math.floor(Math.random()*BOARD); if(state.grid[y][x]===0){ state.grid[y][x]=2; p++; } } }
 function checkLevelUp(){
-  const need = state.level * LEVEL_STEP_SCORE;
+  var need = state.level * LEVEL_STEP_SCORE;
   if(state.score >= need && state.level < LEVELS_MAX && state.mode==='obstacles'){
     state.level++; state.maxLevel = Math.max(state.maxLevel, state.level); LS('bp8.level.max', String(state.maxLevel));
     applyObstacles(Math.max(1, Math.floor(obstaclesForLevel(state.level)*0.6)));
     if(lvlEl) lvlEl.textContent = state.level;
-    showToast(`Level UP → ${state.level}`); requestDraw();
+    showToast('Level UP → '+state.level);
+    requestDraw();
   }
 }
 
 /* ===== Draw ===== */
 function draw(){
   if(!ctx || !canvas) return;
-  const s=state.cell, W=s*BOARD, H=s*BOARD;
+  var s=state.cell, W=s*BOARD, H=s*BOARD;
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.scale(DPR,DPR);
 
   drawPanelAndGridOverlay(ctx, W, H, s);
 
-  for(let y=0;y<BOARD;y++){
-    for(let x=0;x<BOARD;x++){
-      const v=state.grid[y][x];
-      const px=x*s, py=y*s;
+  for(var y=0;y<BOARD;y++){
+    for(var x=0;x<BOARD;x++){
+      var v=state.grid[y][x];
+      var px=x*s, py=y*s;
       if(v===1){ drawPlaced(ctx,px,py,s); }
       else if(v===2){ rr(ctx,px+1,py+1,s-2,s-2,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); }
     }
   }
 
   if(state.dragging && state.dragging.px!=null){
-    const {piece, px, py, valid} = state.dragging;
-    const liftY=72, offsetX=8;
-    const baseX=px-(piece.w*s)/2+offsetX;
-    const baseY=py-(piece.h*s)/2-liftY;
-    for(const [dx,dy] of piece.blocks){
+    var d = state.dragging;
+    var piece=d.piece, px2=d.px, py2=d.py, valid=d.valid;
+    var liftY=72, offsetX=8;
+    var baseX=px2-(piece.w*s)/2+offsetX;
+    var baseY=py2-(piece.h*s)/2-liftY;
+    for(var i=0;i<piece.blocks.length;i++){
+      var dx=piece.blocks[i][0], dy=piece.blocks[i][1];
       drawPreview(ctx, baseX+dx*s, baseY+dy*s, s, piece.color, valid);
     }
   }
 }
 
 /* ===== FX ===== */
-const particles=[];
+var particles=[];
 function spawnParticles(cells){
   if(!fctx) return;
-  const s=state.cell,d=DPR, style=currentSkinStyle();
-  for(const [x,y] of cells){
-    for(let j=0;j<6;j++){
-      const base = {x:(x+0.5)*s*d,y:(y+0.5)*s*d,vx:(Math.random()-0.5)*2,vy:(-Math.random()*2-0.5),life:40, r:2, color:'#ffffffaa', shape:'dot'};
+  var s=state.cell,d=DPR, style=currentSkinStyle();
+  for(var i=0;i<cells.length;i++){
+    var xy=cells[i], bx=xy[0], by=xy[1];
+    for(var j=0;j<6;j++){
+      var base = {x:(bx+0.5)*s*d,y:(by+0.5)*s*d,vx:(Math.random()-0.5)*2,vy:(-Math.random()*2-0.5),life:40, r:2, color:'#ffffffaa', shape:'dot'};
       switch(style){
         case 'glass': base.color='#ffffffcc'; base.r=2; base.shape='dot'; break;
         case 'metal': base.color='#c0c0c0cc'; base.r=1.8; base.shape='dash'; break;
@@ -569,10 +598,10 @@ function spawnParticles(cells){
   }
 }
 function stepFX(){
-  if(!fctx || !fxCnv) return requestAnimationFrame(stepFX);
+  if(!fctx || !fxCnv){ requestAnimationFrame(stepFX); return; }
   fctx.setTransform(1,0,0,1,0,0); fctx.clearRect(0,0,fxCnv.width,fxCnv.height);
-  for(let i=0;i<particles.length;i++){
-    const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--;
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--;
     fctx.globalAlpha=Math.max(0,p.life/40);
     fctx.fillStyle=p.color;
     if(p.shape==='dash'){ fctx.fillRect(p.x, p.y, 3, 1); }
@@ -580,28 +609,30 @@ function stepFX(){
     else if(p.shape==='chip'){ fctx.fillRect(p.x-1, p.y-1, 2, 2); }
     else { fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill(); }
   }
-  for(let i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
+  for(i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
   requestAnimationFrame(stepFX);
-} requestAnimationFrame(stepFX);
+}
+requestAnimationFrame(stepFX);
 
 /* ===== Place / Refill / Game over ===== */
 function place(piece,gx,gy){
-  const placedBlocks = piece.blocks.length;
-  for(const [dx,dy] of piece.blocks) state.grid[gy+dy][gx+dx]=1;
+  var placedBlocks = piece.blocks.length;
+  for(var i=0;i<piece.blocks.length;i++){ var dx=piece.blocks[i][0], dy=piece.blocks[i][1]; state.grid[gy+dy][gx+dx]=1; }
 
-  const fullRows=[], fullCols=[];
-  for(let y=0;y<BOARD;y++){ let ok=true; for(let x=0;x<BOARD;x++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullRows.push(y); }
-  for(let x=0;x<BOARD;x++){ let ok=true; for(let y=0;y<BOARD;y++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullCols.push(x); }
+  var fullRows=[], fullCols=[];
+  var y,x,ok;
+  for(y=0;y<BOARD;y++){ ok=true; for(x=0;x<BOARD;x++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullRows.push(y); }
+  for(x=0;x<BOARD;x++){ ok=true; for(y=0;y<BOARD;y++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullCols.push(x); }
 
-  const cells=[];
-  for(const r of fullRows){ for(let x=0;x<BOARD;x++){ cells.push([x,r]); } state.grid[r]=Array(BOARD).fill(0); }
-  for(const c of fullCols){ for(let y=0;y<BOARD;y++){ cells.push([c,y]); state.grid[y][c]=0; } }
+  var cells=[];
+  for(var r=0;r<fullRows.length;r++){ var ry=fullRows[r]; for(x=0;x<BOARD;x++){ cells.push([x,ry]); } state.grid[ry]=[]; for(x=0;x<BOARD;x++) state.grid[ry][x]=0; }
+  for(var c=0;c<fullCols.length;c++){ var cx=fullCols[c]; for(y=0;y<BOARD;y++){ cells.push([cx,y]); state.grid[y][cx]=0; } }
   if(cells.length) spawnParticles(cells);
 
-  const linesCleared = fullRows.length + fullCols.length;
-  const placePts = SCORE_CFG.perBlock * placedBlocks;
-  const clearPts = scoreForClear(linesCleared);
-  const gained = (placePts + clearPts);
+  var linesCleared = fullRows.length + fullCols.length;
+  var placePts = SCORE_CFG.perBlock * placedBlocks;
+  var clearPts = scoreForClear(linesCleared);
+  var gained = (placePts + clearPts);
 
   state.score += gained; if(scoreEl) scoreEl.textContent=state.score;
   stats.totalScore += gained; stats.blocksPlaced += placedBlocks; stats.linesCleared += linesCleared; saveStats(stats);
@@ -610,10 +641,14 @@ function place(piece,gx,gy){
 
   achievementsTick();
 
-  piece.used=true; state.hand=state.hand.map(p=>p.id===piece.id? {...p,used:true}:p); renderTray();
-  if(state.hand.every(p=>p.used)) refillHand();
+  piece.used=true; 
+  for(i=0;i<state.hand.length;i++){ if(state.hand[i].id===piece.id){ state.hand[i]= { blocks:piece.blocks, w:piece.w, h:piece.h, color:piece.color, used:true, id:piece.id }; } }
+  renderTray();
+  var allUsed=true; for(i=0;i<state.hand.length;i++){ if(!state.hand[i].used) { allUsed=false; break; } }
+  if(allUsed) refillHand();
+
   if(state.mode!=='obstacles' && !anyFits()){
-    if(goStats) goStats.textContent=`Score: ${state.score} • Best: ${state.best[state.mode]||0}`;
+    if(goStats) goStats.textContent='Score: '+state.score+' • Best: '+(state.best[state.mode]||0);
     if(gameOver) gameOver.style.display='flex';
   }
   if(state.mode==='obstacles') checkLevelUp();
@@ -622,91 +657,105 @@ function place(piece,gx,gy){
 function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
 /* ===== Drag ===== */
-const POINTER={active:false,fromSlotIndex:null};
-function getCanvasPos(e){ const r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; }
+var POINTER={active:false,fromSlotIndex:null};
+function getCanvasPos(e){ var r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; }
 function startDragFromSlot(e){
-  const idx=Number(e.currentTarget.dataset.index), piece=state.hand[idx]; if(!piece||piece.used) return;
-  POINTER.active=true; POINTER.fromSlotIndex=idx; state.dragging={piece,gx:null,gy:null,valid:false,px:null,py:null};
-  e.currentTarget.classList.add('used'); try{ e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-  document.body.style.cursor='grabbing'; e.preventDefault(); e.stopPropagation();
+  var idx=Number(e.currentTarget.getAttribute('data-index')), piece=state.hand[idx]; if(!piece||piece.used) return;
+  POINTER.active=true; POINTER.fromSlotIndex=idx; state.dragging={piece:piece,gx:null,gy:null,valid:false,px:null,py:null};
+  var t=e.currentTarget;
+  if(t && t.classList) t.classList.add('used');
+  try{ if(t && t.setPointerCapture) t.setPointerCapture(e.pointerId); }catch(_){}
+  document.body.style.cursor='grabbing'; 
+  if(e.preventDefault) e.preventDefault(); if(e.stopPropagation) e.stopPropagation();
 }
 function onPointerMove(e){
   if(!POINTER.active||!state.dragging) return;
-  const {x,y}=getCanvasPos(e); state.dragging.px=x; state.dragging.py=y;
-  const s=state.cell, p=state.dragging.piece, liftY=72, offsetX=8;
-  const baseX = x - (p.w*s)/2 + offsetX;
-  const baseY = y - (p.h*s)/2 - liftY;
-  let gx=Math.round(baseX/s), gy=Math.round(baseY/s);
-  const maxX=BOARD-p.w, maxY=BOARD-p.h;
+  var pos=getCanvasPos(e); state.dragging.px=pos.x; state.dragging.py=pos.y;
+  var s=state.cell, p=state.dragging.piece, liftY=72, offsetX=8;
+  var baseX = pos.x - (p.w*s)/2 + offsetX;
+  var baseY = pos.y - (p.h*s)/2 - liftY;
+  var gx=Math.round(baseX/s), gy=Math.round(baseY/s);
+  var maxX=BOARD-p.w, maxY=BOARD-p.h;
   if(gx<0||gx>maxX||gy<0||gy>maxY){ state.dragging.valid=false; state.dragging.gx=null; state.dragging.gy=null; }
-  else { const ok=canPlace(p,gx,gy); state.dragging.valid=ok; state.dragging.gx=gx; state.dragging.gy=gy; }
+  else { var ok=canPlace(p,gx,gy); state.dragging.valid=ok; state.dragging.gx=gx; state.dragging.gy=gy; }
   requestDraw();
 }
 function onPointerUp(){
   if(!POINTER.active||!state.dragging) return;
-  const d=state.dragging; const slot=trayEl?.querySelector?.('.slot[data-index="'+POINTER.fromSlotIndex+'"]');
+  var d=state.dragging; 
+  var sel='.slot[data-index="'+POINTER.fromSlotIndex+'"]';
+  var slot = (trayEl && trayEl.querySelector) ? trayEl.querySelector(sel) : null;
   POINTER.active=false; document.body.style.cursor='';
   if(d.valid && d.gx!=null && d.gy!=null) place(d.piece,d.gx,d.gy);
-  else if(slot) slot.classList.remove('used');
+  else if(slot && slot.classList) slot.classList.remove('used');
   state.dragging=null; requestDraw();
 }
 function onPointerCancel(){
   if(!POINTER.active||!state.dragging) return;
-  const slot=trayEl?.querySelector?.('.slot[data-index="'+POINTER.fromSlotIndex+'"]');
+  var sel='.slot[data-index="'+POINTER.fromSlotIndex+'"]';
+  var slot = (trayEl && trayEl.querySelector) ? trayEl.querySelector(sel) : null;
   POINTER.active=false; document.body.style.cursor='';
-  if(slot) slot.classList.remove('used');
+  if(slot && slot.classList) slot.classList.remove('used');
   state.dragging=null; requestDraw();
 }
-addEventListener('pointermove', onPointerMove, {passive:false});
-addEventListener('pointerup', onPointerUp, {passive:true});
-addEventListener('pointercancel', onPointerCancel, {passive:true});
-addEventListener('lostpointercapture', onPointerCancel, {passive:true});
+window.addEventListener('pointermove', onPointerMove, {passive:false});
+window.addEventListener('pointerup', onPointerUp, {passive:true});
+window.addEventListener('pointercancel', onPointerCancel, {passive:true});
+window.addEventListener('lostpointercapture', onPointerCancel, {passive:true});
 
 /* ===== UI helpers ===== */
 function showToast(msg){
-  let t=document.getElementById('toast');
+  var t=document.getElementById('toast');
   if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
-    Object.assign(t.style,{position:'fixed',left:'50%',bottom:'24px',transform:'translateX(-50%)',background:'rgba(8,14,28,.9)',color:'#e8ecf1',padding:'10px 14px',borderRadius:'12px',boxShadow:'0 10px 30px rgba(0,0,0,.35)',zIndex:99,transition:'opacity .25s',opacity:'0',border:'1px solid rgba(255,255,255,.06)'}); }
-  t.textContent=msg; t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; }, 1600);
+    var st=t.style; st.position='fixed'; st.left='50%'; st.bottom='24px'; st.transform='translateX(-50%)'; st.background='rgba(8,14,28,.9)'; st.color='#e8ecf1'; st.padding='10px 14px'; st.borderRadius='12px'; st.boxShadow='0 10px 30px rgba(0,0,0,.35)'; st.zIndex=99; st.transition='opacity .25s'; st.opacity='0'; st.border='1px solid rgba(255,255,255,.06)';
+  }
+  t.textContent=msg; t.style.opacity='1'; setTimeout(function(){ t.style.opacity='0'; }, 1600);
 }
-function updateSoundLabel(){ if(setSound) setSound.textContent = settings.sound?'🔈 On':'🔇 Off'; }
-function applyTheme(t){ document.body.classList.toggle('light', t==='light'); }
+function updateSoundLabel(){ if(setSound) setSound.textContent = (settings.sound?'🔈 On':'🔇 Off'); }
+function applyTheme(t){ if(document.body && document.body.classList){ if(t==='light'){ document.body.classList.add('light'); } else { document.body.classList.remove('light'); } } }
 function saveBest(b){ LS('bp8.best', JSON.stringify(b)); }
-function loadBest(){ const s=LS('bp8.best'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+function loadBest(){ var s=LS('bp8.best'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 
 /* ===== Buttons / Events ===== */
-resetBtn?.addEventListener('click', ()=> newGame(state.mode));
-backBtn?.addEventListener('click', ()=> goHome());
+if(resetBtn) resetBtn.addEventListener('click', function(){ newGame(state.mode); });
+if(backBtn)  backBtn.addEventListener('click', function(){ goHome(); });
 
-settingsBtn?.addEventListener('click', ()=> settingsModal && (settingsModal.style.display='flex'));
-settingsModal?.querySelector?.('.backdrop')?.addEventListener('click', ()=> settingsModal.style.display='none');
-closeSettings?.addEventListener('click', ()=> settingsModal.style.display='none');
-setThemeBtn?.addEventListener('click', ()=>{ settings.theme=settings.theme==='dark'?'light':'dark'; LS('bp8.theme',settings.theme); applyTheme(settings.theme); });
-setSound?.addEventListener('click', ()=>{ settings.sound=!settings.sound; LS('bp8.sound', settings.sound?'1':'0'); updateSoundLabel(); });
-resetBest?.addEventListener('click', ()=>{ localStorage.removeItem('bp8.best'); state.best={classic:0,obstacles:0}; if(bestEl) bestEl.textContent=0; showToast('Best resetovan'); });
+if(settingsBtn) settingsBtn.addEventListener('click', function(){ if(settingsModal) settingsModal.style.display='flex'; });
+if(settingsModal){
+  var bd = settingsModal.querySelector ? settingsModal.querySelector('.backdrop') : null;
+  if(bd) bd.addEventListener('click', function(){ settingsModal.style.display='none'; });
+}
+if(closeSettings) closeSettings.addEventListener('click', function(){ settingsModal.style.display='none'; });
+if(setThemeBtn) setThemeBtn.addEventListener('click', function(){ settings.theme=(settings.theme==='dark'?'light':'dark'); LS('bp8.theme',settings.theme); applyTheme(settings.theme); });
+if(setSound) setSound.addEventListener('click', function(){ settings.sound=!settings.sound; LS('bp8.sound', (settings.sound?'1':'0')); updateSoundLabel(); });
+if(resetBest) resetBest.addEventListener('click', function(){ SAFE.removeItem && SAFE.removeItem('bp8.best'); state.best={classic:0,obstacles:0}; if(bestEl) bestEl.textContent=0; showToast('Best resetovan'); });
 
-playAgain?.addEventListener('click', ()=>{ gameOver.style.display='none'; newGame(state.mode); });
-goMenu?.addEventListener('click', ()=>{ gameOver.style.display='none'; goHome(); });
-startClassic?.addEventListener('click', ()=> startGame('classic'));
-startObstacles?.addEventListener('click', ()=> startGame('obstacles'));
+if(playAgain) playAgain.addEventListener('click', function(){ if(gameOver) gameOver.style.display='none'; newGame(state.mode); });
+if(goMenu)   goMenu.addEventListener('click', function(){ if(gameOver) gameOver.style.display='none'; goHome(); });
+if(startClassic)   startClassic.addEventListener('click', function(){ startGame('classic'); });
+if(startObstacles) startObstacles.addEventListener('click', function(){ startGame('obstacles'); });
 
-/* Dostignuća modal */
-achBtn?.addEventListener('click', ()=>{
-  if(!achievementsModal) return;
-  achievementsModal.style.display='flex';
-  const curIdx = getCurrentMilestoneIndex();
-  const block = indexToBlock(curIdx>=0?curIdx:0);
-  achPage = Math.max(1, Math.min(20, block));
-  renderAchievementsPage();
-  renderMilestoneBoxForBlock(block);
-});
-achievementsModal?.querySelector?.('.backdrop')?.addEventListener('click', ()=> achievementsModal.style.display='none');
-closeAch?.addEventListener('click', ()=> achievementsModal.style.display='none');
-achPrev?.addEventListener('click', ()=>{ achPage=Math.max(1, achPage-1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
-achNext?.addEventListener('click', ()=>{ achPage=Math.min(20, achPage+1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
+if(achBtn){
+  achBtn.addEventListener('click', function(){
+    if(!achievementsModal) return;
+    achievementsModal.style.display='flex';
+    var curIdx = getCurrentMilestoneIndex();
+    var block = indexToBlock(curIdx>=0?curIdx:0);
+    achPage = Math.max(1, Math.min(20, block));
+    renderAchievementsPage();
+    renderMilestoneBoxForBlock(block);
+  });
+}
+if(achievementsModal){
+  var abd = achievementsModal.querySelector ? achievementsModal.querySelector('.backdrop') : null;
+  if(abd) abd.addEventListener('click', function(){ achievementsModal.style.display='none'; });
+}
+if(closeAch) closeAch.addEventListener('click', function(){ achievementsModal.style.display='none'; });
+if(achPrev) achPrev.addEventListener('click', function(){ achPage=Math.max(1, achPage-1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
+if(achNext) achNext.addEventListener('click', function(){ achPage=Math.min(20, achPage+1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
 
-btnWatchAd?.addEventListener('click', watchAdInAchievements);
-btnClaim?.addEventListener('click', ()=>{
+if(btnWatchAd) btnWatchAd.addEventListener('click', watchAdInAchievements);
+if(btnClaim)   btnClaim.addEventListener('click', function(){
   if(btnClaim.getAttribute('aria-disabled')==='true'){
     showToast('Završi 50/50 ciljeva i reklame za ovaj blok.');
     return;
@@ -714,14 +763,19 @@ btnClaim?.addEventListener('click', ()=>{
   claimMilestoneReward();
 });
 
-/* NOVO: Kolekcija modal (start ekran) */
-collectionBtn?.addEventListener('click', ()=>{
-  if(!collectionModal) return;
-  collectionModal.style.display='flex';
-  renderCollection();
-});
-collectionModal?.querySelector?.('.backdrop')?.addEventListener('click', ()=> collectionModal.style.display='none');
-closeCollection?.addEventListener('click', ()=> collectionModal.style.display='none');
+/* Kolekcija modal */
+if(collectionBtn){
+  collectionBtn.addEventListener('click', function(){
+    if(!collectionModal) return;
+    collectionModal.style.display='flex';
+    renderCollection();
+  });
+}
+if(collectionModal){
+  var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null;
+  if(cbd) cbd.addEventListener('click', function(){ collectionModal.style.display='none'; });
+}
+if(closeCollection) closeCollection.addEventListener('click', function(){ collectionModal.style.display='none'; });
 
 /* ===== Flow ===== */
 function startGame(mode){
@@ -746,123 +800,127 @@ function newGame(mode){
 /* ===== Resize ===== */
 function sizeToScreen(){
   if(!canvas) return;
-  const headerH=document.querySelector('header')?.offsetHeight||60;
-  const trayH  =trayEl?.offsetHeight||120;
-  const chrome =28;
-  const availH=Math.max(260, innerHeight - headerH - trayH - chrome);
-  const availW=Math.min(document.documentElement.clientWidth, 720) - 32;
-  const side  =Math.max(240, Math.min(availW, availH));
-  const cell  =Math.floor(side/BOARD);
-  const px    =cell*BOARD;
+  var headerH=(document.querySelector && document.querySelector('header') ? document.querySelector('header').offsetHeight : 60);
+  var trayH  =(trayEl ? trayEl.offsetHeight : 120);
+  var chrome =28;
+  var availH=Math.max(260, window.innerHeight - headerH - trayH - chrome);
+  var availW=Math.min(document.documentElement.clientWidth, 720) - 32;
+  var side  =Math.max(240, Math.min(availW, availH));
+  var cell  =Math.floor(side/BOARD);
+  var px    =cell*BOARD;
   canvas.style.width=px+'px'; canvas.style.height=px+'px'; canvas.width=Math.floor(px*DPR); canvas.height=Math.floor(px*DPR);
   if(fxCnv){ fxCnv.style.width=px+'px'; fxCnv.style.height=px+'px'; fxCnv.width=Math.floor(px*DPR); fxCnv.height=Math.floor(px*DPR); }
   if(ctx){ ctx.setTransform(1,0,0,1,0,0); ctx.scale(DPR,DPR); }
   if(fctx){ fctx.setTransform(1,0,0,1,0,0); }
-  state.cell=cell; if(bg){ bg.width=Math.floor(innerWidth*DPR); bg.height=Math.floor(innerHeight*DPR); }
+  state.cell=cell; if(bg){ bg.width=Math.floor(window.innerWidth*DPR); bg.height=Math.floor(window.innerHeight*DPR); }
   requestDraw();
 }
-let drawQueued=false; function requestDraw(){ if(!drawQueued){ drawQueued=true; requestAnimationFrame(()=>{ drawQueued=false; draw(); }); } }
-addEventListener('resize', sizeToScreen, {passive:true});
+var drawQueued=false; function requestDraw(){ if(!drawQueued){ drawQueued=true; window.requestAnimationFrame(function(){ drawQueued=false; draw(); }); } }
+window.addEventListener('resize', sizeToScreen, {passive:true});
 sizeToScreen();
 
 /* ===== Ach motor (kompakt) ===== */
-const TARGETS = { blocks: (i)=> 300*i, lines:  (i)=> 40*i, score:  (i)=> 50000*i };
+var TARGETS = { blocks: function(i){return 300*i;}, lines: function(i){return 40*i;}, score: function(i){return 50000*i;} };
 function createAchievementsModel(){
-  const list=[];
-  for(let i=1;i<=1000;i++){
-    let title='', kind='', target=0, key='';
-    if(i%3===1){ kind='blocks'; target=TARGETS.blocks(i); title=`Postavi ${target} blokova`; key='blocksPlaced'; }
-    else if(i%3===2){ kind='lines'; target=TARGETS.lines(i);  title=`Očisti ${target} linija`;  key='linesCleared'; }
-    else{ kind='score'; target=TARGETS.score(i);  title=`Osvoji ${target.toLocaleString('sr-RS')} poena`; key='totalScore'; }
-    const node = { id:i, title, kind, key, target, done:false };
+  var list=[], i;
+  for(i=1;i<=1000;i++){
+    var title='', kind='', target=0, key='';
+    if(i%3===1){ kind='blocks'; target=TARGETS.blocks(i); title='Postavi '+target+' blokova'; key='blocksPlaced'; }
+    else if(i%3===2){ kind='lines'; target=TARGETS.lines(i);  title='Očisti '+target+' linija';  key='linesCleared'; }
+    else{ kind='score'; target=TARGETS.score(i);  title='Osvoji '+(target.toLocaleString('sr-RS'))+' poena'; key='totalScore'; }
+    var node = { id:i, title:title, kind:kind, key:key, target:target, done:false };
     if(i%50===0){
-      const adsNeeded = (i/50)*5;
+      var adsNeeded = (i/50)*5;
       node.milestone = { type: (i%100===0) ? 'skin' : 'theme', adsRequired: adsNeeded, adsExtMax: Math.floor(adsNeeded*0.8), adsExt: 0, adsInt: 0, claimed:false };
     }
     list.push(node);
   }
-  const model = { list, currentMilestoneIndex: findFirstOpenMilestoneIndex(list) };
+  var model = { list:list, currentMilestoneIndex: findFirstOpenMilestoneIndex(list) };
   saveAch(model); return model;
 }
-function findFirstOpenMilestoneIndex(list){ for(let i=0;i<list.length;i++){ const a=list[i]; if(a.milestone && !(a.milestone.claimed)) return i; } return -1; }
+function findFirstOpenMilestoneIndex(list){ for(var i=0;i<list.length;i++){ var a=list[i]; if(a.milestone && !(a.milestone.claimed)) return i; } return -1; }
+function getCurrentMilestoneIndex(){ return ach.currentMilestoneIndex!=null ? ach.currentMilestoneIndex : findFirstOpenMilestoneIndex(ach.list); }
 function indexToBlock(idx){ return Math.max(1, Math.ceil((idx+1)/50)); }
-function blockRange(block){ const start=(block-1)*50; const end=block*50-1; return {start,end}; }
+function blockRange(block){ var start=(block-1)*50; var end=block*50-1; return {start:start,end:end}; }
 function blockProgress50(block){
-  const {start,end}=blockRange(block);
-  let done=0; for(let i=start;i<end;i++) if(ach.list[i].done) done++;
-  const ms = ach.list[end].milestone; if(ms && ms.claimed) done += 1;
-  return {done, total: 50};
+  var r=blockRange(block), start=r.start, end=r.end;
+  var done=0; for(var i=start;i<end;i++) if(ach.list[i].done) done++;
+  var ms = ach.list[end].milestone; if(ms && ms.claimed) done += 1;
+  return {done:done, total: 50};
 }
 function rewardNameForMilestone(id){
-  const slot = id / 50;
-  const themePool = THEMES.slice(1);
-  const skinPool  = SKINS.slice(1);
+  var slot = id / 50;
+  var themePool = THEMES.slice(1);
+  var skinPool  = SKINS.slice(1);
   if(id % 100 === 0){
-    const idx = Math.min(Math.max(1, Math.floor(slot/2)), skinPool.length);
-    return {type:'skin', name: skinPool[idx-1].name, idx};
+    var idx = Math.min(Math.max(1, Math.floor(slot/2)), skinPool.length);
+    return {type:'skin', name: skinPool[idx-1].name, idx:idx};
   }else{
-    const idx = Math.min(Math.max(1, Math.floor((slot+1)/2)), themePool.length);
-    return {type:'theme', name: themePool[idx-1].name, idx};
+    var idx2 = Math.min(Math.max(1, Math.floor((slot+1)/2)), themePool.length);
+    return {type:'theme', name: themePool[idx2-1].name, idx:idx2};
   }
 }
 function renderAchievementsPage(){
   if(!achList) return;
-  const perPage=50;
-  const startIdx=(achPage-1)*perPage;
-  const endIdx=Math.min(startIdx+perPage, ach.list.length);
+  var perPage=50;
+  var startIdx=(achPage-1)*perPage;
+  var endIdx=Math.min(startIdx+perPage, ach.list.length);
   if(achPageLbl) achPageLbl.textContent=String(achPage);
   achList.innerHTML='';
-  for(let i=startIdx;i<endIdx;i++){
-    const a=ach.list[i];
-    const progress=Math.min(1, getStat(a.key)/a.target);
-    const card=document.createElement('div');
+  for(var i=startIdx;i<endIdx;i++){
+    var a=ach.list[i];
+    var progress=Math.min(1, getStat(a.key)/a.target);
+    var card=document.createElement('div');
     card.className='ach-card'+(a.milestone?' milestone':'')+(a.done?' done':'');
-    const rewardTag = a.milestone ? (()=>{ const info=rewardNameForMilestone(a.id); return info.type==='skin'?' • 🎁 SKIN: '+info.name:' • 🎁 TEMA: '+info.name; })() : '';
-    card.innerHTML=`
-      <h4>${a.done?'✅ ':''}#${a.id} — ${a.title}${rewardTag}</h4>
-      <div class="meta">
-        <span class="badge">${a.kind}</span>
-        <span class="small">${Math.min(getStat(a.key), a.target).toLocaleString('sr-RS')} / ${a.target.toLocaleString('sr-RS')}</span>
-      </div>
-      <div class="progress"><i style="width:${(progress*100).toFixed(1)}%"></i></div>
-    `;
+    var rewardTag='';
+    if(a.milestone){
+      var info=rewardNameForMilestone(a.id);
+      rewardTag = (info.type==='skin'?' • 🎁 SKIN: '+info.name:' • 🎁 TEMA: '+info.name);
+    }
+    card.innerHTML=
+      '<h4>'+(a.done?'✅ ':'')+'#'+a.id+' — '+a.title+rewardTag+'</h4>'+
+      '<div class="meta">'+
+        '<span class="badge">'+a.kind+'</span>'+
+        '<span class="small">'+Math.min(getStat(a.key), a.target).toLocaleString('sr-RS')+' / '+a.target.toLocaleString('sr-RS')+'</span>'+
+      '</div>'+
+      '<div class="progress"><i style="width:'+(progress*100).toFixed(1)+'%"></i></div>';
     achList.appendChild(card);
   }
 }
 function renderMilestoneBoxForBlock(block){
   if(!msTitle||!msDesc||!msCounters||!msBlockProg||!msBar||!btnWatchAd||!btnClaim) return;
-  const {start,end}=blockRange(block);
-  const node=ach.list[end];
-  const ms=node?.milestone;
+  var r=blockRange(block), start=r.start, end=r.end;
+  var node=ach.list[end];
+  var ms=node?node.milestone:null;
   if(!ms){
-    msTitle.textContent = `Blok ${block}`; msDesc.textContent = 'Nema nagrade za ovaj blok.';
+    msTitle.textContent = 'Blok '+block; msDesc.textContent = 'Nema nagrade za ovaj blok.';
     msCounters.textContent = ''; msBlockProg.textContent = ''; msBar.style.width='0%';
     btnWatchAd.setAttribute('aria-disabled','true'); btnClaim.setAttribute('aria-disabled','true'); return;
   }
-  const info = rewardNameForMilestone(node.id);
-  const extMax = ms.adsExtMax;
-  const need = ms.adsRequired;
-  const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
-  const pct = Math.min(100, (total/need)*100);
-  const blk50 = blockProgress50(block);
-  const blkOK = (blk50.done >= 49);
+  var info = rewardNameForMilestone(node.id);
+  var extMax = ms.adsExtMax;
+  var need = ms.adsRequired;
+  var total = Math.min(ms.adsExt, extMax) + ms.adsInt;
+  var pct = Math.min(100, (total/need)*100);
+  var blk50 = blockProgress50(block);
+  var blkOK = (blk50.done >= 49);
 
-  msTitle.textContent = `Milestone ${node.id}`;
-  msDesc.textContent  = info.type==='skin' ? `🎁 Nagrada: SKIN — ${info.name}` : `🎁 Nagrada: TEMA — ${info.name}`;
-  msCounters.textContent = `🎬 ${total}/${need} (van max ${extMax})`;
-  msBlockProg.textContent = `📦 ${blk50.done}/${blk50.total}`;
+  msTitle.textContent = 'Milestone '+node.id;
+  msDesc.textContent  = (info.type==='skin' ? '🎁 Nagrada: SKIN — '+info.name : '🎁 Nagrada: TEMA — '+info.name);
+  msCounters.textContent = '🎬 '+total+'/'+need+' (van max '+extMax+')';
+  msBlockProg.textContent = '📦 '+blk50.done+'/'+blk50.total;
   msBar.style.width = pct.toFixed(1)+'%';
 
   if(total>=need) btnWatchAd.setAttribute('aria-disabled','true'); else btnWatchAd.setAttribute('aria-disabled','false');
-  const ready = (total>=need && blkOK);
+  var ready = (total>=need && blkOK);
   btnClaim.setAttribute('aria-disabled', ready ? 'false' : 'true');
 
   ach.currentMilestoneIndex = end; saveAch(ach);
 }
 function achievementsTick(){
-  for(const a of ach.list){ if(a.done || a.milestone) continue; if(getStat(a.key)>=a.target) a.done=true; }
+  for(var i=0;i<ach.list.length;i++){ var a=ach.list[i]; if(a.done || a.milestone) continue; if(getStat(a.key)>=a.target) a.done=true; }
   saveAch(ach);
-  if(achievementsModal?.style.display==='flex'){
+  if(achievementsModal && achievementsModal.style.display==='flex'){
     renderAchievementsPage(); renderMilestoneBoxForBlock(achPage);
   }
 }
@@ -870,99 +928,104 @@ function achievementsTick(){
 /* ===== Kolekcija (poseban modal) ===== */
 function renderCollection(){
   if(!themesGrid || !skinsGrid) return;
-  const themeSlots=THEMES.length, skinSlots=SKINS.length;
+  var themeSlots=THEMES.length, skinSlots=SKINS.length, i;
+
   themesGrid.innerHTML='';
-  for(let i=1;i<=themeSlots;i++){
-    const unlocked = (i<= (stats.themesUnlocked||0));
-    const t = THEMES[i-1];
-    const d=document.createElement('div');
+  for(i=1;i<=themeSlots;i++){
+    var unlocked = (i<= (stats.themesUnlocked||0));
+    var t = THEMES[i-1];
+    var d=document.createElement('div');
     d.className='col-card'+(unlocked?'':' locked');
-    const activeTag = (applied.theme===t.id) ? `<span class="activeTag">Aktivno</span>` : '';
-    d.innerHTML = `
-      <span>${t.name}</span>
-      <span class="badge">Tema</span>
-      ${activeTag}
-      ${unlocked? `<button class="apply" data-apply-theme="${t.id}">Primeni</button>` : '<span class="lock">🔒</span>'}
-    `;
+    var activeTag = (applied.theme===t.id) ? '<span class="activeTag">Aktivno</span>' : '';
+    d.innerHTML =
+      '<span>'+t.name+'</span>'+
+      '<span class="badge">Tema</span>'+
+      activeTag+
+      (unlocked? '<button class="apply" data-apply-theme="'+t.id+'">Primeni</button>' : '<span class="lock">🔒</span>');
     themesGrid.appendChild(d);
   }
+
   skinsGrid.innerHTML='';
-  for(let i=1;i<=skinSlots;i++){
-    const unlocked = (i<= (stats.skinsUnlocked||0));
-    const s = SKINS[i-1];
-    const d=document.createElement('div');
-    d.className='col-card'+(unlocked?'':' locked');
-    const activeTag = (applied.skin===s.id) ? `<span class="activeTag">Aktivno</span>` : '';
-    d.innerHTML = `
-      <span>${s.name}</span>
-      <span class="badge">Skin</span>
-      ${activeTag}
-      ${unlocked? `<button class="apply" data-apply-skin="${s.id}">Primeni</button>` : '<span class="lock">🔒</span>'}
-    `;
-    skinsGrid.appendChild(d);
+  for(i=1;i<=skinSlots;i++){
+    var unlockedS = (i<= (stats.skinsUnlocked||0));
+    var s = SKINS[i-1];
+    var d2=document.createElement('div');
+    d2.className='col-card'+(unlockedS?'':' locked');
+    var activeTag2 = (applied.skin===s.id) ? '<span class="activeTag">Aktivno</span>' : '';
+    d2.innerHTML =
+      '<span>'+s.name+'</span>'+
+      '<span class="badge">Skin</span>'+
+      activeTag2+
+      (unlockedS? '<button class="apply" data-apply-skin="'+s.id+'">Primeni</button>' : '<span class="lock">🔒</span>');
+    skinsGrid.appendChild(d2);
   }
-  themesGrid.onclick = (ev)=>{
-    const id = ev.target?.getAttribute?.('data-apply-theme'); if(!id) return;
-    applied.theme = id; saveApplied(applied); applyAccentFromTheme(id); renderCollection(); requestDraw(); showToast('🎨 Tema primenjena');
+
+  themesGrid.onclick = function(ev){
+    var t = ev && ev.target ? ev.target.getAttribute('data-apply-theme') : null; if(!t) return;
+    applied.theme = t; saveApplied(applied); applyAccentFromTheme(t); renderCollection(); requestDraw(); showToast('🎨 Tema primenjena');
   };
-  skinsGrid.onclick = (ev)=>{
-    const id = ev.target?.getAttribute?.('data-apply-skin'); if(!id) return;
-    applied.skin = id; saveApplied(applied); renderCollection(); renderTray(); requestDraw(); showToast('🧊 Skin primenjen');
+  skinsGrid.onclick = function(ev){
+    var s = ev && ev.target ? ev.target.getAttribute('data-apply-skin') : null; if(!s) return;
+    applied.skin = s; saveApplied(applied); renderCollection(); renderTray(); requestDraw(); showToast('🧊 Skin primenjen');
   };
 }
 
 /* ===== persist helpers ===== */
 function getStat(key){ return stats[key]||0; }
 function saveStats(s){ LS('bp8.stats', JSON.stringify(s)); }
-function loadStats(){ const s=LS('bp8.stats'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+function loadStats(){ var s=LS('bp8.stats'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 function saveAch(a){ LS('bp8.ach', JSON.stringify(a)); }
-function loadAch(){ const s=LS('bp8.ach'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+function loadAch(){ var s=LS('bp8.ach'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 function saveApplied(a){ LS('bp8.applied', JSON.stringify(a)); }
-function loadApplied(){ const s=LS('bp8.applied'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
-function applyAccentFromTheme(themeId){ const t = THEMES.find(x=>x.id===themeId); if(t?.accent) document.documentElement.style.setProperty('--accent', t.accent); }
+function loadApplied(){ var s=LS('bp8.applied'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+function applyAccentFromTheme(themeId){
+  var t=null; for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===themeId){ t=THEMES[i]; break; } }
+  if(t && t.accent){ document.documentElement.style.setProperty('--accent', t.accent); }
+}
 
 /* ===== Ads 80/20 u Ach modal ===== */
 function addExternalAd(){
-  const idx = getCurrentMilestoneIndex(); if(idx<0) return;
-  const ms = ach.list[idx].milestone; if(ms.claimed) return;
+  var idx = getCurrentMilestoneIndex(); if(idx<0) return;
+  var ms = ach.list[idx].milestone; if(ms.claimed) return;
   if(ms.adsExt < ms.adsExtMax){ ms.adsExt++; saveAch(ach);
-    if(achievementsModal?.style.display==='flex') renderMilestoneBoxForBlock(indexToBlock(idx));
+    if(achievementsModal && achievementsModal.style.display==='flex') renderMilestoneBoxForBlock(indexToBlock(idx));
   }
 }
 function addInternalAd(){
-  const idx = getCurrentMilestoneIndex(); if(idx<0) return;
-  const ms = ach.list[idx].milestone; if(ms.claimed) return;
-  const need = ms.adsRequired; const extMax = ms.adsExtMax;
-  const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
+  var idx = getCurrentMilestoneIndex(); if(idx<0) return;
+  var ms = ach.list[idx].milestone; if(ms.claimed) return;
+  var need = ms.adsRequired; var extMax = ms.adsExtMax;
+  var total = Math.min(ms.adsExt, extMax) + ms.adsInt;
   if(total>=need) return;
   ms.adsInt++; saveAch(ach); renderMilestoneBoxForBlock(indexToBlock(idx));
 }
 function claimMilestoneReward(){
-  const idx = getCurrentMilestoneIndex(); if(idx<0) return;
-  const node = ach.list[idx]; const ms = node.milestone;
-  const block = indexToBlock(idx);
-  const blk50 = blockProgress50(block); const blkOK = (blk50.done >= 49);
-  const need = ms.adsRequired; const extMax = ms.adsExtMax;
-  const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
+  var idx = getCurrentMilestoneIndex(); if(idx<0) return;
+  var node = ach.list[idx]; var ms = node.milestone;
+  var block = indexToBlock(idx);
+  var blk50 = blockProgress50(block); var blkOK = (blk50.done >= 49);
+  var need = ms.adsRequired; var extMax = ms.adsExtMax;
+  var total = Math.min(ms.adsExt, extMax) + ms.adsInt;
   if(!(total>=need && blkOK)) return;
   ms.claimed = true;
-  const info = rewardNameForMilestone(node.id);
+  var info = rewardNameForMilestone(node.id);
   if(info.type==='theme'){ stats.themesUnlocked++; showToast('🎨 Nova tema: '+info.name); }
   else { stats.skinsUnlocked++; showToast('🧊 Novi skin: '+info.name); }
   saveStats(stats);
   ach.currentMilestoneIndex = findFirstOpenMilestoneIndex(ach.list); saveAch(ach);
-  renderMilestoneBoxForBlock(indexToBlock(ach.currentMilestoneIndex>=0?ach.currentMilestoneIndex:((block-1)*50)));
-  renderAchievementsPage(); if(collectionModal?.style.display==='flex') renderCollection();
+  var nextIdx = (ach.currentMilestoneIndex>=0?ach.currentMilestoneIndex:((block-1)*50));
+  renderMilestoneBoxForBlock(indexToBlock(nextIdx));
+  renderAchievementsPage(); if(collectionModal && collectionModal.style.display==='flex') renderCollection();
 }
 function watchAdInAchievements(){
   if(!btnWatchAd || btnWatchAd.getAttribute('aria-disabled')==='true') return;
   btnWatchAd.setAttribute('aria-disabled','true');
-  setTimeout(()=>{ addInternalAd(); btnWatchAd.setAttribute('aria-disabled','false'); }, 900);
+  setTimeout(function(){ addInternalAd(); btnWatchAd.setAttribute('aria-disabled','false'); }, 900);
 }
 window.simulateExternalAd = function(){ addExternalAd(); stats.externalAds++; saveStats(stats); showToast('🎬 +1 rewarded ad'); };
 
 /* ===== INIT ===== */
-if(!startClassic){ // ako je dev preview bez menija
+if(!startClassic){ // dev fallback
   if(start) start.style.display='none';
   if(app) app.style.display='flex';
   newGame('classic');
