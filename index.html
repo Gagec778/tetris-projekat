@@ -281,8 +281,8 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     </div>
   </div>
 
-<script>
-(function(){
+  <script>
+  (function(){
   'use strict';
 
   /* =====================
@@ -394,7 +394,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   ];
 
   // Primena (persist)
-  const applied = loadApplied() || { theme:'t01', skin:'s02' }; // default: t01 + Metallic Matte
+  const applied = loadApplied() || { theme:'t01', skin:'s02' }; // default
   applyAccentFromTheme(applied.theme);
 
   /* ===== Achievements (1000) + milestone ===== */
@@ -510,19 +510,16 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   function drawBlockStyle(c, x, y, s, baseHex, style, {placed=false}={}){
     const R=Math.max(6, s*.22);
     if(style==='glass'){
-      // živ „glass“ sa jačim highlight-om
       const body=c.createLinearGradient(x, y, x, y+s);
       body.addColorStop(0, 'rgba(255,255,255,0.28)');
       body.addColorStop(0.4, baseHex);
       body.addColorStop(1, shade(baseHex, -22));
       rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-      // „stakleni“ streak
       const streak=c.createLinearGradient(x,y, x+s*0.6,y+s*0.6);
       streak.addColorStop(0,'rgba(255,255,255,.55)');
       streak.addColorStop(0.35,'rgba(255,255,255,.18)');
       streak.addColorStop(1,'rgba(255,255,255,0)');
       rr(c,x+3,y+3,s-6,s-6,R-3); c.globalCompositeOperation='screen'; c.fillStyle=streak; c.fill(); c.globalCompositeOperation='source-over';
-      // ivice
       rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.06); c.strokeStyle='rgba(0,0,0,.28)'; c.stroke();
     }else if(style==='metal'){
       const body=c.createLinearGradient(x, y, x, y+s);
@@ -532,7 +529,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       rr(c,x+2,y+2,s-4,s-4,R-3); c.strokeStyle='rgba(255,255,255,.10)'; c.lineWidth=1; c.stroke();
       rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.05); c.strokeStyle='rgba(0,0,0,.35)'; c.stroke();
     }else if(style==='gem'){
-      // „facet“ – par dijagonalnih preloma
       const body=c.createLinearGradient(x, y, x+s, y+s);
       body.addColorStop(0, shade(baseHex, 28));
       body.addColorStop(0.5, baseHex);
@@ -564,7 +560,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
       rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.05); c.strokeStyle='rgba(0,0,0,.3)'; c.stroke();
     }else{
-      // fallback (metal/satin hibrid)
       const body=c.createLinearGradient(x, y, x, y+s);
       body.addColorStop(0, baseHex);
       body.addColorStop(1, shade(baseHex, -18));
@@ -611,7 +606,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     });
   }
 
-  /* Bodovanje — (isto kao ranije) */
+  /* Bodovanje */
   const SCORE_CFG = { perBlock: 8, lineBase: 300, comboStep: 0.3, levelStep: 0.05 };
   function levelMultiplier(){ return 1 + (state.level - 1) * SCORE_CFG.levelStep; }
   function scoreForClear(lines){
@@ -850,8 +845,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     renderMilestoneBoxForBlock(achPage);
   });
 
-  const btnWatchAd = document.getElementById('btnWatchAd');
-  const btnClaim   = document.getElementById('btnClaim');
   btnWatchAd.addEventListener('click', watchAdInAchievements);
   btnClaim.addEventListener('click', ()=>{
     if(btnClaim.getAttribute('aria-disabled')==='true'){
@@ -928,7 +921,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
       const node = { id:i, title, kind, key, target, done:false };
 
-      // Milestone na svakih 50
       if(i%50===0){
         const adsNeeded = (i/50)*5; // 50→5, 100→10, ...
         node.milestone = {
@@ -981,7 +973,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   function renderAchievementsPage(){
     const perPage=50;
     const startIdx=(achPage-1)*perPage;
-    const endIdx=Math.min(startIdx+perPage, ach.list.length);
+       const endIdx=Math.min(startIdx+perPage, ach.list.length);
     achPageLbl.textContent=String(achPage);
 
     achList.innerHTML='';
@@ -1082,7 +1074,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       skinsGrid.appendChild(d);
     }
 
-    // delegacija klikova
     themesGrid.onclick = (ev)=>{
       const id = ev.target?.getAttribute?.('data-apply-theme');
       if(!id) return;
@@ -1099,7 +1090,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       applied.skin = id;
       saveApplied(applied);
       renderCollection();
-      renderTray(); // da se precrtaju preview-i u traci
+      renderTray();
       requestDraw();
       showToast('🧊 Skin primenjen');
     };
@@ -1224,6 +1215,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   };
 
 })();
-</script>
+  </script>
 </body>
 </html>
