@@ -15,14 +15,22 @@
     }
 
     *{ box-sizing:border-box; }
-    html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; }
+    html,body{ height:100%; margin:0; background:var(--bg); color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
+      overflow:hidden; /* 1) fiksirano — nema skrola stranice */
+    }
     button{ font:inherit; cursor:pointer; border:0; background:transparent; color:inherit; }
     button:focus{ outline:none; }
     *{ -webkit-tap-highlight-color:transparent; }
 
+    /* GLOBAL BG CANVAS (iza svega) */
+    #bg{
+      position:fixed; inset:0; width:100vw; height:100vh; display:block;
+      z-index:0; pointer-events:none; /* ne blokira klikove */
+    }
+
     /* START SCREEN */
-    #startScreen{ position:relative; width:100%; height:100vh; overflow:hidden; }
-    #bg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+    #startScreen{ position:relative; width:100%; height:100vh; overflow:hidden; z-index:1; }
     .ss-inner{
       position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center;
       height:100%; gap:16px; padding:24px; text-align:center;
@@ -57,7 +65,7 @@
     .icon-btn:active{ transform:translateY(1px); }
 
     /* APP (igra) */
-    .wrap{ display:none; flex-direction:column; height:100vh; max-width:720px; margin:0 auto; }
+    .wrap{ display:none; flex-direction:column; height:100vh; max-width:720px; margin:0 auto; position:relative; z-index:1; }
     header{ padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .brand{ font-weight:800; letter-spacing:.4px; opacity:.9 }
     .hud{ display:flex; gap:10px; align-items:center; }
@@ -89,8 +97,8 @@
     .overlay .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.55); backdrop-filter: blur(4px); }
     .overlay .panel{
       position:relative; z-index:2; background:rgba(12,18,30,.85); border:1px solid rgba(255,255,255,.08);
-      border-radius:16px; padding:16px; width:min(680px, calc(100% - 24px)); color:var(--text);
-      box-shadow:0 30px 80px rgba(0,0,0,.45);
+      border-radius:16px; padding:16px; width:min(720px, calc(100% - 24px)); color:var(--text);
+      box-shadow:0 30px 80px rgba(0,0,0,.45); max-height:86vh; overflow:hidden;
     }
     .overlay h3, .overlay h2{ margin:0 0 10px 0; }
 
@@ -101,7 +109,7 @@
     /* Achievements */
     .ach-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
     .ach-pager{ display:flex; gap:8px; align-items:center; }
-    .ach-grid{ display:grid; grid-template-columns:repeat(1, 1fr); gap:8px; max-height:52vh; overflow:auto; padding-right:4px; }
+    .ach-grid{ display:grid; grid-template-columns:1fr; gap:8px; max-height:52vh; overflow:auto; padding-right:4px; }
     .ach-card{
       background:rgba(15,20,32,.75); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px;
     }
@@ -118,32 +126,39 @@
     .ms-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
     .ms-actions .btn[aria-disabled="true"]{ opacity:.4; pointer-events:none; }
 
-    /* Kolekcija (poseban modal) */
-    .collection-section{ margin-top:10px; }
-    .collection-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; max-height:52vh; overflow:auto; padding-right:4px; }
+    /* Kolekcija (TABOVI) */
+    .tabs{ display:flex; gap:8px; margin-bottom:10px; }
+    .tab-btn{
+      padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06); font-weight:700;
+    }
+    .tab-btn[aria-selected="true"]{
+      background:linear-gradient(180deg,#0d111a,#0c121e); color:#ffd87a; border-color:rgba(255,255,255,.14);
+    }
+    .tab-panel{ display:none; }
+    .tab-panel[aria-hidden="false"]{ display:block; }
+
+    .collection-grid{
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));
+      gap:10px; max-height:58vh; overflow:auto; padding-right:4px;
+    }
     .col-card{
       position:relative; background:rgba(15,20,32,.75); border:1px solid rgba(255,255,255,.08);
-      border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:6px;
+      border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:6px; min-height:110px;
     }
     .col-card.locked{ opacity:.55; }
     .col-card .badge{ align-self:flex-start; background:rgba(255,255,255,.08); padding:3px 8px; border-radius:999px; font-size:12px; }
     .col-card .apply{ align-self:flex-end; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06); }
     .activeTag{ position:absolute; top:8px; right:10px; font-size:11px; background:#1f8b4c; border:1px solid #2bb36a; padding:2px 6px; border-radius:999px; }
-
-    /* Game Over */
-    #gameOver .panel{ text-align:center; }
-    #gameOver .panel h2{ margin:0 0 8px 0; }
-
-    /* Footer */
-    .footer{ user-select:none; }
   </style>
 </head>
 <body>
 
+  <!-- GLOBAL AURORA BG (iza svega) -->
+  <canvas id="bg"></canvas>
+
   <!-- START SCREEN -->
   <div id="startScreen">
-    <canvas id="bg"></canvas>
-
     <div class="top-icons">
       <button id="settingsBtn" class="icon-btn" title="Podešavanja">⚙️</button>
       <button id="achBtn" class="icon-btn" title="Dostignuća">🏆</button>
@@ -234,19 +249,22 @@
     </div>
   </div>
 
-  <!-- KOLEKCIJA (poseban modal) -->
+  <!-- KOLEKCIJA (poseban modal sa TABOVIMA) -->
   <div id="collectionModal" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
       <h3>🎨 Kolekcija</h3>
 
-      <div class="collection-section">
-        <h4>TEME</h4>
+      <div class="tabs">
+        <button id="tabThemes" class="tab-btn" aria-selected="true">Teme</button>
+        <button id="tabSkins" class="tab-btn" aria-selected="false">Skinovi</button>
+      </div>
+
+      <div id="panelThemes" class="tab-panel" aria-hidden="false">
         <div id="themesGrid" class="collection-grid"></div>
       </div>
 
-      <div class="collection-section">
-        <h4>SKINOVI</h4>
+      <div id="panelSkins" class="tab-panel" aria-hidden="true">
         <div id="skinsGrid" class="collection-grid"></div>
       </div>
 
@@ -272,4 +290,4 @@
   <!-- JS -->
   <script src="script.js"></script>
 </body>
-</html>
+  </html>
