@@ -15,18 +15,19 @@
     }
 
     *{ box-sizing:border-box; }
-    html,body{ height:100%; margin:0; background:var(--bg); color:var(--text);
+    html,body{
+      height:100%; margin:0; background:var(--bg); color:var(--text);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
-      overflow:hidden; /* 1) fiksirano — nema skrola stranice */
+      overflow:hidden; /* fiksirano — nema skrola */
+      -webkit-tap-highlight-color:transparent;
     }
     button{ font:inherit; cursor:pointer; border:0; background:transparent; color:inherit; }
     button:focus{ outline:none; }
-    *{ -webkit-tap-highlight-color:transparent; }
 
     /* GLOBAL BG CANVAS (iza svega) */
     #bg{
       position:fixed; inset:0; width:100vw; height:100vh; display:block;
-      z-index:0; pointer-events:none; /* ne blokira klikove */
+      z-index:0; pointer-events:none;
     }
 
     /* START SCREEN */
@@ -78,17 +79,27 @@
       color:var(--text); padding:8px 12px; border-radius:12px; font-weight:700;
     }
 
-    .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:6px 16px; position:relative; }
+    .board-area{
+      flex:1; display:flex; align-items:center; justify-content:center;
+      padding:6px 16px 2px; /* smanjeno dno da tray legne uz grid */
+      position:relative;
+    }
     canvas{ touch-action:none; }
 
-    .tray{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px 16px 14px; }
-    .slot{
-      background:rgba(12,18,30,.55); border:1px dashed rgba(255,255,255,.12); border-radius:16px;
-      min-height:96px; display:flex; align-items:center; justify-content:center; transition:.18s; position:relative;
-      backdrop-filter: blur(6px);
+    /* TRAY: uz grid, bez “okvira” slotova */
+    .tray{
+      display:grid; grid-template-columns:repeat(3,1fr);
+      gap:8px; padding:6px 16px 12px; margin-top:-2px; /* blizu grida */
     }
-    .slot.used{ opacity:.35 } .slot.good{ border-color:var(--good); box-shadow:0 0 0 2px color-mix(in oklab, var(--good) 35%, transparent); }
-    .slot.bad{ border-color:var(--bad); box-shadow:0 0 0 2px color-mix(in oklab, var(--bad) 35%, transparent); }
+    .slot{
+      background:transparent; border:0; /* uklonjen okvir slotova */
+      border-radius:16px; min-height:88px;
+      display:flex; align-items:center; justify-content:center; position:relative; transition:.18s;
+    }
+    .slot.used{ opacity:.35 }
+    /* indikacije good/bad meko (bez ivice) */
+    .slot.good{ box-shadow:0 0 0 2px color-mix(in oklab, var(--good) 28%, transparent); }
+    .slot.bad { box-shadow:0 0 0 2px color-mix(in oklab, var(--bad) 28%, transparent); }
 
     .footer{ text-align:center; opacity:.55; font-size:12px; padding-bottom:10px }
 
@@ -110,9 +121,7 @@
     .ach-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
     .ach-pager{ display:flex; gap:8px; align-items:center; }
     .ach-grid{ display:grid; grid-template-columns:1fr; gap:8px; max-height:52vh; overflow:auto; padding-right:4px; }
-    .ach-card{
-      background:rgba(15,20,32,.75); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px;
-    }
+    .ach-card{ background:rgba(15,20,32,.75); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; }
     .ach-card.done{ opacity:.6; }
     .ach-card h4{ margin:0 0 6px 0; font-size:14px; }
     .ach-card .meta{ display:flex; gap:10px; align-items:center; font-size:12px; opacity:.8; }
@@ -290,4 +299,4 @@
   <!-- JS -->
   <script src="script.js"></script>
 </body>
-  </html>
+</html>
