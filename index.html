@@ -268,7 +268,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   (function(){
 'use strict';
 
-/* DOM short-hands (kao pre) */
+/* DOM */
 const canvas = document.getElementById('game');
 const ctx    = canvas.getContext('2d', {alpha:true});
 const fxCnv  = document.getElementById('fx');
@@ -343,10 +343,11 @@ const state = {
 
 const stats = loadStats() || { totalScore:0, blocksPlaced:0, linesCleared:0, externalAds:0, themesUnlocked:0, skinsUnlocked:0 };
 
-/* TEME + SKINOVI: dodati starter varijante */
+/* TEME – Aurora(t00), Aurora+(t01) ostavljene “pojačane”.
+   Ostale vraćene na “malopre” stil: neutral base + 2 meka blob-a, bez traka. */
 const THEMES = [
-  { id:'t00', name:'Starter Aurora', accent:'#2ec5ff', palette:'starterAurora' }, // tiši
-  { id:'t01', name:'Aurora Blue+',  accent:'#35d7ff', palette:'auroraPlus'     }, // življi, gold rim
+  { id:'t00', name:'Starter Aurora', accent:'#2ec5ff', palette:'starterAurora' },
+  { id:'t01', name:'Aurora Blue+',  accent:'#35d7ff', palette:'auroraPlus'     },
   { id:'t02', name:'Sunset Bloom',  accent:'#ffb86c', palette:'sunset' },
   { id:'t03', name:'Noir Gold',     accent:'#d4af37', palette:'noirGold' },
   { id:'t04', name:'Neon Drift',    accent:'#00ffd9', palette:'neon' },
@@ -357,6 +358,8 @@ const THEMES = [
   { id:'t09', name:'Desert Dune',   accent:'#d7a257', palette:'desert' },
   { id:'t10', name:'Crimson Pulse', accent:'#ff6b6b', palette:'crimson' }
 ];
+
+/* SKINOVI – pojačane razlike (nema “svi mat”) */
 const SKINS = [
   { id:'s00', name:'Starter Classic', style:'metal' },
   { id:'s01', name:'Glass Lux',      style:'glass' },
@@ -374,11 +377,11 @@ const SKINS = [
 const applied = loadApplied() || { theme:'t00', skin:'s00' };
 applyAccentFromTheme(applied.theme);
 
-/* Achievements model kao ranije (skraćeno: kreacija/čuvanje) */
+/* Ach model */
 const ach = loadAch() || createAchievementsModel(); 
 let achPage = 1;
 
-/* TEST unlock – ostavljeno kao ranije */
+/* TEST: unlock all (ostavljeno kao ranije) */
 const TEST_UNLOCK_ALL = true;
 if(TEST_UNLOCK_ALL){
   stats.themesUnlocked = THEMES.length;
@@ -392,33 +395,28 @@ function createGrid(n){ return Array.from({length:n},()=>Array(n).fill(0)); }
 function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v); }
 
-/* Aurora BG — razdvojen t00 (tiho) i t01 (življe + trake) */
+/* Aurora BG */
 function drawAurora(c,w,h){
   const pal = THEMES.find(x=>x.id===applied.theme)?.palette || 'starterAurora';
   c.save();
+  // base gradijent
   const base=c.createLinearGradient(0,0,w,h);
-  // pozadinski gradient (osnova)
   if(pal==='starterAurora'){
     base.addColorStop(0,'rgba(8,14,28,0.85)');
     base.addColorStop(1,'rgba(10,20,40,0.85)');
   }else if(pal==='auroraPlus'){
     base.addColorStop(0,'rgba(6,12,22,0.90)');
     base.addColorStop(1,'rgba(10,26,46,0.92)');
-  }else if(pal==='sunset'){ base.addColorStop(0,'rgba(38,14,10,0.90)'); base.addColorStop(1,'rgba(90,28,18,0.88)'); }
-  else if(pal==='noirGold'){ base.addColorStop(0,'rgba(8,8,10,0.92)'); base.addColorStop(1,'rgba(16,14,10,0.90)'); }
-  else if(pal==='ivory'){ base.addColorStop(0,'rgba(235,232,224,0.92)'); base.addColorStop(1,'rgba(214,208,198,0.90)'); }
-  else if(pal==='emerald'){ base.addColorStop(0,'rgba(8,22,18,0.90)'); base.addColorStop(1,'rgba(10,28,22,0.88)'); }
-  else if(pal==='royal'){ base.addColorStop(0,'rgba(16,10,28,0.92)'); base.addColorStop(1,'rgba(12,8,24,0.90)'); }
-  else if(pal==='ocean'){ base.addColorStop(0,'rgba(8,16,26,0.90)'); base.addColorStop(1,'rgba(8,22,32,0.90)'); }
-  else if(pal==='desert'){ base.addColorStop(0,'rgba(28,18,10,0.92)'); base.addColorStop(1,'rgba(42,26,12,0.90)'); }
-  else if(pal==='crimson'){ base.addColorStop(0,'rgba(20,6,8,0.92)'); base.addColorStop(1,'rgba(32,10,12,0.90)'); }
-  else if(pal==='neon'){ base.addColorStop(0,'rgba(6,12,16,0.92)'); base.addColorStop(1,'rgba(8,16,20,0.90)'); }
+  }else{
+    // “malopre” neutral base (tiši, bez oštrih prelaza)
+    base.addColorStop(0,'rgba(8,12,20,0.90)');
+    base.addColorStop(1,'rgba(10,18,28,0.90)');
+  }
   c.fillStyle=base; c.fillRect(0,0,w,h);
 
-  // mehki “blobovi” i trake
+  // blob helper
   c.globalCompositeOperation='screen';
   function blob(cx,cy,r,color,a1=0.40,a0=0){ const g=c.createRadialGradient(cx,cy,10,cx,cy,r); g.addColorStop(0,`rgba(${color},${a1})`); g.addColorStop(1,`rgba(${color},${a0})`); c.fillStyle=g; c.fillRect(0,0,w,h); }
-  function streak(x1,y1,x2,y2,wid,a){ c.save(); c.translate(x1,y1); c.rotate(Math.atan2(y2-y1,x2-x1)); const g=c.createLinearGradient(0,-wid,0,wid); g.addColorStop(0,`rgba(255,255,255,0)`); g.addColorStop(0.5,`rgba(255,255,255,${a})`); g.addColorStop(1,`rgba(255,255,255,0)`); c.fillStyle=g; c.fillRect(0,-wid, Math.hypot(x2-x1,y2-y1), wid*2); c.restore(); }
 
   if(pal==='starterAurora'){
     blob(w*.34,h*.42,Math.max(w,h)*.75,'60,140,255',0.38);
@@ -426,18 +424,33 @@ function drawAurora(c,w,h){
     blob(w*.28,h*.36,Math.max(w,h)*.85,'60,160,255',0.52);
     blob(w*.72,h*.70,Math.max(w,h)*.95,'0,220,255',0.42);
     blob(w*.18,h*.86,Math.max(w,h)*.65,'120,80,255',0.38);
-    // trake
+    // par diskretnih “traka svetla”
+    c.save();
+    function streak(x1,y1,x2,y2,wid,a){ c.save(); c.translate(x1,y1); c.rotate(Math.atan2(y2-y1,x2-x1)); const g=c.createLinearGradient(0,-wid,0,wid); g.addColorStop(0,`rgba(255,255,255,0)`); g.addColorStop(0.5,`rgba(255,255,255,${a})`); g.addColorStop(1,`rgba(255,255,255,0)`); c.fillStyle=g; c.fillRect(0,-wid, Math.hypot(x2-x1,y2-y1), wid*2); c.restore(); }
     streak(w*.15,h*.25,w*.85,h*.45, 40, 0.18);
     streak(w*.10,h*.70,w*.90,h*.85, 36, 0.14);
+    c.restore();
   }else{
-    // ostale palete kao pre (par blobova je dovoljno)
-    blob(w*.3,h*.35,Math.max(w,h)*.8,'60,140,255',0.45);
-    blob(w*.75,h*.7,Math.max(w,h)*.9,'0,220,255',0.35);
+    // OSTALI – vraćeni na staro (dva meka blob-a, različite boje po temi)
+    const map = {
+      sunset:  ['255,120,80','255,190,120'],
+      noirGold:['212,175,55','255,220,120'],
+      neon:    ['0,255,217','80,140,255'],
+      ivory:   ['255,245,225','220,210,190'],
+      emerald: ['80,220,180','120,255,210'],
+      royal:   ['150,120,255','220,180,255'],
+      ocean:   ['60,150,255','0,220,255'],
+      desert:  ['215,162,87','255,210,140'],
+      crimson: ['255,80,110','255,140,160']
+    };
+    const [c1,c2] = map[pal] || ['60,150,255','0,220,255'];
+    blob(w*.30,h*.35,Math.max(w,h)*.80, c1, 0.40);
+    blob(w*.75,h*.72,Math.max(w,h)*.90, c2, 0.32);
   }
   c.restore();
 }
 
-/* kontinuirano crtanje bg */
+/* petlja pozadine */
 (function loopBG(){
   const b=bg.getContext('2d');
   b.setTransform(1,0,0,1,0,0); b.scale(DPR,DPR);
@@ -446,7 +459,7 @@ function drawAurora(c,w,h){
   requestAnimationFrame(loopBG);
 })();
 
-/* Shapes i komadi (kao pre) */
+/* Shapes */
 const SHAPES=(function(){
   const raw=[
     [[0,0]],
@@ -484,7 +497,7 @@ function canFitAnywhere(piece){
 }
 function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-/* GRID panel + overlay; posebna ivica ako je auroraPlus */
+/* GRID panel + overlay */
 function isAuroraPlus(){ return applied.theme==='t01'; }
 function drawPanelAndGridOverlay(c, W, H, s){
   c.save();
@@ -506,7 +519,7 @@ function drawPanelAndGridOverlay(c, W, H, s){
   c.restore();
 }
 
-/* --- SKIN PATTERN ENGINE --- */
+/* --- SKIN PATTERN ENGINE (pojačano) --- */
 const patternCache = new Map();
 function makePatternCanvas(drawFn, size=24){
   const key = drawFn.name + ':' + size;
@@ -521,62 +534,60 @@ function makePatternCanvas(drawFn, size=24){
   return pat;
 }
 
-/* pojedinačni motivi */
+/* motivi (pojačani kontrasti/oblici) */
 function patGlass(g,s){
-  g.strokeStyle='rgba(255,255,255,0.14)'; g.lineWidth=0.8;
-  g.beginPath(); g.moveTo(0, s*0.25); g.lineTo(s, 0); g.stroke();
-  g.beginPath(); g.moveTo(0, s*0.6); g.lineTo(s, s*0.35); g.stroke();
+  g.strokeStyle='rgba(255,255,255,0.18)'; g.lineWidth=0.9;
+  g.beginPath(); g.moveTo(0, s*0.22); g.lineTo(s, 0); g.stroke();
+  g.beginPath(); g.moveTo(0, s*0.62); g.lineTo(s, s*0.38); g.stroke();
 }
 function patBrushed(g,s){
-  g.strokeStyle='rgba(255,255,255,0.08)'; g.lineWidth=0.8;
+  g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=0.9;
   for(let x=0;x<s;x+=3){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,s); g.stroke(); }
 }
 function patFacet(g,s){
-  g.strokeStyle='rgba(255,255,255,0.12)'; g.lineWidth=1.0;
+  g.strokeStyle='rgba(255,255,255,0.16)'; g.lineWidth=1.0;
   g.beginPath(); g.moveTo(0,0); g.lineTo(s,s); g.stroke();
   g.beginPath(); g.moveTo(s*0.2,0); g.lineTo(s, s*0.8); g.stroke();
   g.beginPath(); g.moveTo(0, s*0.3); g.lineTo(s*0.7, s); g.stroke();
 }
 function patSatin(g,s){
-  g.strokeStyle='rgba(255,255,255,0.08)'; g.lineWidth=1.2;
-  g.beginPath(); g.moveTo(0,s*0.3); g.bezierCurveTo(s*0.3,s*0.2, s*0.6,s*0.5, s,s*0.4); g.stroke();
+  g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=1.2;
+  g.beginPath(); g.moveTo(0,s*0.3); g.bezierCurveTo(s*0.3,s*0.2, s*0.6,s*0.5, s,s*0.42); g.stroke();
 }
 function patChrome(g,s){
-  const grd=g.createLinearGradient(0,s*0.3,0,s*0.7);
-  grd.addColorStop(0,'rgba(255,255,255,0.40)');
+  const grd=g.createLinearGradient(0,s*0.28,0,s*0.72);
+  grd.addColorStop(0,'rgba(255,255,255,0.45)');
   grd.addColorStop(0.5,'rgba(255,255,255,0.00)');
-  grd.addColorStop(1,'rgba(255,255,255,0.40)');
+  grd.addColorStop(1,'rgba(255,255,255,0.45)');
   g.fillStyle=grd; g.fillRect(0,0,s,s);
 }
 function patSpeckle(g,s){
-  g.fillStyle='rgba(255,255,255,0.06)';
-  for(let i=0;i<Math.floor(s*0.8);i++){ g.fillRect(Math.random()*s, Math.random()*s, 1,1); }
+  g.fillStyle='rgba(255,255,255,0.08)';
+  for(let i=0;i<Math.floor(s*1.0);i++){ g.fillRect(Math.random()*s, Math.random()*s, 1,1); }
 }
 function patWeave(g,s){
-  g.strokeStyle='rgba(255,255,255,0.06)'; g.lineWidth=1;
+  g.strokeStyle='rgba(255,255,255,0.08)'; g.lineWidth=1;
   for(let x=0;x<s;x+=4){ g.beginPath(); g.moveTo(x,0); g.lineTo(x+2,s); g.stroke(); }
   for(let y=0;y<s;y+=4){ g.beginPath(); g.moveTo(0,y); g.lineTo(s,y+2); g.stroke(); }
 }
 function patCrackle(g,s){
-  g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=0.8;
+  g.strokeStyle='rgba(255,255,255,0.12)'; g.lineWidth=0.8;
   for(let i=0;i<3;i++){
     g.beginPath();
     g.moveTo(Math.random()*s, Math.random()*s);
-    for(let k=0;k<3;k++){
-      g.lineTo(Math.random()*s, Math.random()*s);
-    }
+    for(let k=0;k<3;k++){ g.lineTo(Math.random()*s, Math.random()*s); }
     g.stroke();
   }
 }
 function patBubbles(g,s){
-  g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=0.8;
+  g.strokeStyle='rgba(255,255,255,0.12)'; g.lineWidth=0.8;
   for(let i=0;i<3;i++){
     const r=2+Math.random()*3, x=Math.random()*s, y=Math.random()*s;
     g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.stroke();
   }
 }
 function patVeins(g,s){
-  g.strokeStyle='rgba(255,255,255,0.12)'; g.lineWidth=1.0;
+  g.strokeStyle='rgba(255,255,255,0.16)'; g.lineWidth=1.0;
   for(let i=0;i<2;i++){
     g.beginPath();
     g.moveTo(0, Math.random()*s);
@@ -584,8 +595,6 @@ function patVeins(g,s){
     g.stroke();
   }
 }
-
-/* mapiranje skin→pattern */
 function getSkinPattern(style){
   switch(style){
     case 'glass':     return makePatternCanvas(patGlass, 28);
@@ -601,8 +610,6 @@ function getSkinPattern(style){
     default:          return null;
   }
 }
-
-/* Blok stilovi (osnova kao ranije, + overlay pattern sloj) */
 function shade(hex, amt){
   const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if(!m) return hex;
@@ -612,134 +619,118 @@ function shade(hex, amt){
 }
 function currentSkinStyle(){ return SKINS.find(s=>s.id===applied.skin)?.style || 'metal'; }
 
+/* Blokovi – naglašene razlike po skinu (sjaj, rim, pattern) */
 function drawBlockStyle(c, x, y, s, baseHex, style, {placed=false}={}){
   const R=Math.max(6, s*.22);
 
-  // telo (kao ranije + sitna podešavanja)
+  const drawRim=(alpha=0.30,color='rgba(0,0,0,.30)', wMul=0.05)=>{
+    rr(c,x+1,y+1,s-2,s-2,R);
+    c.lineWidth=Math.max(1, s*wMul);
+    c.strokeStyle=color; c.globalAlpha=alpha; c.stroke(); c.globalAlpha=1;
+  };
+  const glint=(ox,oy,rad,a=0.35)=>{
+    const g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad);
+    g.addColorStop(0,`rgba(255,255,255,${a})`);
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    c.fillStyle=g; rr(c,x+1,y+1,s-2,s-2,R); c.fill();
+  };
+
   if(style==='glass'){
     const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, 'rgba(255,255,255,0.28)');
-    body.addColorStop(0.4, baseHex);
+    body.addColorStop(0, 'rgba(255,255,255,0.30)');
+    body.addColorStop(0.35, baseHex);
     body.addColorStop(1, shade(baseHex, -22));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-
-    // pattern
-    const pat = getSkinPattern('glass');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.3; c.fill(); c.restore(); }
-
-    // rim
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.06); c.strokeStyle='rgba(0,0,0,.28)'; c.stroke();
+    const pat=getSkinPattern('glass'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.32; c.fill(); c.restore(); }
+    drawRim(0.35,'rgba(0,0,0,.35)',0.06);
+    glint(s*0.25, s*0.22, s*0.46, 0.28);
 
   }else if(style==='metal'){
     const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 12));
-    body.addColorStop(1, shade(baseHex, -24));
+    body.addColorStop(0, shade(baseHex, 14));
+    body.addColorStop(1, shade(baseHex, -26));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-
-    const pat = getSkinPattern('metal');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.5; c.fill(); c.restore(); }
-
-    rr(c,x+2,y+2,s-4,s-4,R-3); c.strokeStyle='rgba(255,255,255,.10)'; c.lineWidth=1; c.stroke();
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.05); c.strokeStyle='rgba(0,0,0,.35)'; c.stroke();
+    const pat=getSkinPattern('metal'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.55; c.fill(); c.restore(); }
+    drawRim(0.28,'rgba(0,0,0,.40)',0.06);
+    rr(c,x+2,y+2,s-4,s-4,R-3); c.strokeStyle='rgba(255,255,255,.12)'; c.lineWidth=1; c.stroke();
 
   }else if(style==='gem'){
     const body=c.createLinearGradient(x, y, x+s, y+s);
-    body.addColorStop(0, shade(baseHex, 28));
+    body.addColorStop(0, shade(baseHex, 30));
     body.addColorStop(0.5, baseHex);
-    body.addColorStop(1, shade(baseHex, -28));
+    body.addColorStop(1, shade(baseHex, -30));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-
-    const pat = getSkinPattern('gem');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.35; c.fill(); c.restore(); }
-
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.05); c.strokeStyle='rgba(0,0,0,.35)'; c.stroke();
+    const pat=getSkinPattern('gem'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.38; c.fill(); c.restore(); }
+    drawRim(0.34,'rgba(0,0,0,.38)',0.06);
 
   }else if(style==='satin'){
     const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 10));
+    body.addColorStop(0, shade(baseHex, 12));
     body.addColorStop(0.5, baseHex);
-    body.addColorStop(1, shade(baseHex, -10));
+    body.addColorStop(1, shade(baseHex, -12));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-
-    const pat = getSkinPattern('satin');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.25; c.fill(); c.restore(); }
-
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.05); c.strokeStyle='rgba(0,0,0,.25)'; c.stroke();
+    const pat=getSkinPattern('satin'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.26; c.fill(); c.restore(); }
+    drawRim(0.25,'rgba(0,0,0,.28)',0.05);
 
   }else if(style==='chrome'){
     const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, 'rgba(255,255,255,.6)');
-    body.addColorStop(0.2, shade(baseHex, 30));
-    body.addColorStop(0.5, shade(baseHex, -20));
-    body.addColorStop(0.8, shade(baseHex, 25));
-    body.addColorStop(1, 'rgba(255,255,255,.45)');
+    body.addColorStop(0, 'rgba(255,255,255,.65)');
+    body.addColorStop(0.2, shade(baseHex, 28));
+    body.addColorStop(0.5, shade(baseHex, -22));
+    body.addColorStop(0.8, shade(baseHex, 24));
+    body.addColorStop(1, 'rgba(255,255,255,.48)');
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-
-    const pat = getSkinPattern('chrome');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.35; c.fill(); c.restore(); }
-
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.05); c.strokeStyle='rgba(0,0,0,.3)'; c.stroke();
+    const pat=getSkinPattern('chrome'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.38; c.fill(); c.restore(); }
+    drawRim(0.36,'rgba(0,0,0,.34)',0.06);
+    glint(s*0.5, s*0.25, s*0.55, 0.24);
 
   }else if(style==='porcelain'){
     const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 8));
-    body.addColorStop(1, shade(baseHex, -8));
+    body.addColorStop(0, shade(baseHex, 10));
+    body.addColorStop(1, shade(baseHex, -10));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-
-    const pat = getSkinPattern('porcelain');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.22; c.fill(); c.restore(); }
-
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.04); c.strokeStyle='rgba(0,0,0,.18)'; c.stroke();
+    const pat=getSkinPattern('porcelain'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.24; c.fill(); c.restore(); }
+    drawRim(0.22,'rgba(0,0,0,.22)',0.045);
 
   }else if(style==='carbon'){
     const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 6));
-    body.addColorStop(1, shade(baseHex, -14));
+    body.addColorStop(0, shade(baseHex, 8));
+    body.addColorStop(1, shade(baseHex, -18));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-
-    const pat = getSkinPattern('carbon');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.35; c.fill(); c.restore(); }
-
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.05); c.strokeStyle='rgba(0,0,0,.35)'; c.stroke();
+    const pat=getSkinPattern('carbon'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.42; c.fill(); c.restore(); }
+    drawRim(0.32,'rgba(0,0,0,.40)',0.06);
 
   }else if(style==='frost'){
     const body=c.createLinearGradient(x, y, x, y+s);
     body.addColorStop(0, shade(baseHex, 18));
     body.addColorStop(1, shade(baseHex, -26));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-
-    const pat = getSkinPattern('frost');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.22; c.fill(); c.restore(); }
-
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.05); c.strokeStyle='rgba(0,0,0,.32)'; c.stroke();
+    const pat=getSkinPattern('frost'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.26; c.fill(); c.restore(); }
+    drawRim(0.30,'rgba(0,0,0,.32)',0.055);
 
   }else if(style==='velvet'){
     const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 14));
-    body.addColorStop(1, shade(baseHex, -14));
-    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-
-    const pat = getSkinPattern('velvet');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.18; c.fill(); c.restore(); }
-
-    // bez jakog rima
-  }else if(style==='marble'){
-    const body=c.createLinearGradient(x, y, x, y+s);
-    body.addColorStop(0, shade(baseHex, 6));
+    body.addColorStop(0, shade(baseHex, 16));
     body.addColorStop(1, shade(baseHex, -16));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
+    const pat=getSkinPattern('velvet'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.22; c.fill(); c.restore(); }
+    // bez jakog rima za baršun
 
-    const pat = getSkinPattern('marble');
-    if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.25; c.fill(); c.restore(); }
+  }else if(style==='marble'){
+    const body=c.createLinearGradient(x, y, x, y+s);
+    body.addColorStop(0, shade(baseHex, 8));
+    body.addColorStop(1, shade(baseHex, -16));
+    rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
+    const pat=getSkinPattern('marble'); if(pat){ c.save(); rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=pat; c.globalAlpha=0.28; c.fill(); c.restore(); }
+    drawRim(0.30,'rgba(0,0,0,.30)',0.055);
 
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.05); c.strokeStyle='rgba(0,0,0,.30)'; c.stroke();
   }else{
     // fallback
     const body=c.createLinearGradient(x, y, x, y+s);
     body.addColorStop(0, baseHex);
     body.addColorStop(1, shade(baseHex, -18));
     rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
-    rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.06); c.strokeStyle='rgba(0,0,0,.28)'; c.stroke();
+    drawRim(0.28,'rgba(0,0,0,.30)',0.06);
   }
 
   if(placed){
@@ -749,6 +740,7 @@ function drawBlockStyle(c, x, y, s, baseHex, style, {placed=false}={}){
     c.stroke();
   }
 }
+
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
@@ -773,7 +765,7 @@ function renderTray(){
   });
 }
 
-/* Scoring (kao pre) */
+/* Scoring */
 const SCORE_CFG = { perBlock: 8, lineBase: 300, comboStep: 0.3, levelStep: 0.05 };
 function levelMultiplier(){ return 1 + (state.level - 1) * SCORE_CFG.levelStep; }
 function scoreForClear(lines){
@@ -782,7 +774,7 @@ function scoreForClear(lines){
   return Math.round(SCORE_CFG.lineBase * lines * combo * levelMultiplier());
 }
 
-/* Obstacles (kao pre, skraćeno) */
+/* Obstacles */
 const LEVELS_MAX = 100;
 const LEVEL_STEP_SCORE = 10000;
 function obstaclesForLevel(lvl){ const maxCells = BOARD*BOARD; return Math.min(Math.round(3 + lvl*1.2), Math.round(maxCells*0.15)); }
@@ -825,7 +817,7 @@ function draw(){
   }
 }
 
-/* FX – partikule variraju po skinu */
+/* FX */
 const particles=[];
 function spawnParticles(cells){
   const s=state.cell,d=DPR, style=currentSkinStyle();
@@ -863,7 +855,7 @@ function stepFX(){
   requestAnimationFrame(stepFX);
 } requestAnimationFrame(stepFX);
 
-/* Place / Refill / Game over (isto ponašanje) */
+/* Place / Refill / Game over */
 function place(piece,gx,gy){
   const placedBlocks = piece.blocks.length;
   for(const [dx,dy] of piece.blocks) state.grid[gy+dy][gx+dx]=1;
@@ -900,7 +892,7 @@ function place(piece,gx,gy){
 }
 function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
-/* Drag — “iznad prsta” već namješteno */
+/* Drag */
 const POINTER={active:false,fromSlotIndex:null};
 function getCanvasPos(e){ const r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; }
 function startDragFromSlot(e){
@@ -968,7 +960,7 @@ goMenu.addEventListener('click', ()=>{ gameOver.style.display='none'; goHome(); 
 startClassic.addEventListener('click', ()=> startGame('classic'));
 startObstacles.addEventListener('click', ()=> startGame('obstacles'));
 
-/* Achievements/Kolekcija – UI switching (kao ranije) */
+/* Achievements/Kolekcija */
 function openAchievementsTab(){
   tabAchievements.classList.add('active');
   tabCollection.classList.remove('active');
@@ -1047,7 +1039,7 @@ addEventListener('resize', sizeToScreen, {passive:true});
 sizeToScreen();
 if(!startClassic){ start.style.display='none'; app.style.display='flex'; newGame('classic'); }
 
-/* Achievements motor (kao ranije, skraćeno) */
+/* Ach motor (skraćeno) */
 const TARGETS = { blocks: (i)=> 300*i, lines:  (i)=> 40*i, score:  (i)=> 50000*i };
 function createAchievementsModel(){
   const list=[];
