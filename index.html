@@ -6,7 +6,7 @@
 <title>Block Puzzle 8×8 — Classic & Obstacles (Levels)</title>
 <style>
 :root{
-  --bg:#0a0f1a; --text:#e8ecf1; --muted:#a6afc3; --accent:#2ec5ff; /* akcenat grida */
+  --bg:#0a0f1a; --text:#e8ecf1; --muted:#a6afc3; --accent:#2ec5ff;
   --panel: rgba(14,18,28,.45);
   --grid-border: rgba(255,255,255,.10);
   --gold:#d4af37;
@@ -45,25 +45,19 @@ button:focus, .btn:focus, .icon-btn:focus{ outline:none; }
 *:focus{ outline:none; }
 
 /* Neaktivno dugme kroz aria-disabled */
-.btn[aria-disabled="true"]{
-  opacity:.5; filter:saturate(.2); cursor:not-allowed;
-}
+.btn[aria-disabled="true"]{ opacity:.5; filter:saturate(.2); cursor:not-allowed; }
 
 /* Board */
 .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:8px 16px 0; position:relative; }
 canvas{ touch-action:none; border-radius:18px; display:block; }
 
-/* Canvasi – slojevi: aurora ispod, igra iznad */
-#bg{
-  position:fixed; inset:0; width:100%; height:100%;
-  pointer-events:none; z-index:0;
-}
+/* Canvasi */
+#bg{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:0; }
 #game{ position:relative; z-index:2; }
 #fx{ position:absolute; inset:0; z-index:3; pointer-events:none; }
 
 .tray{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; padding:12px 16px 18px; }
-.slot{ background:#0c1422; border:1px dashed #1f2a3a; border-radius:16px; min-height:96px;
-  display:flex; align-items:center; justify-content:center; position:relative; transition:border-color .18s, box-shadow .18s, opacity .18s; }
+.slot{ background:#0c1422; border:1px dashed #1f2a3a; border-radius:16px; min-height:96px; display:flex; align-items:center; justify-content:center; position:relative; transition:border-color .18s, box-shadow .18s, opacity .18s; }
 .slot.used{ opacity:.3 }
 .slot.good{ border-color:#57c857; box-shadow:0 0 0 2px color-mix(in oklab, #57c857 40%, transparent); }
 .slot.bad { border-color:#e06b6b; box-shadow:0 0 0 2px color-mix(in oklab, #e06b6b 40%, transparent); }
@@ -113,10 +107,8 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 .milestone{ border-color: var(--gold); }
 .milestone h4{ color: var(--gold); }
 
-/* COMPLETED ACHIEVEMENT – vizuelno različito */
-.ach-card.done{
-  opacity:.45; filter:saturate(.2); cursor:default;
-}
+/* COMPLETED ACHIEVEMENT */
+.ach-card.done{ opacity:.45; filter:saturate(.2); cursor:default; }
 .ach-card.done .progress > i{ background:linear-gradient(90deg, var(--good), #7ef2b5); }
 .ach-card.done::after{
   content:'✓'; position:absolute; right:8px; top:8px;
@@ -125,7 +117,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   box-shadow:0 4px 12px rgba(0,0,0,.4);
 }
 
-/* Milestone box je ISPOD liste (na dnu) */
+/* Milestone box */
 .milestone-box{ margin-top:10px; }
 .ach-controls{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap; }
 .small{ font-size:12px; opacity:.85; }
@@ -153,10 +145,8 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 </style>
 </head>
 <body>
-  <!-- GLOBAL AURORA (plava) -->
   <canvas id="bg"></canvas>
 
-  <!-- START -->
   <div id="startScreen" class="start">
     <div class="ss-inner">
       <div class="top-icons">
@@ -171,7 +161,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     </div>
   </div>
 
-  <!-- APP -->
   <div class="wrap" id="app" style="display:none">
     <header>
       <div class="brand">BLOCK • 8×8</div>
@@ -193,7 +182,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     <div class="footer">Blue • Aurora • 8×8 • Drag above finger</div>
   </div>
 
-  <!-- SETTINGS -->
   <div id="settingsModal" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
@@ -206,7 +194,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     </div>
   </div>
 
-  <!-- ACHIEVEMENTS + KOLEKCIJA -->
   <div id="achievementsModal" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
@@ -215,7 +202,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
         <div id="tabCollection"   class="tab">Kolekcija</div>
       </div>
 
-      <!-- View: Dostignuća -->
       <div id="achView">
         <div class="ach-header">
           <h3>🏆 Dostignuća</h3>
@@ -228,7 +214,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
         <div class="ach-grid" id="achList"></div>
 
-        <!-- Milestone na dnu -->
         <div id="milestoneBox" class="ach-card milestone milestone-box">
           <h4 id="msTitle">Milestone 50</h4>
           <div class="small" id="msDesc">🎁 Nagrada: nova tema/skin</div>
@@ -246,7 +231,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
         </div>
       </div>
 
-      <!-- View: Kolekcija (10 tema + 10 skinova) -->
       <div id="collectionView">
         <h3>🎨 Kolekcija (Teme & Skinovi)</h3>
 
@@ -268,7 +252,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     </div>
   </div>
 
-  <!-- GAME OVER -->
   <div id="gameOver" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
@@ -285,9 +268,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   (function(){
   'use strict';
 
-  /* =====================
-     DOM & OSNOVA
-  ====================== */
+  /* DOM */
   const canvas = document.getElementById('game');
   const ctx    = canvas.getContext('2d', {alpha:true});
   const fxCnv  = document.getElementById('fx');
@@ -311,7 +292,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   const runTestsBtn   = document.getElementById('runTests');
   const achBtn   = document.getElementById('achBtn');
 
-  // Achievements modal refs
   const achievementsModal = document.getElementById('achievementsModal');
   const tabAchievements = document.getElementById('tabAchievements');
   const tabCollection   = document.getElementById('tabCollection');
@@ -365,10 +345,11 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
   const stats = loadStats() || { totalScore:0, blocksPlaced:0, linesCleared:0, externalAds:0, themesUnlocked:0, skinsUnlocked:0 };
 
-  /* ===========================
-     Teme & skinovi (10 + 10)
-     =========================== */
+  /* TEME & SKINOVI
+     Dodati STARTER (t00/s00) + default applied = t00/s00
+  */
   const THEMES = [
+    { id:'t00', name:'Starter Aurora', accent:'#2ec5ff', palette:'auroraBlue' },  // start tema (uvek dostupna)
     { id:'t01', name:'Aurora Blue+',  accent:'#2ec5ff', palette:'auroraBlue' },
     { id:'t02', name:'Sunset Bloom',  accent:'#ffb86c', palette:'sunset' },
     { id:'t03', name:'Noir Gold',     accent:'#d4af37', palette:'noirGold' },
@@ -381,6 +362,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     { id:'t10', name:'Crimson Pulse', accent:'#ff6b6b', palette:'crimson' }
   ];
   const SKINS = [
+    { id:'s00', name:'Starter Classic', style:'metal' }, // start skin (uvek dostupan)
     { id:'s01', name:'Glass Lux',      style:'glass' },
     { id:'s02', name:'Metallic Matte', style:'metal' },
     { id:'s03', name:'Gem Cut',        style:'gem' },
@@ -393,25 +375,32 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     { id:'s10', name:'Stone Marble',   style:'marble' }
   ];
 
-  // Primena (persist)
-  const applied = loadApplied() || { theme:'t01', skin:'s02' }; // default
+  // default primenjeni: starter
+  const applied = loadApplied() || { theme:'t00', skin:'s00' };
   applyAccentFromTheme(applied.theme);
 
-  /* ===== Achievements (1000) + milestone ===== */
+  /* Achievements (1000) + milestone */
   const ach = loadAch() || createAchievementsModel(); 
   let achPage = 1;
 
-  // ==== Utils
+  // === TEST: otključaj sve u kolekciji (dok testiraš)
+  const TEST_UNLOCK_ALL = true;
+  if(TEST_UNLOCK_ALL){
+    stats.themesUnlocked = THEMES.length;
+    stats.skinsUnlocked  = SKINS.length;
+    saveStats(stats);
+  }
+
+  /* Utils */
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   function createGrid(n){ return Array.from({length:n},()=>Array(n).fill(0)); }
   function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
   function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
 
-  /* AURORA — varijante po temi */
+  /* Aurora pozadina */
   function drawAurora(c,w,h){
     const t = THEMES.find(x=>x.id===applied.theme)?.palette || 'auroraBlue';
     c.save();
-    // osnovna pozadina
     const base=c.createLinearGradient(0,0,w,h);
     if(t==='sunset'){ base.addColorStop(0,'rgba(38,14,10,0.90)'); base.addColorStop(1,'rgba(90,28,18,0.88)'); }
     else if(t==='noirGold'){ base.addColorStop(0,'rgba(8,8,10,0.92)'); base.addColorStop(1,'rgba(16,14,10,0.90)'); }
@@ -425,7 +414,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     else { base.addColorStop(0,'rgba(8,14,28,0.85)'); base.addColorStop(1,'rgba(10,20,40,0.85)'); }
     c.fillStyle=base; c.fillRect(0,0,w,h);
 
-    // glow slojevi
     c.globalCompositeOperation='screen';
     function blob(cx,cy,r,color1,a1=0.45,a0=0){ const g=c.createRadialGradient(cx,cy,10,cx,cy,r); g.addColorStop(0,`rgba(${color1},${a1})`); g.addColorStop(1,`rgba(${color1},${a0})`); c.fillStyle=g; c.fillRect(0,0,w,h); }
     if(t==='sunset'){ blob(w*.3,h*.35,Math.max(w,h)*.8,'255,120,60',0.45); blob(w*.75,h*.7,Math.max(w,h)*.9,'255,60,100',0.35); }
@@ -448,7 +436,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     requestAnimationFrame(loopBG);
   })();
 
-  // Shapes (osnovni set)
+  /* Shapes */
   const SHAPES=(function(){
     const raw=[
       [[0,0]],
@@ -472,7 +460,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     return { blocks:s.blocks.map(b=>[b[0],b[1]]), w:s.w, h:s.h, color:rndColor(), used:false, id:Math.random().toString(36).slice(2) };
   }
 
-  // Pravila
+  /* Rules */
   function canPlace(piece,gx,gy){
     for(const [dx,dy] of piece.blocks){
       const x=gx+dx, y=gy+dy;
@@ -486,7 +474,9 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   }
   function anyFits(){ return state.hand.some(p=>!p.used && canFitAnywhere(p)); }
 
-  /* Grid (konture) */
+  /* Grid crtanje */
+  function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+  function getCss(v){ return getComputedStyle(document.body).getPropertyValue(v); }
   function drawPanelAndGridOverlay(c, W, H, s){
     c.save();
     c.lineWidth=1;
@@ -498,15 +488,23 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
         c.stroke();
       }
     }
-    const gold = getCss('--accent') || '#2ec5ff';
+    const accent = getCss('--accent') || '#2ec5ff';
     c.lineWidth = Math.max(2, s*0.08);
-    c.strokeStyle = gold.trim() || '#2ec5ff';
+    c.strokeStyle = accent.trim() || '#2ec5ff';
     rr(c, 1.0, 1.0, W-2.0, H-2.0, 14);
     c.stroke();
     c.restore();
   }
 
-  /* BLOKOVI – stil po SKIN-u */
+  /* Blok stilovi */
+  function shade(hex, amt){
+    const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if(!m) return hex;
+    let [r,g,b]=[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)];
+    r=Math.max(0,Math.min(255,r+amt)); g=Math.max(0,Math.min(255,g+amt)); b=Math.max(0,Math.min(255,b+amt));
+    return `rgb(${r},${g},${b})`;
+  }
+  function currentSkinStyle(){ return SKINS.find(s=>s.id===applied.skin)?.style || 'metal'; }
   function drawBlockStyle(c, x, y, s, baseHex, style, {placed=false}={}){
     const R=Math.max(6, s*.22);
     if(style==='glass'){
@@ -566,7 +564,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       rr(c,x+1,y+1,s-2,s-2,R); c.fillStyle=body; c.fill();
       rr(c,x+1,y+1,s-2,s-2,R); c.lineWidth=Math.max(1, s*.06); c.strokeStyle='rgba(0,0,0,.28)'; c.stroke();
     }
-
     if(placed){
       rr(c,x+1.2,y+1.2,s-2.4,s-2.4,R-1);
       c.lineWidth=Math.max(1, s*.06);
@@ -574,18 +571,10 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       c.stroke();
     }
   }
-  function shade(hex, amt){
-    const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if(!m) return hex;
-    let [r,g,b]=[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)];
-    r=Math.max(0,Math.min(255,r+amt)); g=Math.max(0,Math.min(255,g+amt)); b=Math.max(0,Math.min(255,b+amt));
-    return `rgb(${r},${g},${b})`;
-  }
-  function currentSkinStyle(){ return SKINS.find(s=>s.id===applied.skin)?.style || 'metal'; }
   function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
   function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
-  // Tray
+  /* Tray */
   function drawPieceToCanvas(piece){
     const scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
     const c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -606,7 +595,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     });
   }
 
-  /* Bodovanje */
+  /* Scoring */
   const SCORE_CFG = { perBlock: 8, lineBase: 300, comboStep: 0.3, levelStep: 0.05 };
   function levelMultiplier(){ return 1 + (state.level - 1) * SCORE_CFG.levelStep; }
   function scoreForClear(lines){
@@ -615,7 +604,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     return Math.round(SCORE_CFG.lineBase * lines * combo * levelMultiplier());
   }
 
-  /* LEVELI (Obstacles) */
+  /* Obstacles levels */
   const LEVELS_MAX = 100;
   const LEVEL_STEP_SCORE = 10000;
   function obstaclesForLevel(lvl){
@@ -644,7 +633,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     }
   }
 
-  /* DRAW */
+  /* Draw */
   function draw(){
     const s=state.cell, W=s*BOARD, H=s*BOARD;
     ctx.setTransform(1,0,0,1,0,0);
@@ -657,12 +646,10 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       for(let x=0;x<BOARD;x++){
         const v=state.grid[y][x];
         const px=x*s, py=y*s;
-        if(v===1){
-          drawPlaced(ctx,px,py,s);
-        }else if(v===2){
+        if(v===1){ drawPlaced(ctx,px,py,s); }
+        else if(v===2){
           rr(ctx,px+1,py+1,s-2,s-2,9);
-          ctx.fillStyle=OBSTACLE_COLOR;
-          ctx.fill();
+          ctx.fillStyle=OBSTACLE_COLOR; ctx.fill();
         }
       }
     }
@@ -689,7 +676,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     requestAnimationFrame(stepFX);
   } requestAnimationFrame(stepFX);
 
-  /* PLACE */
+  /* Place */
   function place(piece,gx,gy){
     const placedBlocks = piece.blocks.length;
     for(const [dx,dy] of piece.blocks) state.grid[gy+dy][gx+dx]=1;
@@ -711,7 +698,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     state.score += gained;
     scoreEl.textContent=state.score;
 
-    // stats
     stats.totalScore += gained;
     stats.blocksPlaced += placedBlocks;
     stats.linesCleared += linesCleared;
@@ -719,7 +705,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
     if(state.score>(state.best[state.mode]||0)){ state.best[state.mode]=state.score; saveBest(state.best); bestEl.textContent=state.score; }
 
-    // achievements tick
     achievementsTick();
 
     piece.used=true; state.hand=state.hand.map(p=>p.id===piece.id? {...p,used:true}:p); renderTray();
@@ -731,10 +716,9 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     if(state.mode==='obstacles') checkLevelUp();
     requestDraw();
   }
-
   function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
-  /* DRAG */
+  /* Drag */
   const POINTER={active:false,fromSlotIndex:null};
   function getCanvasPos(e){ const r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; }
   function startDragFromSlot(e){
@@ -775,7 +759,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   addEventListener('pointercancel', onPointerCancel, {passive:true});
   addEventListener('lostpointercapture', onPointerCancel, {passive:true});
 
-  /* UI helpers */
+  /* Helpers */
   function showToast(msg){
     let t=document.getElementById('toast');
     if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
@@ -787,7 +771,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   function saveBest(b){ LS('bp8.best', JSON.stringify(b)); }
   function loadBest(){ const s=LS('bp8.best'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 
-  // Events – game
+  /* Events */
   resetBtn.addEventListener('click', ()=> newGame(state.mode));
   backBtn.addEventListener('click', ()=> goHome());
   settingsBtn.addEventListener('click', ()=> settingsModal.style.display='flex');
@@ -802,7 +786,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
   startClassic.addEventListener('click', ()=> startGame('classic'));
   startObstacles.addEventListener('click', ()=> startGame('obstacles'));
 
-  // Tabs u modalu
   function openAchievementsTab(){
     tabAchievements.classList.add('active');
     tabCollection.classList.remove('active');
@@ -816,8 +799,6 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     collectionView.style.display='block';
     renderCollection();
   }
-
-  // Events – achievements
   achBtn.addEventListener('click', ()=>{
     achievementsModal.style.display='flex';
     openAchievementsTab();
@@ -854,7 +835,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     claimMilestoneReward();
   });
 
-  // Flow
+  /* Flow */
   function startGame(mode){
     state.mode=mode||'classic';
     start.style.display='none'; app.style.display='flex';
@@ -878,7 +859,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     requestDraw();
   }
 
-  // Resize
+  /* Resize */
   function sizeToScreen(){
     const headerH=document.querySelector('header')?.offsetHeight||60;
     const trayH  =trayEl?.offsetHeight||120;
@@ -894,23 +875,16 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     state.cell=cell; bg.width=Math.floor(innerWidth*DPR); bg.height=Math.floor(innerHeight*DPR); requestDraw();
   }
   let drawQueued=false; function requestDraw(){ if(!drawQueued){ drawQueued=true; requestAnimationFrame(()=>{ drawQueued=false; draw(); }); } }
-
   addEventListener('resize', sizeToScreen, {passive:true});
   sizeToScreen();
-
   if(!startClassic){ start.style.display='none'; app.style.display='flex'; newGame('classic'); }
 
-  /* ==============================
-      DOSTIGNUĆA + REKLAME 80/20
-     ============================== */
-
-  // EXTREME ciljevi
+  /* Achievements hardcore ciljevi */
   const TARGETS = {
     blocks: (i)=> 300*i,
     lines:  (i)=> 40*i,
     score:  (i)=> 50000*i
   };
-
   function createAchievementsModel(){
     const list=[];
     for(let i=1;i<=1000;i++){
@@ -937,17 +911,12 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     const model = { list, currentMilestoneIndex: findFirstOpenMilestoneIndex(list) };
     saveAch(model); return model;
   }
-
   function findFirstOpenMilestoneIndex(list){
     for(let i=0;i<list.length;i++){ const a=list[i]; if(a.milestone && !(a.milestone.claimed)) return i; }
     return -1;
   }
-
-  // Mapiranje indeksa → blok (1..20), i opseg bloka
   function indexToBlock(idx){ return Math.max(1, Math.ceil((idx+1)/50)); }
-  function blockRange(block){ const start=(block-1)*50; const end=block*50-1; return {start,end}; } // end = milestone
-
-  // Blok progres 0..50
+  function blockRange(block){ const start=(block-1)*50; const end=block*50-1; return {start,end}; }
   function blockProgress50(block){
     const {start,end}=blockRange(block);
     let done=0;
@@ -957,23 +926,24 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     return {done, total: 50};
   }
 
-  // Koji skin/tema ide na dati milestone
+  /* Nagrada: preskačemo STARTER (t00/s00) u milestone dodelama */
   function rewardNameForMilestone(milestoneId){
     const slot = milestoneId / 50; // 1..20
+    const themePool = THEMES.slice(1); // bez t00
+    const skinPool  = SKINS.slice(1);  // bez s00
     if(milestoneId % 100 === 0){
-      const idx = Math.min(Math.max(1, Math.floor(slot/2)), SKINS.length);
-      return {type:'skin', name: SKINS[idx-1].name, idx};
+      const idx = Math.min(Math.max(1, Math.floor(slot/2)), skinPool.length);
+      return {type:'skin', name: skinPool[idx-1].name, idx};
     }else{
-      const idx = Math.min(Math.max(1, Math.floor((slot+1)/2)), THEMES.length);
-      return {type:'theme', name: THEMES[idx-1].name, idx};
+      const idx = Math.min(Math.max(1, Math.floor((slot+1)/2)), themePool.length);
+      return {type:'theme', name: themePool[idx-1].name, idx};
     }
   }
 
-  // Render lista (po 50)
   function renderAchievementsPage(){
     const perPage=50;
     const startIdx=(achPage-1)*perPage;
-       const endIdx=Math.min(startIdx+perPage, ach.list.length);
+    const endIdx=Math.min(startIdx+perPage, ach.list.length);
     achPageLbl.textContent=String(achPage);
 
     achList.innerHTML='';
@@ -994,13 +964,10 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       achList.appendChild(card);
     }
   }
-
-  // Milestone box
   function renderMilestoneBoxForBlock(block){
     const {start,end}=blockRange(block);
     const node=ach.list[end];
     const ms=node?.milestone;
-
     if(!ms){
       msTitle.textContent = `Blok ${block}`;
       msDesc.textContent = 'Nema nagrade za ovaj blok.';
@@ -1011,14 +978,11 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
       btnClaim.setAttribute('aria-disabled','true');
       return;
     }
-
     const info = rewardNameForMilestone(node.id);
-
     const extMax = ms.adsExtMax;
     const need = ms.adsRequired;
     const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
     const pct = Math.min(100, (total/need)*100);
-
     const blk50 = blockProgress50(block);
     const blkOK = (blk50.done >= 49);
 
@@ -1038,13 +1002,13 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     saveAch(ach);
   }
 
-  // KOLEKCIJA — Apply dugmad
+  /* Kolekcija — Apply */
   function renderCollection(){
     const themeSlots=THEMES.length, skinSlots=SKINS.length;
 
     themesGrid.innerHTML='';
     for(let i=1;i<=themeSlots;i++){
-      const unlocked = i <= (stats.themesUnlocked||0);
+      const unlocked = (i<= (stats.themesUnlocked||0));
       const t = THEMES[i-1];
       const d=document.createElement('div');
       d.className='col-card'+(unlocked?'':' locked');
@@ -1060,7 +1024,7 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
 
     skinsGrid.innerHTML='';
     for(let i=1;i<=skinSlots;i++){
-      const unlocked = i <= (stats.skinsUnlocked||0);
+      const unlocked = (i<= (stats.skinsUnlocked||0));
       const s = SKINS[i-1];
       const d=document.createElement('div');
       d.className='col-card'+(unlocked?'':' locked');
@@ -1096,14 +1060,12 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     };
   }
 
-  // Stat & persist
+  /* Persist helpers */
   function getStat(key){ return stats[key]||0; }
   function saveStats(s){ LS('bp8.stats', JSON.stringify(s)); }
   function loadStats(){ const s=LS('bp8.stats'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
   function saveAch(a){ LS('bp8.ach', JSON.stringify(a)); }
   function loadAch(){ const s=LS('bp8.ach'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
-
-  // Applied persist
   function saveApplied(a){ LS('bp8.applied', JSON.stringify(a)); }
   function loadApplied(){ const s=LS('bp8.applied'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
   function applyAccentFromTheme(themeId){
@@ -1111,20 +1073,18 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     if(t?.accent) document.documentElement.style.setProperty('--accent', t.accent);
   }
 
-  // „Tick“ posle poteza: markiraj obične zadatke
+  /* Ach tick */
   function achievementsTick(){
     for(const a of ach.list){
       if(a.done || a.milestone) continue;
       if(getStat(a.key)>=a.target) a.done=true;
     }
     saveAch(ach);
-
     if(achievementsModal.style.display==='flex' && tabAchievements.classList.contains('active')){
       renderAchievementsPage();
       renderMilestoneBoxForBlock(achPage);
     }
   }
-
   function getCurrentMilestoneIndex(){
     if(ach.currentMilestoneIndex!=null){
       const cur = ach.list[ach.currentMilestoneIndex];
@@ -1133,57 +1093,39 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     return findFirstOpenMilestoneIndex(ach.list);
   }
 
-  // 80/20 — SPOLJA
+  /* Ads 80/20 */
   function addExternalAd(){
-    const idx = getCurrentMilestoneIndex();
-    if(idx<0) return;
-    const ms = ach.list[idx].milestone;
-    if(ms.claimed) return;
+    const idx = getCurrentMilestoneIndex(); if(idx<0) return;
+    const ms = ach.list[idx].milestone; if(ms.claimed) return;
     if(ms.adsExt < ms.adsExtMax){
-      ms.adsExt++;
-      saveAch(ach);
+      ms.adsExt++; saveAch(ach);
       if(achievementsModal.style.display==='flex' && tabAchievements.classList.contains('active')){
         renderMilestoneBoxForBlock(indexToBlock(idx));
       }
     }
   }
-
-  // UNUTRA
   function addInternalAd(){
-    const idx = getCurrentMilestoneIndex();
-    if(idx<0) return;
-    const ms = ach.list[idx].milestone;
-    if(ms.claimed) return;
-
-    const need = ms.adsRequired;
-    const extMax = ms.adsExtMax;
+    const idx = getCurrentMilestoneIndex(); if(idx<0) return;
+    const ms = ach.list[idx].milestone; if(ms.claimed) return;
+    const need = ms.adsRequired; const extMax = ms.adsExtMax;
     const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
     if(total>=need) return;
-
-    ms.adsInt++;
-    saveAch(ach);
+    ms.adsInt++; saveAch(ach);
     renderMilestoneBoxForBlock(indexToBlock(idx));
   }
-
-  // Claim
   function claimMilestoneReward(){
-    const idx = getCurrentMilestoneIndex();
-    if(idx<0) return;
-    const node = ach.list[idx];
-    const ms = node.milestone;
+    const idx = getCurrentMilestoneIndex(); if(idx<0) return;
+    const node = ach.list[idx]; const ms = node.milestone;
 
     const block = indexToBlock(idx);
     const blk50 = blockProgress50(block);
     const blkOK = (blk50.done >= 49);
 
-    const need = ms.adsRequired;
-    const extMax = ms.adsExtMax;
+    const need = ms.adsRequired; const extMax = ms.adsExtMax;
     const total = Math.min(ms.adsExt, extMax) + ms.adsInt;
-
     if(!(total>=need && blkOK)) return;
 
     ms.claimed = true;
-
     const info = rewardNameForMilestone(node.id);
     if(info.type==='theme'){ stats.themesUnlocked++; showToast('🎨 Nova tema: '+info.name); }
     else { stats.skinsUnlocked++; showToast('🧊 Novi skin: '+info.name); }
@@ -1193,21 +1135,13 @@ canvas{ touch-action:none; border-radius:18px; display:block; }
     saveAch(ach);
     renderMilestoneBoxForBlock(indexToBlock(ach.currentMilestoneIndex>=0?ach.currentMilestoneIndex:((block-1)*50)));
     renderAchievementsPage();
-
     if(tabCollection.classList.contains('active')) renderCollection();
   }
-
-  // Dugme u UI (unutrašnje reklame)
   function watchAdInAchievements(){
     if(btnWatchAd.getAttribute('aria-disabled')==='true') return;
     btnWatchAd.setAttribute('aria-disabled','true');
-    setTimeout(()=>{
-      addInternalAd();
-      btnWatchAd.setAttribute('aria-disabled','false');
-    }, 900);
+    setTimeout(()=>{ addInternalAd(); btnWatchAd.setAttribute('aria-disabled','false'); }, 900);
   }
-
-  // Hook za spoljne reklame
   window.simulateExternalAd = function(){
     addExternalAd();
     stats.externalAds++; saveStats(stats);
