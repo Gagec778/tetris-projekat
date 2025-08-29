@@ -65,6 +65,11 @@ var startObstacles = document.getElementById('startObstacles');
 if(ctx){ ctx.imageSmoothingEnabled=false; }
 if(fctx){ fctx.imageSmoothingEnabled=false; }
 
+/* ===== NOVO: slojevi tokom drag-a (blok iznad teme) ===== */
+if (canvas) { canvas.style.position = 'relative'; canvas.style.zIndex = '2'; }
+if (fxCnv)  { fxCnv.style.position  = 'absolute'; fxCnv.style.zIndex  = '3'; }
+if (bg)     { bg.style.zIndex = '0'; }
+
 /* ===== CONSTS & STATE ===== */
 var DPR=Math.min(window.devicePixelRatio||1,2);
 var BOARD=8;
@@ -340,7 +345,7 @@ function drawPanelAndGridOverlay(c, W, H, s){
 }
 
 /* ===== SKIN render — bez “okvira/rima” na blokovima ===== */
-var SHOW_BLOCK_RIM=false; // <- tvoje traženje: nema spoljnog okvira
+var SHOW_BLOCK_RIM=false; // nema spoljnog okvira
 
 var patternCache=new Map();
 function makePatternCanvas(drawFn,size){ if(size==null) size=24; var key=(drawFn&&drawFn.name?drawFn.name:'p')+':'+size; if(patternCache.has(key)) return patternCache.get(key); var c=document.createElement('canvas'); c.width=c.height=size; var g=c.getContext('2d'); g.clearRect(0,0,size,size); drawFn(g,size); var pat=g.createPattern(c,'repeat'); patternCache.set(key,pat); return pat; }
@@ -359,8 +364,8 @@ function shade(hex,amt){ var m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
 function currentSkinStyle(){ for(var i=0;i<SKINS.length;i++){ if(SKINS[i].id===applied.skin) return SKINS[i].style; } return 'metal'; }
 function drawBlockStyle(c,x,y,s,baseHex,style,opt){
   var placed = opt && opt.placed;
-  var R=Math.max(6, s*.22);
-  function rrS(){ rr(c,x+1,y+1,s-2,s-2,R); }
+  var R=Math.max(4, s*.18);
+  function rrS(){ rr(c, x, y, s, s, Math.max(4, s*0.18)); }
   function drawRim(alpha,color,wMul){ if(alpha==null)alpha=0.30; if(color==null)color='rgba(0,0,0,.30)'; if(wMul==null)wMul=0.05; rrS(); c.lineWidth=Math.max(1, s*wMul); c.strokeStyle=color; c.globalAlpha=alpha; c.stroke(); c.globalAlpha=1; }
   function glint(ox,oy,rad,a){ if(a==null)a=0.35; var g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad); g.addColorStop(0,'rgba(255,255,255,'+a+')'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; rrS(); c.fill(); }
 
@@ -461,7 +466,7 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
-/* ===== Tray render — bez okvira i “uz grid” + popravka srednjeg slota ===== */
+/* ===== Tray render — (bez suvišnih okvira) ===== */
 function drawPieceToCanvas(piece){
   var scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
   var c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -472,32 +477,19 @@ function drawPieceToCanvas(piece){
 function renderTray(){
   if(!trayEl) return;
   trayEl.innerHTML='';
-  // približi traku gridu (bez menjanja CSS fajla)
-  trayEl.style.paddingTop='4px';
-  // ukloni sabijanje okvira slotova
   for(var i=0;i<state.hand.length;i++){
     var p=state.hand[i];
     var div=document.createElement('div');
     var fits=canFitAnywhere(p);
     div.className='slot'+(p.used?' used':'')+(p.used?'':(fits?' good':' bad'));
-    // Bez okvira i pozadine — SAMO blok
-    div.style.border='none';
-    div.style.background='transparent';
-    div.style.minHeight='auto';
-    div.style.justifyContent='center';
-    div.style.alignItems='center';
-    div.style.padding='4px';
-
     div.setAttribute('data-index', String(i));
     var pieceCanvas = drawPieceToCanvas(p);
     div.appendChild(pieceCanvas);
 
     if(!p.used){
-      // pointerdown i na SLOT i na CHILD CANVAS (popravlja srednji slot na nekim telefonima)
       var handler = function(e){ startDragFromSlot(e); };
       div.addEventListener('pointerdown', handler, {passive:false});
       pieceCanvas.addEventListener('pointerdown', handler, {passive:false});
-      // osiguraj tap hit-box
       div.style.touchAction='none';
       pieceCanvas.style.touchAction='none';
     }
@@ -529,13 +521,14 @@ function draw(){
       var v=state.grid[y][x];
       var px=x*s, py=y*s;
       if(v===1){ drawPlaced(ctx,px,py,s); }
-      else if(v===2){ rr(ctx,px+1,py+1,s-2,s-2,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); }
+      else if(v===2){ rr(ctx, px, py, s, s, Math.max(6, s*0.2)); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); }
     }
   }
 
   if(state.dragging && state.dragging.px!=null){
+    ctx.globalCompositeOperation = 'source-over'; // previev blok uvek preko
     var d = state.dragging, piece=d.piece, px2=d.px, py2=d.py, valid=d.valid;
-    var liftY=72, offsetX=8; // blok iznad prsta (kako želiš)
+    var liftY=72, offsetX=8; // blok iznad prsta
     var baseX=px2-(piece.w*s)/2+offsetX;
     var baseY=py2-(piece.h*s)/2-liftY;
     for(var i=0;i<piece.blocks.length;i++){
