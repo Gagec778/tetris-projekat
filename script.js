@@ -823,4 +823,3 @@ window.simulateExternalAd = function(){ addExternalAd(); stats.externalAds++; sa
 if(!startClassic){ if(start) start.style.display='none'; if(app) app.style.display='flex'; newGame('classic'); }
 
 })();
-```0
