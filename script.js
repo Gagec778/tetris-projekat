@@ -1,6 +1,9 @@
 (function(){
 'use strict';
 
+/* === Fix: ensure DOM is ready before running === */
+function init(){
+
 /* ===== DOM REFS ===== */
 var canvas = document.getElementById('game');
 var ctx    = (canvas && canvas.getContext) ? canvas.getContext('2d', {alpha:true}) : null;
@@ -867,5 +870,14 @@ window.simulateExternalAd = function(){ addExternalAd(); stats.externalAds++; sa
 
 /* ===== INIT ===== */
 if(!startClassic){ if(start) start.style.display='none'; if(app) app.style.display='flex'; newGame('classic'); }
+
+} // <- end init
+
+/* Run immediately if DOM is ready, otherwise wait */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init, { once: true });
+} else {
+  init();
+}
 
 })();
