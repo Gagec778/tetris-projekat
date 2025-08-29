@@ -115,7 +115,7 @@ var THEMES = [
   { id:'t04', name:'Neon Drift',    accent:'#00ffd9', palette:'neon' },
   { id:'t05', name:'Ivory Pearl',   accent:'#d9c8a1', palette:'ivory' },
   { id:'t06', name:'Emerald Mist',  accent:'#59e3a7', palette:'emerald' },
-  { id:'t07', name:'Royal Purple',  accent:'#b18cff', palette:'royal' },   // ponovo LJUBIČASTO
+  { id:'t07', name:'Royal Purple',  accent:'#b18cff', palette:'royal' },
   { id:'t08', name:'Ocean Depths',  accent:'#7bd0ff', palette:'ocean' },
   { id:'t09', name:'Desert Dune',   accent:'#d7a257', palette:'desert' },
   { id:'t10', name:'Crimson Pulse', accent:'#ff6b6b', palette:'crimson' }
@@ -153,67 +153,41 @@ function drawAurora(c,w,h){
   var pal = (function(){ for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===applied.theme) return THEMES[i].palette; } return 'starterAurora'; })();
   c.save();
   var base=c.createLinearGradient(0,0,w,h);
-  // bazne pozadine po paletama
   switch(pal){
     case 'starterAurora':
-      base.addColorStop(0,'rgba(8,14,28,0.88)');
-      base.addColorStop(1,'rgba(10,20,40,0.92)');
-      break;
+      base.addColorStop(0,'rgba(8,14,28,0.88)'); base.addColorStop(1,'rgba(10,20,40,0.92)'); break;
     case 'auroraPlus':
-      base.addColorStop(0,'rgba(6,12,22,0.92)');
-      base.addColorStop(1,'rgba(10,26,46,0.94)');
-      break;
+      base.addColorStop(0,'rgba(6,12,22,0.92)');  base.addColorStop(1,'rgba(10,26,46,0.94)'); break;
     case 'royal':
-      base.addColorStop(0,'rgba(20,10,30,0.92)');
-      base.addColorStop(1,'rgba(40,18,70,0.94)');
-      break;
+      base.addColorStop(0,'rgba(20,10,30,0.92)'); base.addColorStop(1,'rgba(40,18,70,0.94)'); break;
     case 'sunset':
-      base.addColorStop(0,'rgba(28,10,10,0.90)');
-      base.addColorStop(1,'rgba(40,18,10,0.92)');
-      break;
+      base.addColorStop(0,'rgba(28,10,10,0.90)'); base.addColorStop(1,'rgba(40,18,10,0.92)'); break;
     case 'noirGold':
-      base.addColorStop(0,'rgba(14,12,8,0.92)');
-      base.addColorStop(1,'rgba(26,20,10,0.94)');
-      break;
+      base.addColorStop(0,'rgba(14,12,8,0.92)');  base.addColorStop(1,'rgba(26,20,10,0.94)'); break;
     case 'neon':
-      base.addColorStop(0,'rgba(6,16,18,0.92)');
-      base.addColorStop(1,'rgba(8,26,28,0.94)');
-      break;
+      base.addColorStop(0,'rgba(6,16,18,0.92)');  base.addColorStop(1,'rgba(8,26,28,0.94)'); break;
     case 'ivory':
-      base.addColorStop(0,'rgba(22,22,20,0.90)');
-      base.addColorStop(1,'rgba(28,28,24,0.92)');
-      break;
+      base.addColorStop(0,'rgba(22,22,20,0.90)'); base.addColorStop(1,'rgba(28,28,24,0.92)'); break;
     case 'emerald':
-      base.addColorStop(0,'rgba(8,20,14,0.92)');
-      base.addColorStop(1,'rgba(12,32,22,0.94)');
-      break;
+      base.addColorStop(0,'rgba(8,20,14,0.92)');  base.addColorStop(1,'rgba(12,32,22,0.94)'); break;
     case 'ocean':
-      base.addColorStop(0,'rgba(8,16,28,0.92)');
-      base.addColorStop(1,'rgba(10,26,44,0.94)');
-      break;
+      base.addColorStop(0,'rgba(8,16,28,0.92)');  base.addColorStop(1,'rgba(10,26,44,0.94)'); break;
     case 'desert':
-      base.addColorStop(0,'rgba(26,18,10,0.92)');
-      base.addColorStop(1,'rgba(34,24,12,0.94)');
-      break;
+      base.addColorStop(0,'rgba(26,18,10,0.92)'); base.addColorStop(1,'rgba(34,24,12,0.94)'); break;
     case 'crimson':
-      base.addColorStop(0,'rgba(26,8,12,0.92)');
-      base.addColorStop(1,'rgba(40,10,14,0.94)');
-      break;
+      base.addColorStop(0,'rgba(26,8,12,0.92)');  base.addColorStop(1,'rgba(40,10,14,0.94)'); break;
     default:
-      base.addColorStop(0,'rgba(8,12,20,0.92)');
-      base.addColorStop(1,'rgba(10,18,28,0.92)');
+      base.addColorStop(0,'rgba(8,12,20,0.92)');  base.addColorStop(1,'rgba(10,18,28,0.92)');
   }
   c.fillStyle=base; c.fillRect(0,0,w,h);
 
   c.globalCompositeOperation='screen';
-  function blob(cx,cy,r,color,a1,a0){
-    if(a1===void 0)a1=0.40; if(a0===void 0)a0=0;
+  function blob(cx,cy,r,color,a1,a0){ if(a1===void 0)a1=0.40; if(a0===void 0)a0=0;
     var g=c.createRadialGradient(cx,cy,10,cx,cy,r);
     g.addColorStop(0,'rgba('+color+','+a1+')');
     g.addColorStop(1,'rgba('+color+','+a0+')');
     c.fillStyle=g; c.fillRect(0,0,w,h);
   }
-  // svetle “aurora” mrlje po paleti
   switch(pal){
     case 'starterAurora':
       blob(w*.34,h*.42,Math.max(w,h)*.75,'60,140,255',0.38);
@@ -224,7 +198,7 @@ function drawAurora(c,w,h){
       blob(w*.72,h*.70,Math.max(w,h)*.95,'0,220,255',0.42);
       blob(w*.18,h*.86,Math.max(w,h)*.65,'120,80,255',0.38);
       break;
-    case 'royal': // ljubičasti tonovi
+    case 'royal':
       blob(w*.32,h*.40,Math.max(w,h)*.85,'150,80,255',0.50);
       blob(w*.74,h*.72,Math.max(w,h)*.90,'210,150,255',0.35);
       break;
@@ -322,7 +296,7 @@ function anyFits(){
   return false;
 }
 
-/* ===== GRID overlay & rim ===== */
+/* ===== GRID overlay & rim (prilepljeno) ===== */
 function isAuroraPlus(){ return applied.theme==='t01'; }
 function drawPanelAndGridOverlay(c, W, H, s){
   c.save();
@@ -331,7 +305,7 @@ function drawPanelAndGridOverlay(c, W, H, s){
   for(var y=0;y<BOARD;y++){
     for(var x=0;x<BOARD;x++){
       var px=x*s, py=y*s;
-      rr(c,px+1.5,py+1.5,s-3,s-3,8);
+      rr(c,px,py,s,s,8); // PRILEPLJENO uz grid (bez +1.5/-3)
       c.stroke();
     }
   }
@@ -339,12 +313,12 @@ function drawPanelAndGridOverlay(c, W, H, s){
   var outerColor = isAuroraPlus() ? '#d4af37' : (accent.trim() || '#2ec5ff');
   c.lineWidth = isAuroraPlus() ? Math.max(2.2, s*0.10) : Math.max(2, s*0.08);
   c.strokeStyle = outerColor;
-  rr(c, 1.0, 1.0, W-2.0, H-2.0, 14);
+  rr(c, 0, 0, W, H, 14); // bez offseta
   c.stroke();
   c.restore();
 }
 
-/* ===== SKIN render — bez “okvira/rima” na blokovima; prilepljeni uz grid ===== */
+/* ===== SKIN render — bez “okvira/rima”; prilepljeni uz grid ===== */
 var SHOW_BLOCK_RIM=false; // nema spoljnog okvira
 
 var patternCache=new Map();
@@ -365,7 +339,7 @@ function currentSkinStyle(){ for(var i=0;i<SKINS.length;i++){ if(SKINS[i].id===a
 function drawBlockStyle(c,x,y,s,baseHex,style,opt){
   var placed = opt && opt.placed;
   var R=Math.max(6, s*.22);
-  function rrS(){ rr(c,x,y,s,s,R); } // PRILEPLJENO: bez +1/-2
+  function rrS(){ rr(c,x,y,s,s,R); } // PRILEPLJENO uz grid (bez +1/-2)
 
   function drawRim(alpha,color,wMul){ if(alpha==null)alpha=0.30; if(color==null)color='rgba(0,0,0,.30)'; if(wMul==null)wMul=0.05; rrS(); c.lineWidth=Math.max(1, s*wMul); c.strokeStyle=color; c.globalAlpha=alpha; c.stroke(); c.globalAlpha=1; }
   function glint(ox,oy,rad,a){ if(a==null)a=0.35; var g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad); g.addColorStop(0,'rgba(255,255,255,'+a+')'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; rrS(); c.fill(); }
@@ -467,7 +441,7 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
-/* ===== Tray render — bez okvira i “uz grid” + popravka srednjeg slota ===== */
+/* ===== Tray render — bez okvira i uz grid ===== */
 function drawPieceToCanvas(piece){
   var scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
   var c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -530,14 +504,14 @@ function draw(){
       var v=state.grid[y][x];
       var px=x*s, py=y*s;
       if(v===1){ drawPlaced(ctx,px,py,s); }
-      else if(v===2){ rr(ctx,px,py,s,s,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); } // PRILEPLJENE PREPREKE
+      else if(v===2){ rr(ctx,px,py,s,s,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); } // prilepljene prepreke
     }
   }
 
   if(state.dragging && state.dragging.px!=null){
     ctx.globalCompositeOperation = 'source-over'; // blok uvek iznad
     var d = state.dragging, piece=d.piece, px2=d.px, py2=d.py, valid=d.valid;
-    var liftY=72, offsetX=8; // blok iznad prsta
+    var liftY=72, offsetX=8; // blok iznad prsta (vizuelno)
     var baseX=px2-(piece.w*s)/2+offsetX;
     var baseY=py2-(piece.h*s)/2-liftY;
     for(var i=0;i<piece.blocks.length;i++){
@@ -759,7 +733,6 @@ function sizeToScreen(){
   if(fctx){ fctx.setTransform(1,0,0,1,0,0); }
   state.cell=cell;
 
-  // global bg canvas
   if(bg){
     var w=window.innerWidth, h=window.innerHeight;
     if(bg.width!==Math.floor(w*DPR) || bg.height!==Math.floor(h*DPR)){
