@@ -106,7 +106,7 @@ var state = {
 /* Stats */
 var stats = loadStats() || { totalScore:0, blocksPlaced:0, linesCleared:0, externalAds:0, themesUnlocked:0, skinsUnlocked:0 };
 
-/* ===== TEME & SKINOVI – vraćene razlikovane teme ===== */
+/* ===== TEME & SKINOVI ===== */
 var THEMES = [
   { id:'t00', name:'Starter Aurora', accent:'#2ec5ff', palette:'starterAurora' },
   { id:'t01', name:'Aurora Blue+',  accent:'#35d7ff', palette:'auroraPlus'     },
@@ -138,7 +138,14 @@ var SKINS = [
 var applied = loadApplied() || { theme:'t00', skin:'s00' };
 applyAccentFromTheme(applied.theme);
 
-/* Achievements model (sačuvan) */
+/* ====== ACH TARGETS (MORA pre createAchievementsModel) ====== */
+var TARGETS = {
+  blocks: function(i){ return 300*i; },
+  lines : function(i){ return 40*i; },
+  score : function(i){ return 50000*i; }
+};
+
+/* Achievements model */
 var ach = loadAch() || createAchievementsModel();
 var achPage = 1;
 
@@ -148,36 +155,24 @@ function createGrid(n){ var arr=[]; for(var i=0;i<n;i++){ var row=[]; for(var j=
 function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v); }
 
-/* ===== Aurora BG — sada više paleta (meni + igra) ===== */
+/* ===== Aurora BG ===== */
 function drawAurora(c,w,h){
   var pal = (function(){ for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===applied.theme) return THEMES[i].palette; } return 'starterAurora'; })();
   c.save();
   var base=c.createLinearGradient(0,0,w,h);
   switch(pal){
-    case 'starterAurora':
-      base.addColorStop(0,'rgba(8,14,28,0.88)'); base.addColorStop(1,'rgba(10,20,40,0.92)'); break;
-    case 'auroraPlus':
-      base.addColorStop(0,'rgba(6,12,22,0.92)');  base.addColorStop(1,'rgba(10,26,46,0.94)'); break;
-    case 'royal':
-      base.addColorStop(0,'rgba(20,10,30,0.92)'); base.addColorStop(1,'rgba(40,18,70,0.94)'); break;
-    case 'sunset':
-      base.addColorStop(0,'rgba(28,10,10,0.90)'); base.addColorStop(1,'rgba(40,18,10,0.92)'); break;
-    case 'noirGold':
-      base.addColorStop(0,'rgba(14,12,8,0.92)');  base.addColorStop(1,'rgba(26,20,10,0.94)'); break;
-    case 'neon':
-      base.addColorStop(0,'rgba(6,16,18,0.92)');  base.addColorStop(1,'rgba(8,26,28,0.94)'); break;
-    case 'ivory':
-      base.addColorStop(0,'rgba(22,22,20,0.90)'); base.addColorStop(1,'rgba(28,28,24,0.92)'); break;
-    case 'emerald':
-      base.addColorStop(0,'rgba(8,20,14,0.92)');  base.addColorStop(1,'rgba(12,32,22,0.94)'); break;
-    case 'ocean':
-      base.addColorStop(0,'rgba(8,16,28,0.92)');  base.addColorStop(1,'rgba(10,26,44,0.94)'); break;
-    case 'desert':
-      base.addColorStop(0,'rgba(26,18,10,0.92)'); base.addColorStop(1,'rgba(34,24,12,0.94)'); break;
-    case 'crimson':
-      base.addColorStop(0,'rgba(26,8,12,0.92)');  base.addColorStop(1,'rgba(40,10,14,0.94)'); break;
-    default:
-      base.addColorStop(0,'rgba(8,12,20,0.92)');  base.addColorStop(1,'rgba(10,18,28,0.92)');
+    case 'starterAurora': base.addColorStop(0,'rgba(8,14,28,0.88)'); base.addColorStop(1,'rgba(10,20,40,0.92)'); break;
+    case 'auroraPlus':    base.addColorStop(0,'rgba(6,12,22,0.92)');  base.addColorStop(1,'rgba(10,26,46,0.94)'); break;
+    case 'royal':         base.addColorStop(0,'rgba(20,10,30,0.92)'); base.addColorStop(1,'rgba(40,18,70,0.94)'); break;
+    case 'sunset':        base.addColorStop(0,'rgba(28,10,10,0.90)'); base.addColorStop(1,'rgba(40,18,10,0.92)'); break;
+    case 'noirGold':      base.addColorStop(0,'rgba(14,12,8,0.92)');  base.addColorStop(1,'rgba(26,20,10,0.94)'); break;
+    case 'neon':          base.addColorStop(0,'rgba(6,16,18,0.92)');  base.addColorStop(1,'rgba(8,26,28,0.94)'); break;
+    case 'ivory':         base.addColorStop(0,'rgba(22,22,20,0.90)'); base.addColorStop(1,'rgba(28,28,24,0.92)'); break;
+    case 'emerald':       base.addColorStop(0,'rgba(8,20,14,0.92)');  base.addColorStop(1,'rgba(12,32,22,0.94)'); break;
+    case 'ocean':         base.addColorStop(0,'rgba(8,16,28,0.92)');  base.addColorStop(1,'rgba(10,26,44,0.94)'); break;
+    case 'desert':        base.addColorStop(0,'rgba(26,18,10,0.92)'); base.addColorStop(1,'rgba(34,24,12,0.94)'); break;
+    case 'crimson':       base.addColorStop(0,'rgba(26,8,12,0.92)');  base.addColorStop(1,'rgba(40,10,14,0.94)'); break;
+    default:              base.addColorStop(0,'rgba(8,12,20,0.92)');  base.addColorStop(1,'rgba(10,18,28,0.92)');
   }
   c.fillStyle=base; c.fillRect(0,0,w,h);
 
@@ -189,59 +184,23 @@ function drawAurora(c,w,h){
     c.fillStyle=g; c.fillRect(0,0,w,h);
   }
   switch(pal){
-    case 'starterAurora':
-      blob(w*.34,h*.42,Math.max(w,h)*.75,'60,140,255',0.38);
-      blob(w*.70,h*.70,Math.max(w,h)*.65,'30,220,255',0.30);
-      break;
-    case 'auroraPlus':
-      blob(w*.28,h*.36,Math.max(w,h)*.85,'60,160,255',0.52);
-      blob(w*.72,h*.70,Math.max(w,h)*.95,'0,220,255',0.42);
-      blob(w*.18,h*.86,Math.max(w,h)*.65,'120,80,255',0.38);
-      break;
-    case 'royal':
-      blob(w*.32,h*.40,Math.max(w,h)*.85,'150,80,255',0.50);
-      blob(w*.74,h*.72,Math.max(w,h)*.90,'210,150,255',0.35);
-      break;
-    case 'sunset':
-      blob(w*.30,h*.38,Math.max(w,h)*.90,'255,120,80',0.46);
-      blob(w*.76,h*.70,Math.max(w,h)*.80,'255,200,120',0.34);
-      break;
-    case 'noirGold':
-      blob(w*.28,h*.36,Math.max(w,h)*.80,'220,180,80',0.36);
-      blob(w*.70,h*.74,Math.max(w,h)*.85,'255,220,150',0.26);
-      break;
-    case 'neon':
-      blob(w*.30,h*.40,Math.max(w,h)*.90,'0,255,200',0.42);
-      blob(w*.72,h*.68,Math.max(w,h)*.85,'0,180,255',0.30);
-      break;
-    case 'emerald':
-      blob(w*.30,h*.42,Math.max(w,h)*.90,'60,255,180',0.40);
-      blob(w*.72,h*.70,Math.max(w,h)*.85,'30,220,150',0.32);
-      break;
-    case 'ivory':
-      blob(w*.34,h*.44,Math.max(w,h)*.80,'255,240,200',0.32);
-      blob(w*.70,h*.72,Math.max(w,h)*.80,'250,220,160',0.26);
-      break;
-    case 'ocean':
-      blob(w*.34,h*.42,Math.max(w,h)*.85,'80,180,255',0.40);
-      blob(w*.72,h*.70,Math.max(w,h)*.90,'0,120,255',0.28);
-      break;
-    case 'desert':
-      blob(w*.34,h*.42,Math.max(w,h)*.85,'255,200,120',0.38);
-      blob(w*.72,h*.70,Math.max(w,h)*.90,'255,160,80',0.30);
-      break;
-    case 'crimson':
-      blob(w*.32,h*.40,Math.max(w,h)*.85,'255,80,100',0.46);
-      blob(w*.74,h*.72,Math.max(w,h)*.90,'255,150,160',0.32);
-      break;
-    default:
-      blob(w*.30,h*.35,Math.max(w,h)*.80,'60,150,255',0.40);
-      blob(w*.75,h*.72,Math.max(w,h)*.90,'0,220,255',0.32);
+    case 'starterAurora': blob(w*.34,h*.42,Math.max(w,h)*.75,'60,140,255',0.38); blob(w*.70,h*.70,Math.max(w,h)*.65,'30,220,255',0.30); break;
+    case 'auroraPlus':    blob(w*.28,h*.36,Math.max(w,h)*.85,'60,160,255',0.52); blob(w*.72,h*.70,Math.max(w,h)*.95,'0,220,255',0.42); blob(w*.18,h*.86,Math.max(w,h)*.65,'120,80,255',0.38); break;
+    case 'royal':         blob(w*.32,h*.40,Math.max(w,h)*.85,'150,80,255',0.50); blob(w*.74,h*.72,Math.max(w,h)*.90,'210,150,255',0.35); break;
+    case 'sunset':        blob(w*.30,h*.38,Math.max(w,h)*.90,'255,120,80',0.46); blob(w*.76,h*.70,Math.max(w,h)*.80,'255,200,120',0.34); break;
+    case 'noirGold':      blob(w*.28,h*.36,Math.max(w,h)*.80,'220,180,80',0.36); blob(w*.70,h*.74,Math.max(w,h)*.85,'255,220,150',0.26); break;
+    case 'neon':          blob(w*.30,h*.40,Math.max(w,h)*.90,'0,255,200',0.42); blob(w*.72,h*.68,Math.max(w,h)*.85,'0,180,255',0.30); break;
+    case 'emerald':       blob(w*.30,h*.42,Math.max(w,h)*.90,'60,255,180',0.40); blob(w*.72,h*.70,Math.max(w,h)*.85,'30,220,150',0.32); break;
+    case 'ivory':         blob(w*.34,h*.44,Math.max(w,h)*.80,'255,240,200',0.32); blob(w*.70,h*.72,Math.max(w,h)*.80,'250,220,160',0.26); break;
+    case 'ocean':         blob(w*.34,h*.42,Math.max(w,h)*.85,'80,180,255',0.40); blob(w*.72,h*.70,Math.max(w,h)*.90,'0,120,255',0.28); break;
+    case 'desert':        blob(w*.34,h*.42,Math.max(w,h)*.85,'255,200,120',0.38); blob(w*.72,h*.70,Math.max(w,h)*.90,'255,160,80',0.30); break;
+    case 'crimson':       blob(w*.32,h*.40,Math.max(w,h)*.85,'255,80,100',0.46); blob(w*.74,h*.72,Math.max(w,h)*.90,'255,150,160',0.32); break;
+    default:              blob(w*.30,h*.35,Math.max(w,h)*.80,'60,150,255',0.40); blob(w*.75,h*.72,Math.max(w,h)*.90,'0,220,255',0.32);
   }
   c.restore();
 }
 
-/* petlja pozadine — radi stalno */
+/* petlja pozadine */
 if(bg){
   (function loopBG(){
     var b=bg.getContext('2d');
@@ -296,7 +255,7 @@ function anyFits(){
   return false;
 }
 
-/* ===== GRID overlay & rim (prilepljeno) ===== */
+/* ===== GRID overlay (prilepljen uz grid) ===== */
 function isAuroraPlus(){ return applied.theme==='t01'; }
 function drawPanelAndGridOverlay(c, W, H, s){
   c.save();
@@ -305,7 +264,7 @@ function drawPanelAndGridOverlay(c, W, H, s){
   for(var y=0;y<BOARD;y++){
     for(var x=0;x<BOARD;x++){
       var px=x*s, py=y*s;
-      rr(c,px,py,s,s,8); // PRILEPLJENO uz grid (bez +1.5/-3)
+      rr(c,px,py,s,s,8); // bez unutrašnjih margina
       c.stroke();
     }
   }
@@ -313,13 +272,13 @@ function drawPanelAndGridOverlay(c, W, H, s){
   var outerColor = isAuroraPlus() ? '#d4af37' : (accent.trim() || '#2ec5ff');
   c.lineWidth = isAuroraPlus() ? Math.max(2.2, s*0.10) : Math.max(2, s*0.08);
   c.strokeStyle = outerColor;
-  rr(c, 0, 0, W, H, 14); // bez offseta
+  rr(c, 0, 0, W, H, 14); // okvir bez offseta
   c.stroke();
   c.restore();
 }
 
-/* ===== SKIN render — bez “okvira/rima”; prilepljeni uz grid ===== */
-var SHOW_BLOCK_RIM=false; // nema spoljnog okvira
+/* ===== SKIN render — bez “okvira”; blokovi prilepljeni ===== */
+var SHOW_BLOCK_RIM=false;
 
 var patternCache=new Map();
 function makePatternCanvas(drawFn,size){ if(size==null) size=24; var key=(drawFn&&drawFn.name?drawFn.name:'p')+':'+size; if(patternCache.has(key)) return patternCache.get(key); var c=document.createElement('canvas'); c.width=c.height=size; var g=c.getContext('2d'); g.clearRect(0,0,size,size); drawFn(g,size); var pat=g.createPattern(c,'repeat'); patternCache.set(key,pat); return pat; }
@@ -339,7 +298,7 @@ function currentSkinStyle(){ for(var i=0;i<SKINS.length;i++){ if(SKINS[i].id===a
 function drawBlockStyle(c,x,y,s,baseHex,style,opt){
   var placed = opt && opt.placed;
   var R=Math.max(6, s*.22);
-  function rrS(){ rr(c,x,y,s,s,R); } // PRILEPLJENO uz grid (bez +1/-2)
+  function rrS(){ rr(c,x,y,s,s,R); } // bez +1/-2 → nalepljeno na grid
 
   function drawRim(alpha,color,wMul){ if(alpha==null)alpha=0.30; if(color==null)color='rgba(0,0,0,.30)'; if(wMul==null)wMul=0.05; rrS(); c.lineWidth=Math.max(1, s*wMul); c.strokeStyle=color; c.globalAlpha=alpha; c.stroke(); c.globalAlpha=1; }
   function glint(ox,oy,rad,a){ if(a==null)a=0.35; var g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad); g.addColorStop(0,'rgba(255,255,255,'+a+')'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; rrS(); c.fill(); }
@@ -441,7 +400,7 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
-/* ===== Tray render — bez okvira i uz grid ===== */
+/* ===== Tray render ===== */
 function drawPieceToCanvas(piece){
   var scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
   var c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -452,7 +411,7 @@ function drawPieceToCanvas(piece){
 function renderTray(){
   if(!trayEl) return;
   trayEl.innerHTML='';
-  trayEl.style.paddingTop='4px';
+  trayEl.style.paddingTop='4px'; // uz grid
   for(var i=0;i<state.hand.length;i++){
     var p=state.hand[i];
     var div=document.createElement('div');
@@ -464,15 +423,15 @@ function renderTray(){
     div.style.justifyContent='center';
     div.style.alignItems='center';
     div.style.padding='4px';
-
     div.setAttribute('data-index', String(i));
+
     var pieceCanvas = drawPieceToCanvas(p);
     div.appendChild(pieceCanvas);
 
     if(!p.used){
       var handler = function(e){ startDragFromSlot(e); };
-      div.addEventListener('pointerdown', handler, {passive:false});
-      pieceCanvas.addEventListener('pointerdown', handler, {passive:false});
+      div.addEventListener && div.addEventListener('pointerdown', handler, {passive:false});
+      pieceCanvas.addEventListener && pieceCanvas.addEventListener('pointerdown', handler, {passive:false});
       div.style.touchAction='none';
       pieceCanvas.style.touchAction='none';
     }
@@ -504,14 +463,14 @@ function draw(){
       var v=state.grid[y][x];
       var px=x*s, py=y*s;
       if(v===1){ drawPlaced(ctx,px,py,s); }
-      else if(v===2){ rr(ctx,px,py,s,s,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); } // prilepljene prepreke
+      else if(v===2){ rr(ctx,px,py,s,s,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); }
     }
   }
 
   if(state.dragging && state.dragging.px!=null){
-    ctx.globalCompositeOperation = 'source-over'; // blok uvek iznad
+    ctx.globalCompositeOperation = 'source-over';
     var d = state.dragging, piece=d.piece, px2=d.px, py2=d.py, valid=d.valid;
-    var liftY=72, offsetX=8; // blok iznad prsta (vizuelno)
+    var liftY=72, offsetX=8; // blok iznad prsta
     var baseX=px2-(piece.w*s)/2+offsetX;
     var baseY=py2-(piece.h*s)/2-liftY;
     for(var i=0;i<piece.blocks.length;i++){
@@ -524,7 +483,7 @@ function draw(){
 /* ===== FX ===== */
 var particles=[];
 function spawnParticles(cells){ if(!fctx) return; var s=state.cell,d=DPR; for(var i=0;i<cells.length;i++){ var xy=cells[i], bx=xy[0], by=xy[1]; for(var j=0;j<6;j++){ var base={x:(bx+0.5)*s*d,y:(by+0.5)*s*d,vx:(Math.random()-0.5)*2,vy:(-Math.random()*2-0.5),life:40,r:2,color:'#ffffffaa',shape:'dot'}; particles.push(base);} } }
-function stepFX(){ if(!fctx || !fxCnv){ requestAnimationFrame(stepFX); return; } fctx.setTransform(1,0,0,1,0,0); fctx.clearRect(0,0,fxCnv.width,fxCnv.height); for(var i=0;i<particles.length;i++){ var p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--; fctx.globalAlpha=Math.max(0,p.life/40); fctx.fillStyle=p.color; fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill(); } for(i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1); requestAnimationFrame(stepFX); }
+function stepFX(){ if(!fctx || !fxCnv){ requestAnimationFrame(stepFX); return; } fctx.setTransform(1,0,0,1,0,0); fctx.clearRect(0,0,fxCnv.width,fxCnv.height); for(var i=0;i<particles.length;i++){ var p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--; fctx.globalAlpha=Math.max(0,p.life/40); fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill(); } for(i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1); requestAnimationFrame(stepFX); }
 requestAnimationFrame(stepFX);
 
 /* ===== Place / Refill / Game over ===== */
@@ -570,7 +529,7 @@ function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray
 
 /* ===== Drag ===== */
 var POINTER={active:false,fromSlotIndex:null};
-function getCanvasPos(e){ var r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; }
+function getCanvasPos(e){ if(!canvas) return {x:0,y:0}; var r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; }
 function startDragFromSlot(e){
   var target = e.currentTarget || e.target;
   var parentSlot = target.closest ? target.closest('.slot') : null;
@@ -582,8 +541,8 @@ function startDragFromSlot(e){
 
   if(parentSlot && parentSlot.classList) parentSlot.classList.add('used');
   try{ if(parentSlot && parentSlot.setPointerCapture && e.pointerId!=null) parentSlot.setPointerCapture(e.pointerId); }catch(_){}
-  document.body.style.cursor='grabbing';
-  if(e.preventDefault) e.preventDefault(); if(e.stopPropagation) e.stopPropagation();
+  document.body && (document.body.style.cursor='grabbing');
+  e.preventDefault && e.preventDefault(); e.stopPropagation && e.stopPropagation();
 }
 function onPointerMove(e){
   if(!POINTER.active||!state.dragging) return;
@@ -602,7 +561,7 @@ function onPointerUp(){
   var d=state.dragging;
   var sel='.slot[data-index="'+POINTER.fromSlotIndex+'"]';
   var slot = (trayEl && trayEl.querySelector) ? trayEl.querySelector(sel) : null;
-  POINTER.active=false; document.body.style.cursor='';
+  POINTER.active=false; document.body && (document.body.style.cursor='');
   if(d.valid && d.gx!=null && d.gy!=null) place(d.piece,d.gx,d.gy);
   else if(slot && slot.classList) slot.classList.remove('used');
   state.dragging=null; requestDraw();
@@ -611,7 +570,7 @@ function onPointerCancel(){
   if(!POINTER.active||!state.dragging) return;
   var sel='.slot[data-index="'+POINTER.fromSlotIndex+'"]';
   var slot = (trayEl && trayEl.querySelector) ? trayEl.querySelector(sel) : null;
-  POINTER.active=false; document.body.style.cursor='';
+  POINTER.active=false; document.body && (document.body.style.cursor='');
   if(slot && slot.classList) slot.classList.remove('used');
   state.dragging=null; requestDraw();
 }
@@ -623,7 +582,7 @@ window.addEventListener('lostpointercapture', onPointerCancel, {passive:true});
 /* ===== UI helpers ===== */
 function showToast(msg){
   var t=document.getElementById('toast');
-  if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
+  if(!t){ t=document.createElement('div'); t.id='toast'; document.body && document.body.appendChild(t);
     var st=t.style; st.position='fixed'; st.left='50%'; st.bottom='24px'; st.transform='translateX(-50%)'; st.background='rgba(8,14,28,.9)'; st.color='#e8ecf1'; st.padding='10px 14px'; st.borderRadius='12px'; st.boxShadow='0 10px 30px rgba(0,0,0,.35)'; st.zIndex=99; st.transition='opacity .25s'; st.opacity='0'; st.border='1px solid rgba(255,255,255,.06)';
   }
   t.textContent=msg; t.style.opacity='1'; setTimeout(function(){ t.style.opacity='0'; }, 1600);
@@ -633,21 +592,21 @@ function applyTheme(t){ if(document.body && document.body.classList){ if(t==='li
 function saveBest(b){ LS('bp8.best', JSON.stringify(b)); }
 function loadBest(){ var s=LS('bp8.best'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 
-/* ===== Buttons / Events ===== */
-if(resetBtn) resetBtn.addEventListener('click', function(){ newGame(state.mode); });
-if(backBtn)  backBtn.addEventListener('click', function(){ goHome(); });
+/* ===== Buttons / Events (guardovi) ===== */
+resetBtn && resetBtn.addEventListener('click', function(){ newGame(state.mode); });
+backBtn  && backBtn.addEventListener('click', function(){ goHome(); });
 
-if(settingsBtn) settingsBtn.addEventListener('click', function(){ if(settingsModal) settingsModal.style.display='flex'; });
-if(settingsModal){ var bd = settingsModal.querySelector ? settingsModal.querySelector('.backdrop') : null; if(bd) bd.addEventListener('click', function(){ settingsModal.style.display='none'; }); }
-if(closeSettings) closeSettings.addEventListener('click', function(){ settingsModal.style.display='none'; });
-if(setThemeBtn) setThemeBtn.addEventListener('click', function(){ settings.theme=(settings.theme==='dark'?'light':'dark'); LS('bp8.theme',settings.theme); applyTheme(settings.theme); });
-if(setSound) setSound.addEventListener('click', function(){ settings.sound=!settings.sound; LS('bp8.sound', (settings.sound?'1':'0')); updateSoundLabel(); });
-if(resetBest) resetBest.addEventListener('click', function(){ SAFE.removeItem && SAFE.removeItem('bp8.best'); state.best={classic:0,obstacles:0}; if(bestEl) bestEl.textContent=0; showToast('Best resetovan'); });
+if(settingsBtn) settingsBtn.addEventListener('click', function(){ settingsModal && (settingsModal.style.display='flex'); });
+if(settingsModal){ var bd = settingsModal.querySelector ? settingsModal.querySelector('.backdrop') : null; bd && bd.addEventListener('click', function(){ settingsModal.style.display='none'; }); }
+closeSettings && closeSettings.addEventListener('click', function(){ settingsModal && (settingsModal.style.display='none'); });
+setThemeBtn && setThemeBtn.addEventListener('click', function(){ settings.theme=(settings.theme==='dark'?'light':'dark'); LS('bp8.theme',settings.theme); applyTheme(settings.theme); });
+setSound && setSound.addEventListener('click', function(){ settings.sound=!settings.sound; LS('bp8.sound', (settings.sound?'1':'0')); updateSoundLabel(); });
+resetBest && resetBest.addEventListener('click', function(){ SAFE.removeItem && SAFE.removeItem('bp8.best'); state.best={classic:0,obstacles:0}; bestEl && (bestEl.textContent=0); showToast('Best resetovan'); });
 
-if(playAgain) playAgain.addEventListener('click', function(){ if(gameOver) gameOver.style.display='none'; newGame(state.mode); });
-if(goMenu)   goMenu.addEventListener('click', function(){ if(gameOver) gameOver.style.display='none'; goHome(); });
-if(startClassic)   startClassic.addEventListener('click', function(){ startGame('classic'); });
-if(startObstacles) startObstacles.addEventListener('click', function(){ startGame('obstacles'); });
+playAgain && playAgain.addEventListener('click', function(){ gameOver && (gameOver.style.display='none'); newGame(state.mode); });
+goMenu   && goMenu  .addEventListener('click', function(){ gameOver && (gameOver.style.display='none'); goHome(); });
+startClassic   && startClassic  .addEventListener('click', function(){ startGame('classic'); });
+startObstacles && startObstacles.addEventListener('click', function(){ startGame('obstacles'); });
 
 if(achBtn){
   achBtn.addEventListener('click', function(){
@@ -660,13 +619,13 @@ if(achBtn){
     renderMilestoneBoxForBlock(block);
   });
 }
-if(achievementsModal){ var abd = achievementsModal.querySelector ? achievementsModal.querySelector('.backdrop') : null; if(abd) abd.addEventListener('click', function(){ achievementsModal.style.display='none'; }); }
-if(closeAch) closeAch.addEventListener('click', function(){ achievementsModal.style.display='none'; });
-if(achPrev) achPrev.addEventListener('click', function(){ achPage=Math.max(1, achPage-1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
-if(achNext) achNext.addEventListener('click', function(){ achPage=Math.min(20, achPage+1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
+if(achievementsModal){ var abd = achievementsModal.querySelector ? achievementsModal.querySelector('.backdrop') : null; abd && abd.addEventListener('click', function(){ achievementsModal.style.display='none'; }); }
+closeAch && closeAch.addEventListener('click', function(){ achievementsModal && (achievementsModal.style.display='none'); });
+achPrev && achPrev.addEventListener('click', function(){ achPage=Math.max(1, achPage-1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
+achNext && achNext.addEventListener('click', function(){ achPage=Math.min(20, achPage+1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
 
-if(btnWatchAd) btnWatchAd.addEventListener('click', watchAdInAchievements);
-if(btnClaim)   btnClaim.addEventListener('click', function(){
+btnWatchAd && btnWatchAd.addEventListener('click', watchAdInAchievements);
+btnClaim   && btnClaim  .addEventListener('click', function(){
   if(btnClaim.getAttribute('aria-disabled')==='true'){ showToast('Završi 50/50 ciljeva i reklame za ovaj blok.'); return; }
   claimMilestoneReward();
 });
@@ -680,43 +639,43 @@ if(collectionBtn){
     setTab('themes'); // default
   });
 }
-if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; if(cbd) cbd.addEventListener('click', function(){ collectionModal.style.display='none'; }); }
-if(closeCollection) closeCollection.addEventListener('click', function(){ collectionModal.style.display='none'; });
+if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; cbd && cbd.addEventListener('click', function(){ collectionModal.style.display='none'; }); }
+closeCollection && closeCollection.addEventListener('click', function(){ collectionModal && (collectionModal.style.display='none'); });
 
-if(tabThemes) tabThemes.addEventListener('click', function(){ setTab('themes'); });
-if(tabSkins)  tabSkins  .addEventListener('click', function(){ setTab('skins'); });
+tabThemes && tabThemes.addEventListener('click', function(){ setTab('themes'); });
+tabSkins  && tabSkins .addEventListener('click', function(){ setTab('skins'); });
 function setTab(which){
   var themesSel = (which==='themes');
-  if(tabThemes) tabThemes.setAttribute('aria-selected', themesSel? 'true':'false');
-  if(tabSkins)  tabSkins .setAttribute('aria-selected', themesSel? 'false':'true');
-  if(panelThemes) panelThemes.setAttribute('aria-hidden', themesSel? 'false':'true');
-  if(panelSkins)  panelSkins .setAttribute('aria-hidden', themesSel? 'true':'false');
+  tabThemes && tabThemes.setAttribute('aria-selected', themesSel? 'true':'false');
+  tabSkins  && tabSkins .setAttribute('aria-selected', themesSel? 'false':'true');
+  panelThemes && panelThemes.setAttribute('aria-hidden', themesSel? 'false':'true');
+  panelSkins  && panelSkins .setAttribute('aria-hidden', themesSel? 'true':'false');
 }
 
 /* ===== Flow ===== */
 function startGame(mode){
   state.mode=mode||'classic';
-  if(start) start.style.display='none';
-  if(app) app.style.display='flex';
+  start && (start.style.display='none');
+  app && (app.style.display='flex');
   sizeToScreen(); newGame(mode);
 }
-function goHome(){ if(app) app.style.display='none'; if(start) start.style.display='flex'; state.dragging=null; requestDraw(); }
+function goHome(){ app && (app.style.display='none'); start && (start.style.display='flex'); state.dragging=null; requestDraw(); }
 function newGame(mode){
   state.grid=createGrid(BOARD);
-  state.score=0; if(scoreEl) scoreEl.textContent=0; if(bestEl) bestEl.textContent=String(state.best[mode]||0);
+  state.score=0; scoreEl && (scoreEl.textContent=0); bestEl && (bestEl.textContent=String(state.best[mode]||0));
   state.hand=[]; refillHand();
   if(mode==='obstacles'){
-    if(levelPill) levelPill.style.display='inline-flex';
-    state.level = 1; if(lvlEl) lvlEl.textContent = state.level; applyObstacles(obstaclesForLevel(state.level));
+    levelPill && (levelPill.style.display='inline-flex');
+    state.level = 1; lvlEl && (lvlEl.textContent = state.level); applyObstacles(obstaclesForLevel(state.level));
     showToast('Obstacles — Level 1');
-  }else{ if(levelPill) levelPill.style.display='none'; }
+  }else{ levelPill && (levelPill.style.display='none'); }
   requestDraw();
 }
 
 /* ===== Resize ===== */
 function sizeToScreen(){
   if(!canvas) return;
-  var headerEl = document.querySelector('header');
+  var headerEl = document.querySelector && document.querySelector('header');
   var headerH  = headerEl ? headerEl.offsetHeight : 60;
   var trayH    = trayEl ? (trayEl.offsetHeight) : 120;
   var chrome   = 28;
@@ -745,9 +704,24 @@ var drawQueued=false; function requestDraw(){ if(!drawQueued){ drawQueued=true; 
 window.addEventListener('resize', sizeToScreen, {passive:true});
 sizeToScreen();
 
-/* ===== Ach motor (sačuvan) ===== */
-var TARGETS = { blocks: function(i){return 300*i;}, lines: function(i){return 40*i;}, score: function(i){return 50000*i;} };
-function createAchievementsModel(){ var list=[],i; for(i=1;i<=1000;i++){ var title='',kind='',target=0,key=''; if(i%3===1){ kind='blocks'; target=TARGETS.blocks(i); title='Postavi '+target+' blokova'; key='blocksPlaced'; } else if(i%3===2){ kind='lines'; target=TARGETS.lines(i);  title='Očisti '+target+' linija';  key='linesCleared'; } else { kind='score'; target=TARGETS.score(i);  title='Osvoji '+(target.toLocaleString('sr-RS'))+' poena'; key='totalScore'; } var node={id:i,title:title,kind:kind,key:key,target:target,done:false}; if(i%50===0){ var adsNeeded=(i/50)*5; node.milestone={type:(i%100===0)?'skin':'theme', adsRequired:adsNeeded, adsExtMax:Math.floor(adsNeeded*0.8), adsExt:0, adsInt:0, claimed:false}; } list.push(node);} var model={list:list, currentMilestoneIndex: findFirstOpenMilestoneIndex(list)}; saveAch(model); return model; }
+/* ===== Ach motor ===== */
+function createAchievementsModel(){
+  var list=[],i;
+  for(i=1;i<=1000;i++){
+    var title='',kind='',target=0,key='';
+    if(i%3===1){ kind='blocks'; target=TARGETS.blocks(i); title='Postavi '+target+' blokova'; key='blocksPlaced'; }
+    else if(i%3===2){ kind='lines'; target=TARGETS.lines(i);  title='Očisti '+target+' linija';  key='linesCleared'; }
+    else { kind='score'; target=TARGETS.score(i);  title='Osvoji '+(target.toLocaleString('sr-RS'))+' poena'; key='totalScore'; }
+    var node={id:i,title:title,kind:kind,key:key,target:target,done:false};
+    if(i%50===0){
+      var adsNeeded=(i/50)*5;
+      node.milestone={type:(i%100===0)?'skin':'theme', adsRequired:adsNeeded, adsExtMax:Math.floor(adsNeeded*0.8), adsExt:0, adsInt:0, claimed:false};
+    }
+    list.push(node);
+  }
+  var model={list:list, currentMilestoneIndex: findFirstOpenMilestoneIndex(list)};
+  saveAch(model); return model;
+}
 function findFirstOpenMilestoneIndex(list){ for(var i=0;i<list.length;i++){ var a=list[i]; if(a.milestone && !(a.milestone.claimed)) return i; } return -1; }
 function getCurrentMilestoneIndex(){ return ach.currentMilestoneIndex!=null ? ach.currentMilestoneIndex : findFirstOpenMilestoneIndex(ach.list); }
 function indexToBlock(idx){ return Math.max(1, Math.ceil((idx+1)/50)); }
@@ -757,7 +731,7 @@ function rewardNameForMilestone(id){ var slot=id/50; var themePool=THEMES.slice(
 function renderAchievementsPage(){
   if(!achList) return;
   var perPage=50, startIdx=(achPage-1)*perPage, endIdx=Math.min(startIdx+perPage, ach.list.length);
-  if(achPageLbl) achPageLbl.textContent=String(achPage);
+  achPageLbl && (achPageLbl.textContent=String(achPage));
   achList.innerHTML='';
   for(var i=startIdx;i<endIdx;i++){
     var a=ach.list[i]; var progress=Math.min(1, getStat(a.key)/a.target);
@@ -833,7 +807,7 @@ function saveApplied(a){ LS('bp8.applied', JSON.stringify(a)); }
 function loadApplied(){ var s=LS('bp8.applied'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 function applyAccentFromTheme(themeId){ var t=null; for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===themeId){ t=THEMES[i]; break; } } if(t && t.accent){ document.documentElement.style.setProperty('--accent', t.accent); } }
 
-/* ===== Ads 80/20 u Ach modal ===== */
+/* ===== Ads ===== */
 function addExternalAd(){ var idx=getCurrentMilestoneIndex(); if(idx<0) return; var ms=ach.list[idx].milestone; if(ms.claimed) return; if(ms.adsExt < ms.adsExtMax){ ms.adsExt++; saveAch(ach); if(achievementsModal && achievementsModal.style.display==='flex') renderMilestoneBoxForBlock(indexToBlock(idx)); } }
 function addInternalAd(){ var idx=getCurrentMilestoneIndex(); if(idx<0) return; var ms=ach.list[idx].milestone; if(ms.claimed) return; var need=ms.adsRequired; var extMax=ms.adsExtMax; var total=Math.min(ms.adsExt, extMax)+ms.adsInt; if(total>=need) return; ms.adsInt++; saveAch(ach); renderMilestoneBoxForBlock(indexToBlock(idx)); }
 function claimMilestoneReward(){ var idx=getCurrentMilestoneIndex(); if(idx<0) return; var node=ach.list[idx]; var ms=node.milestone; var block=indexToBlock(idx); var blk50=blockProgress50(block); var blkOK=(blk50.done>=49); var need=ms.adsRequired; var extMax=ms.adsExtMax; var total=Math.min(ms.adsExt, extMax)+ms.adsInt; if(!(total>=need && blkOK)) return; ms.claimed=true; var info=rewardNameForMilestone(node.id); if(info.type==='theme'){ stats.themesUnlocked++; showToast('🎨 Nova tema: '+info.name); } else { stats.skinsUnlocked++; showToast('🧊 Novi skin: '+info.name); } saveStats(stats); ach.currentMilestoneIndex = findFirstOpenMilestoneIndex(ach.list); saveAch(ach); var nextIdx=(ach.currentMilestoneIndex>=0?ach.currentMilestoneIndex:((block-1)*50)); renderMilestoneBoxForBlock(indexToBlock(nextIdx)); renderAchievementsPage(); if(collectionModal && collectionModal.style.display==='flex') renderCollection(); }
@@ -841,6 +815,6 @@ function watchAdInAchievements(){ if(!btnWatchAd || btnWatchAd.getAttribute('ari
 window.simulateExternalAd = function(){ addExternalAd(); stats.externalAds++; saveStats(stats); showToast('🎬 +1 rewarded ad'); };
 
 /* ===== INIT ===== */
-if(!startClassic){ if(start) start.style.display='none'; if(app) app.style.display='flex'; newGame('classic'); }
+if(!startClassic){ start && (start.style.display='none'); app && (app.style.display='flex'); newGame('classic'); }
 
 })();
