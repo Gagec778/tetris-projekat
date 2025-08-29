@@ -115,7 +115,7 @@ var THEMES = [
   { id:'t04', name:'Neon Drift',    accent:'#00ffd9', palette:'neon' },
   { id:'t05', name:'Ivory Pearl',   accent:'#d9c8a1', palette:'ivory' },
   { id:'t06', name:'Emerald Mist',  accent:'#59e3a7', palette:'emerald' },
-  { id:'t07', name:'Royal Purple',  accent:'#b18cff', palette:'royal' },   // ponovo LJUBIČASTO
+  { id:'t07', name:'Royal Purple',  accent:'#b18cff', palette:'royal' },
   { id:'t08', name:'Ocean Depths',  accent:'#7bd0ff', palette:'ocean' },
   { id:'t09', name:'Desert Dune',   accent:'#d7a257', palette:'desert' },
   { id:'t10', name:'Crimson Pulse', accent:'#ff6b6b', palette:'crimson' }
@@ -328,13 +328,10 @@ function drawPanelAndGridOverlay(c, W, H, s){
   c.save();
   c.lineWidth=1;
   c.strokeStyle='rgba(255,255,255,.16)';
-  for(var y=0;y<BOARD;y++){
-    for(var x=0;x<BOARD;x++){
-      var px=x*s, py=y*s;
-      rr(c,px+1.5,py+1.5,s-3,s-3,8);
-      c.stroke();
-    }
-  }
+
+  /* === IZMENJENO: uklonjeni okviri ćelija po gridu ===
+     (ranije je ovde bila petlja koja je crtala rr() za svaku ćeliju i stroke) */
+
   var accent = getCss('--accent') || '#2ec5ff';
   var outerColor = isAuroraPlus() ? '#d4af37' : (accent.trim() || '#2ec5ff');
   c.lineWidth = isAuroraPlus() ? Math.max(2.2, s*0.10) : Math.max(2, s*0.08);
@@ -811,22 +808,24 @@ function renderCollection(){
 
   themesGrid.innerHTML='';
   for(i=1;i<=themeSlots;i++){
-    var unlocked = (i<= (stats.themesUnlocked||0));
     var t = THEMES[i-1];
     var d=document.createElement('div');
-    d.className='col-card'+(unlocked?'':' locked');
+    // === IZMENJENO: sve teme su otključane za probu ===
+    var unlocked = true;
     var activeTag = (applied.theme===t.id) ? '<span class="activeTag">Aktivno</span>' : '';
+    d.className='col-card'+(unlocked?'':' locked');
     d.innerHTML='<span>'+t.name+'</span><span class="badge">Tema</span>'+activeTag+(unlocked? '<button class="apply" data-apply-theme="'+t.id+'">Primeni</button>' : '<span class="lock">🔒</span>');
     themesGrid.appendChild(d);
   }
 
   skinsGrid.innerHTML='';
   for(i=1;i<=skinSlots;i++){
-    var unlockedS = (i<= (stats.skinsUnlocked||0));
     var s = SKINS[i-1];
     var d2=document.createElement('div');
-    d2.className='col-card'+(unlockedS?'':' locked');
+    // === IZMENJENO: svi skinovi su otključani za probu ===
+    var unlockedS = true;
     var activeTag2 = (applied.skin===s.id) ? '<span class="activeTag">Aktivno</span>' : '';
+    d2.className='col-card'+(unlockedS?'':' locked');
     d2.innerHTML='<span>'+s.name+'</span><span class="badge">Skin</span>'+activeTag2+(unlockedS? '<button class="apply" data-apply-skin="'+s.id+'">Primeni</button>' : '<span class="lock">🔒</span>');
     skinsGrid.appendChild(d2);
   }
