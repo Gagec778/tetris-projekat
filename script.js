@@ -133,6 +133,7 @@ function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
 function createGrid(n){ var arr=[]; for(var i=0;i<n;i++){ var row=[]; for(var j=0;j<n;j++) row.push(0); arr.push(row);} return arr; }
 function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v); }
+function fmt(n){ try{ return (n!=null && n.toLocaleString) ? n.toLocaleString('sr-RS') : String(n); }catch(e){ return String(n); } }
 
 function drawAurora(c,w,h){
   var pal = (function(){ for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===applied.theme) return THEMES[i].palette; } return 'starterAurora'; })();
@@ -324,7 +325,7 @@ function drawPanelAndGridOverlay(c, W, H, s){
 
 var SHOW_BLOCK_RIM=false;
 
-var patternCache=new Map();
+var patternCache = (typeof Map!=='undefined') ? new Map() : (function(){ var o=Object.create(null); return {has:function(k){return k in o;}, get:function(k){return o[k];}, set:function(k,v){o[k]=v;}}})();
 function makePatternCanvas(drawFn,size){ if(size==null) size=24; var key=(drawFn&&drawFn.name?drawFn.name:'p')+':'+size; if(patternCache.has(key)) return patternCache.get(key); var c=document.createElement('canvas'); c.width=c.height=size; var g=c.getContext('2d'); g.clearRect(0,0,size,size); drawFn(g,size); var pat=g.createPattern(c,'repeat'); patternCache.set(key,pat); return pat; }
 function patGlass(g,s){ g.strokeStyle='rgba(255,255,255,0.18)'; g.lineWidth=0.9; g.beginPath(); g.moveTo(0, s*0.22); g.lineTo(s, 0); g.stroke(); g.beginPath(); g.moveTo(0, s*0.62); g.lineTo(s, s*0.38); g.stroke(); }
 function patBrushed(g,s){ g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=0.9; for(var x=0;x<s;x+=3){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,s); g.stroke(); } }
@@ -729,7 +730,7 @@ window.addEventListener('resize', sizeToScreen, {passive:true});
 sizeToScreen();
 
 var TARGETS = { blocks: function(i){return 300*i;}, lines: function(i){return 40*i;}, score: function(i){return 50000*i;} };
-function createAchievementsModel(){ var list=[],i; for(i=1;i<=1000;i++){ var title='',kind='',target=0,key=''; if(i%3===1){ kind='blocks'; target=TARGETS.blocks(i); title='Postavi '+target+' blokova'; key='blocksPlaced'; } else if(i%3===2){ kind='lines'; target=TARGETS.lines(i);  title='Očisti '+target+' linija';  key='linesCleared'; } else { kind='score'; target=TARGETS.score(i);  title='Osvoji '+(target.toLocaleString('sr-RS'))+' poena'; key='totalScore'; } var node={id:i,title:title,kind:kind,key:key,target:target,done:false}; if(i%50===0){ var adsNeeded=(i/50)*5; node.milestone={type:(i%100===0)?'skin':'theme', adsRequired:adsNeeded, adsExtMax:Math.floor(adsNeeded*0.8), adsExt:0, adsInt:0, claimed:false}; } list.push(node);} var model={list:list, currentMilestoneIndex: findFirstOpenMilestoneIndex(list)}; saveAch(model); return model; }
+function createAchievementsModel(){ var list=[],i; for(i=1;i<=1000;i++){ var title='',kind='',target=0,key=''; if(i%3===1){ kind='blocks'; target=TARGETS.blocks(i); title='Postavi '+target+' blokova'; key='blocksPlaced'; } else if(i%3===2){ kind='lines'; target=TARGETS.lines(i);  title='Očisti '+target+' linija';  key='linesCleared'; } else { kind='score'; target=TARGETS.score(i);  title='Osvoji '+fmt(target)+' poena'; key='totalScore'; } var node={id:i,title:title,kind:kind,key:key,target:target,done:false}; if(i%50===0){ var adsNeeded=(i/50)*5; node.milestone={type:(i%100===0)?'skin':'theme', adsRequired:adsNeeded, adsExtMax:Math.floor(adsNeeded*0.8), adsExt:0, adsInt:0, claimed:false}; } list.push(node);} var model={list:list, currentMilestoneIndex: findFirstOpenMilestoneIndex(list)}; saveAch(model); return model; }
 function findFirstOpenMilestoneIndex(list){ for(var i=0;i<list.length;i++){ var a=list[i]; if(a.milestone && !(a.milestone.claimed)) return i; } return -1; }
 function getCurrentMilestoneIndex(){ return ach.currentMilestoneIndex!=null ? ach.currentMilestoneIndex : findFirstOpenMilestoneIndex(ach.list); }
 function indexToBlock(idx){ return Math.max(1, Math.ceil((idx+1)/50)); }
@@ -746,7 +747,7 @@ function renderAchievementsPage(){
     var card=document.createElement('div'); card.className='ach-card'+(a.milestone?' milestone':'')+(a.done?' done':'');
     var rewardTag=''; if(a.milestone){ var info=rewardNameForMilestone(a.id); rewardTag=(info.type==='skin'?' • 🎁 SKIN: '+info.name:' • 🎁 TEMA: '+info.name); }
     card.innerHTML='<h4>'+(a.done?'✅ ':'')+'#'+a.id+' — '+a.title+rewardTag+'</h4>'+
-      '<div class="meta"><span class="badge">'+a.kind+'</span><span class="small">'+Math.min(getStat(a.key),a.target).toLocaleString('sr-RS')+' / '+a.target.toLocaleString('sr-RS')+'</span></div>'+
+      '<div class="meta"><span class="badge">'+a.kind+'</span><span class="small">'+fmt(Math.min(getStat(a.key),a.target))+' / '+fmt(a.target)+'</span></div>'+
       '<div class="progress"><i style="width:'+(progress*100).toFixed(1)+'%"></i></div>';
     achList.appendChild(card);
   }
