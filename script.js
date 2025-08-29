@@ -65,10 +65,10 @@ var startObstacles = document.getElementById('startObstacles');
 if(ctx){ ctx.imageSmoothingEnabled=false; }
 if(fctx){ fctx.imageSmoothingEnabled=false; }
 
-/* ===== NOVO: slojevi tokom drag-a (blok iznad teme) ===== */
-if (canvas) { canvas.style.position = 'relative'; canvas.style.zIndex = '2'; }
-if (fxCnv)  { fxCnv.style.position  = 'absolute'; fxCnv.style.zIndex  = '3'; }
-if (bg)     { bg.style.zIndex = '0'; }
+/* ===== LAYERING: blok uvek iznad teme ===== */
+if (canvas) { canvas.style.position='relative'; canvas.style.zIndex='3'; }
+if (fxCnv)  { fxCnv.style.position='absolute'; fxCnv.style.zIndex='4'; }
+if (bg)     { bg.style.zIndex='0'; }
 
 /* ===== CONSTS & STATE ===== */
 var DPR=Math.min(window.devicePixelRatio||1,2);
@@ -344,7 +344,7 @@ function drawPanelAndGridOverlay(c, W, H, s){
   c.restore();
 }
 
-/* ===== SKIN render — bez “okvira/rima” na blokovima ===== */
+/* ===== SKIN render — bez “okvira/rima” na blokovima; prilepljeni uz grid ===== */
 var SHOW_BLOCK_RIM=false; // nema spoljnog okvira
 
 var patternCache=new Map();
@@ -364,12 +364,13 @@ function shade(hex,amt){ var m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
 function currentSkinStyle(){ for(var i=0;i<SKINS.length;i++){ if(SKINS[i].id===applied.skin) return SKINS[i].style; } return 'metal'; }
 function drawBlockStyle(c,x,y,s,baseHex,style,opt){
   var placed = opt && opt.placed;
-  var R=Math.max(4, s*.18);
-  function rrS(){ rr(c, x, y, s, s, Math.max(4, s*0.18)); }
+  var R=Math.max(6, s*.22);
+  function rrS(){ rr(c,x,y,s,s,R); } // PRILEPLJENO: bez +1/-2
+
   function drawRim(alpha,color,wMul){ if(alpha==null)alpha=0.30; if(color==null)color='rgba(0,0,0,.30)'; if(wMul==null)wMul=0.05; rrS(); c.lineWidth=Math.max(1, s*wMul); c.strokeStyle=color; c.globalAlpha=alpha; c.stroke(); c.globalAlpha=1; }
   function glint(ox,oy,rad,a){ if(a==null)a=0.35; var g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad); g.addColorStop(0,'rgba(255,255,255,'+a+')'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; rrS(); c.fill(); }
 
-  var styleNow = style||'metal';
+  var styleNow = style||currentSkinStyle();
 
   if(styleNow==='glass'){
     var body=c.createLinearGradient(x,y,x,y+s);
@@ -466,7 +467,7 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
-/* ===== Tray render — (bez suvišnih okvira) ===== */
+/* ===== Tray render — bez okvira i “uz grid” + popravka srednjeg slota ===== */
 function drawPieceToCanvas(piece){
   var scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
   var c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -477,11 +478,19 @@ function drawPieceToCanvas(piece){
 function renderTray(){
   if(!trayEl) return;
   trayEl.innerHTML='';
+  trayEl.style.paddingTop='4px';
   for(var i=0;i<state.hand.length;i++){
     var p=state.hand[i];
     var div=document.createElement('div');
     var fits=canFitAnywhere(p);
     div.className='slot'+(p.used?' used':'')+(p.used?'':(fits?' good':' bad'));
+    div.style.border='none';
+    div.style.background='transparent';
+    div.style.minHeight='auto';
+    div.style.justifyContent='center';
+    div.style.alignItems='center';
+    div.style.padding='4px';
+
     div.setAttribute('data-index', String(i));
     var pieceCanvas = drawPieceToCanvas(p);
     div.appendChild(pieceCanvas);
@@ -521,12 +530,12 @@ function draw(){
       var v=state.grid[y][x];
       var px=x*s, py=y*s;
       if(v===1){ drawPlaced(ctx,px,py,s); }
-      else if(v===2){ rr(ctx, px, py, s, s, Math.max(6, s*0.2)); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); }
+      else if(v===2){ rr(ctx,px,py,s,s,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); } // PRILEPLJENE PREPREKE
     }
   }
 
   if(state.dragging && state.dragging.px!=null){
-    ctx.globalCompositeOperation = 'source-over'; // previev blok uvek preko
+    ctx.globalCompositeOperation = 'source-over'; // blok uvek iznad
     var d = state.dragging, piece=d.piece, px2=d.px, py2=d.py, valid=d.valid;
     var liftY=72, offsetX=8; // blok iznad prsta
     var baseX=px2-(piece.w*s)/2+offsetX;
@@ -701,13 +710,13 @@ if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.q
 if(closeCollection) closeCollection.addEventListener('click', function(){ collectionModal.style.display='none'; });
 
 if(tabThemes) tabThemes.addEventListener('click', function(){ setTab('themes'); });
-if(tabSkins)  tabSkins.addEventListener('click', function(){ setTab('skins'); });
+if(tabSkins)  tabSkins  .addEventListener('click', function(){ setTab('skins'); });
 function setTab(which){
   var themesSel = (which==='themes');
   if(tabThemes) tabThemes.setAttribute('aria-selected', themesSel? 'true':'false');
-  if(tabSkins)  tabSkins.setAttribute('aria-selected', themesSel? 'false':'true');
+  if(tabSkins)  tabSkins .setAttribute('aria-selected', themesSel? 'false':'true');
   if(panelThemes) panelThemes.setAttribute('aria-hidden', themesSel? 'false':'true');
-  if(panelSkins)  panelSkins.setAttribute('aria-hidden', themesSel? 'true':'false');
+  if(panelSkins)  panelSkins .setAttribute('aria-hidden', themesSel? 'true':'false');
 }
 
 /* ===== Flow ===== */
