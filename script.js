@@ -1,14 +1,13 @@
 (function(){
 'use strict';
 
-/* ===== DOM REFS ===== */
 var canvas = document.getElementById('game');
 var ctx    = (canvas && canvas.getContext) ? canvas.getContext('2d', {alpha:true}) : null;
 var fxCnv  = document.getElementById('fx');
 var fctx   = (fxCnv && fxCnv.getContext) ? fxCnv.getContext('2d', {alpha:true}) : null;
 var app    = document.getElementById('app');
 var start  = document.getElementById('startScreen');
-var bg     = document.getElementById('bg'); // globalna aurora
+var bg     = document.getElementById('bg');
 var trayEl = document.getElementById('tray');
 var scoreEl= document.getElementById('score');
 var bestEl = document.getElementById('best');
@@ -40,7 +39,6 @@ var btnWatchAd = document.getElementById('btnWatchAd');
 var btnClaim   = document.getElementById('btnClaim');
 var closeAch = document.getElementById('closeAch');
 
-/* Kolekcija (tabs) */
 var collectionBtn   = document.getElementById('collectionBtn');
 var collectionModal = document.getElementById('collectionModal');
 var themesGrid = document.getElementById('themesGrid');
@@ -51,36 +49,29 @@ var tabSkins  = document.getElementById('tabSkins');
 var panelThemes = document.getElementById('panelThemes');
 var panelSkins  = document.getElementById('panelSkins');
 
-/* Game Over */
 var gameOver = document.getElementById('gameOver');
 var goStats  = document.getElementById('goStats');
 var playAgain= document.getElementById('playAgain');
 var goMenu   = document.getElementById('goMenu');
 
-/* Mode dugmad */
 var startClassic   = document.getElementById('startClassic');
 var startObstacles = document.getElementById('startObstacles');
 
-/* ===== SAFETY ===== */
 if(ctx){ ctx.imageSmoothingEnabled=false; }
 if(fctx){ fctx.imageSmoothingEnabled=false; }
 
-/* ===== NOVO: slojevi tokom drag-a (blok iznad teme) ===== */
 if (canvas) { canvas.style.position = 'relative'; canvas.style.zIndex = '2'; }
 if (fxCnv)  { fxCnv.style.position  = 'absolute'; fxCnv.style.zIndex  = '3'; }
 if (bg)     { bg.style.zIndex = '0'; }
+if (trayEl) { trayEl.style.overflow = 'visible'; }
 
-/* ===== CONSTS & STATE ===== */
 var DPR=Math.min(window.devicePixelRatio||1,2);
 var BOARD=8;
 
-/* Paleta boja za blokove */
 var COLORS=['#ffd089','#ffb3c6','#ffd1a1','#d4af37','#c0c0c0','#ff9e7d','#ffc06a','#f6a6ff'];
 
-/* Prepreke */
 var OBSTACLE_COLOR='#2a3344';
 
-/* safe localStorage wrapper */
 function makeSafeStorage(){
   try{ localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return localStorage; }
   catch(e){ return {getItem:function(){return null;}, setItem:function(){}, removeItem:function(){}}; }
@@ -88,25 +79,20 @@ function makeSafeStorage(){
 var SAFE = makeSafeStorage();
 function LS(k,v){ return (v===undefined ? SAFE.getItem(k) : SAFE.setItem(k,v)); }
 
-/* Settings */
 var settings = { theme: (LS('bp8.theme')||'dark'), sound: (LS('bp8.sound')!==null ? LS('bp8.sound')==='1' : true) };
 applyTheme(settings.theme); updateSoundLabel();
 
-/* Best */
 var bestByMode = loadBest() || {classic:0, obstacles:0};
 var maxLevelSaved = parseInt(LS('bp8.level.max')||'1',10);
 
-/* State */
 var state = {
   grid:createGrid(BOARD), cell:36, score:0,
   mode:'classic', best:bestByMode, hand:[],
   dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved)
 };
 
-/* Stats */
 var stats = loadStats() || { totalScore:0, blocksPlaced:0, linesCleared:0, externalAds:0, themesUnlocked:0, skinsUnlocked:0 };
 
-/* ===== TEME & SKINOVI ===== */
 var THEMES = [
   { id:'t00', name:'Starter Aurora', accent:'#2ec5ff', palette:'starterAurora' },
   { id:'t01', name:'Aurora Blue+',  accent:'#35d7ff', palette:'auroraPlus'     },
@@ -135,31 +121,73 @@ var SKINS = [
   { id:'s10', name:'Stone Marble',   style:'marble' }
 ];
 
-/* ===== DEV: otključaj sve teme/skinove dok praviš igru ===== */
-var DEV_UNLOCK = true; /* CHANGED: tokom razvoja — sve otključano */
+var DEV_UNLOCK = true;
 
-/* primenjeni */
 var applied = loadApplied() || { theme:'t00', skin:'s00' };
 applyAccentFromTheme(applied.theme);
 
-/* Achievements model (sačuvan) */
 var ach = loadAch() || createAchievementsModel();
 var achPage = 1;
 
-/* ===== Utils ===== */
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
 function createGrid(n){ var arr=[]; for(var i=0;i<n;i++){ var row=[]; for(var j=0;j<n;j++) row.push(0); arr.push(row);} return arr; }
 function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v); }
 
-/* ===== Aurora BG ===== */
 function drawAurora(c,w,h){
   var pal = (function(){ for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===applied.theme) return THEMES[i].palette; } return 'starterAurora'; })();
   c.save();
   var base=c.createLinearGradient(0,0,w,h);
-  /* ... (bez izmjena — skraćeno radi čitljivosti) ... */
+  switch(pal){
+    case 'starterAurora':
+      base.addColorStop(0,'rgba(8,14,28,0.88)');
+      base.addColorStop(1,'rgba(10,20,40,0.92)');
+      break;
+    case 'auroraPlus':
+      base.addColorStop(0,'rgba(6,12,22,0.92)');
+      base.addColorStop(1,'rgba(10,26,46,0.94)');
+      break;
+    case 'royal':
+      base.addColorStop(0,'rgba(20,10,30,0.92)');
+      base.addColorStop(1,'rgba(40,18,70,0.94)');
+      break;
+    case 'sunset':
+      base.addColorStop(0,'rgba(28,10,10,0.90)');
+      base.addColorStop(1,'rgba(40,18,10,0.92)');
+      break;
+    case 'noirGold':
+      base.addColorStop(0,'rgba(14,12,8,0.92)');
+      base.addColorStop(1,'rgba(26,20,10,0.94)');
+      break;
+    case 'neon':
+      base.addColorStop(0,'rgba(6,16,18,0.92)');
+      base.addColorStop(1,'rgba(8,26,28,0.94)');
+      break;
+    case 'ivory':
+      base.addColorStop(0,'rgba(22,22,20,0.90)');
+      base.addColorStop(1,'rgba(28,28,24,0.92)');
+      break;
+    case 'emerald':
+      base.addColorStop(0,'rgba(8,20,14,0.92)');
+      base.addColorStop(1,'rgba(12,32,22,0.94)');
+      break;
+    case 'ocean':
+      base.addColorStop(0,'rgba(8,16,28,0.92)');
+      base.addColorStop(1,'rgba(10,26,44,0.94)');
+      break;
+    case 'desert':
+      base.addColorStop(0,'rgba(26,18,10,0.92)');
+      base.addColorStop(1,'rgba(34,24,12,0.94)');
+      break;
+    case 'crimson':
+      base.addColorStop(0,'rgba(26,8,12,0.92)');
+      base.addColorStop(1,'rgba(40,10,14,0.94)');
+      break;
+    default:
+      base.addColorStop(0,'rgba(8,12,20,0.92)');
+      base.addColorStop(1,'rgba(10,18,28,0.92)');
+  }
   c.fillStyle=base; c.fillRect(0,0,w,h);
-
   c.globalCompositeOperation='screen';
   function blob(cx,cy,r,color,a1,a0){
     if(a1===void 0)a1=0.40; if(a0===void 0)a0=0;
@@ -168,11 +196,59 @@ function drawAurora(c,w,h){
     g.addColorStop(1,'rgba('+color+','+a0+')');
     c.fillStyle=g; c.fillRect(0,0,w,h);
   }
-  /* ... ostale palete ... */
+  switch(pal){
+    case 'starterAurora':
+      blob(w*.34,h*.42,Math.max(w,h)*.75,'60,140,255',0.38);
+      blob(w*.70,h*.70,Math.max(w,h)*.65,'30,220,255',0.30);
+      break;
+    case 'auroraPlus':
+      blob(w*.28,h*.36,Math.max(w,h)*.85,'60,160,255',0.52);
+      blob(w*.72,h*.70,Math.max(w,h)*.95,'0,220,255',0.42);
+      blob(w*.18,h*.86,Math.max(w,h)*.65,'120,80,255',0.38);
+      break;
+    case 'royal':
+      blob(w*.32,h*.40,Math.max(w,h)*.85,'150,80,255',0.50);
+      blob(w*.74,h*.72,Math.max(w,h)*.90,'210,150,255',0.35);
+      break;
+    case 'sunset':
+      blob(w*.30,h*.38,Math.max(w,h)*.90,'255,120,80',0.46);
+      blob(w*.76,h*.70,Math.max(w,h)*.80,'255,200,120',0.34);
+      break;
+    case 'noirGold':
+      blob(w*.28,h*.36,Math.max(w,h)*.80,'220,180,80',0.36);
+      blob(w*.70,h*.74,Math.max(w,h)*.85,'255,220,150',0.26);
+      break;
+    case 'neon':
+      blob(w*.30,h*.40,Math.max(w,h)*.90,'0,255,200',0.42);
+      blob(w*.72,h*.68,Math.max(w,h)*.85,'0,180,255',0.30);
+      break;
+    case 'emerald':
+      blob(w*.30,h*.42,Math.max(w,h)*.90,'60,255,180',0.40);
+      blob(w*.72,h*.70,Math.max(w,h)*.85,'30,220,150',0.32);
+      break;
+    case 'ivory':
+      blob(w*.34,h*.44,Math.max(w,h)*.80,'255,240,200',0.32);
+      blob(w*.70,h*.72,Math.max(w,h)*.80,'250,220,160',0.26);
+      break;
+    case 'ocean':
+      blob(w*.34,h*.42,Math.max(w,h)*.85,'80,180,255',0.40);
+      blob(w*.72,h*.70,Math.max(w,h)*.90,'0,120,255',0.28);
+      break;
+    case 'desert':
+      blob(w*.34,h*.42,Math.max(w,h)*.85,'255,200,120',0.38);
+      blob(w*.72,h*.70,Math.max(w,h)*.90,'255,160,80',0.30);
+      break;
+    case 'crimson':
+      blob(w*.32,h*.40,Math.max(w,h)*.85,'255,80,100',0.46);
+      blob(w*.74,h*.72,Math.max(w,h)*.90,'255,150,160',0.32);
+      break;
+    default:
+      blob(w*.30,h*.35,Math.max(w,h)*.80,'60,150,255',0.40);
+      blob(w*.75,h*.72,Math.max(w,h)*.90,'0,220,255',0.32);
+  }
   c.restore();
 }
 
-/* petlja pozadine — radi stalno */
 if(bg){
   (function loopBG(){
     var b=bg.getContext('2d');
@@ -185,16 +261,30 @@ if(bg){
   })();
 }
 
-/* ===== Shapes / Pieces ===== */
 var SHAPES=(function(){
-  /* ... bez izmjena ... */
+  var raw=[
+    [[0,0]],
+    [[0,0],[1,0]], [[0,0],[1,0],[2,0]], [[0,0],[1,0],[2,0],[3,0]], [[0,0],[1,0],[2,0],[3,0],[4,0]],
+    [[0,0],[0,1]], [[0,0],[0,1],[0,2]], [[0,0],[0,1],[0,2],[0,3]], [[0,0],[0,1],[0,2],[0,3],[0,4]],
+    [[0,0],[1,0],[0,1],[1,1]],
+    [[0,0],[1,0],[2,0],[0,1]],
+    [[0,0],[1,0],[2,0],[1,1]],
+    [[0,0],[1,0],[0,1],[0,2]],
+    [[0,0],[1,0],[1,1],[1,2]]
+  ];
+  return raw.map(function(shape){
+    var minx=Infinity,miny=Infinity,i;
+    for(i=0;i<shape.length;i++){ if(shape[i][0]<minx)minx=shape[i][0]; if(shape[i][1]<miny)miny=shape[i][1]; }
+    var blocks=shape.map(function(b){ return [b[0]-minx,b[1]-miny]; });
+    var w=0,h=0; for(i=0;i<blocks.length;i++){ if(blocks[i][0]>w)w=blocks[i][0]; if(blocks[i][1]>h)h=blocks[i][1]; }
+    return {blocks:blocks,w:w+1,h:h+1};
+  });
 })();
 function rndColor(){ return COLORS[Math.floor(Math.random()*COLORS.length)]; }
 function newPiece(){ var s=SHAPES[Math.floor(Math.random()*SHAPES.length)];
   return { blocks:s.blocks.map(function(b){return [b[0],b[1]];}), w:s.w, h:s.h, color:rndColor(), used:false, id:Math.random().toString(36).slice(2) };
 }
 
-/* ===== Pravila ===== */
 function canPlace(piece,gx,gy){
   for(var i=0;i<piece.blocks.length;i++){
     var x=gx+piece.blocks[i][0], y=gy+piece.blocks[i][1];
@@ -211,7 +301,6 @@ function anyFits(){
   return false;
 }
 
-/* ===== GRID overlay & rim ===== */
 function isAuroraPlus(){ return applied.theme==='t01'; }
 function drawPanelAndGridOverlay(c, W, H, s){
   c.save();
@@ -233,16 +322,127 @@ function drawPanelAndGridOverlay(c, W, H, s){
   c.restore();
 }
 
-/* ===== SKIN render — (bez okvira na blokovima) ===== */
 var SHOW_BLOCK_RIM=false;
 
 var patternCache=new Map();
-/* ... (sve kao u tvom kodu) ... */
+function makePatternCanvas(drawFn,size){ if(size==null) size=24; var key=(drawFn&&drawFn.name?drawFn.name:'p')+':'+size; if(patternCache.has(key)) return patternCache.get(key); var c=document.createElement('canvas'); c.width=c.height=size; var g=c.getContext('2d'); g.clearRect(0,0,size,size); drawFn(g,size); var pat=g.createPattern(c,'repeat'); patternCache.set(key,pat); return pat; }
+function patGlass(g,s){ g.strokeStyle='rgba(255,255,255,0.18)'; g.lineWidth=0.9; g.beginPath(); g.moveTo(0, s*0.22); g.lineTo(s, 0); g.stroke(); g.beginPath(); g.moveTo(0, s*0.62); g.lineTo(s, s*0.38); g.stroke(); }
+function patBrushed(g,s){ g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=0.9; for(var x=0;x<s;x+=3){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,s); g.stroke(); } }
+function patFacet(g,s){ g.strokeStyle='rgba(255,255,255,0.16)'; g.lineWidth=1.0; g.beginPath(); g.moveTo(0,0); g.lineTo(s,s); g.stroke(); g.beginPath(); g.moveTo(s*0.2,0); g.lineTo(s, s*0.8); g.stroke(); g.beginPath(); g.moveTo(0, s*0.3); g.lineTo(s*0.7, s); g.stroke(); }
+function patSatin(g,s){ g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=1.2; g.beginPath(); g.moveTo(0,s*0.3); g.bezierCurveTo(s*0.3,s*0.2, s*0.6,s*0.5, s,s*0.42); g.stroke(); }
+function patChrome(g,s){ var grd=g.createLinearGradient(0,s*0.28,0,s*0.72); grd.addColorStop(0,'rgba(255,255,255,0.45)'); grd.addColorStop(0.5,'rgba(255,255,255,0.00)'); grd.addColorStop(1,'rgba(255,255,255,0.45)'); g.fillStyle=grd; g.fillRect(0,0,s,s); }
+function patSpeckle(g,s){ g.fillStyle='rgba(255,255,255,0.08)'; for(var i=0;i<Math.floor(s*1.0);i++){ g.fillRect(Math.random()*s, Math.random()*s, 1,1); } }
+function patWeave(g,s){ g.strokeStyle='rgba(255,255,255,0.08)'; g.lineWidth=1; for(var x=0;x<s;x+=4){ g.beginPath(); g.moveTo(x,0); g.lineTo(x+2,s); g.stroke(); } for(var y=0;y<s;y+=4){ g.beginPath(); g.moveTo(0,y); g.lineTo(s,y+2); g.stroke(); } }
+function patCrackle(g,s){ g.strokeStyle='rgba(255,255,255,0.12)'; g.lineWidth=0.8; for(var i=0;i<3;i++){ g.beginPath(); g.moveTo(Math.random()*s, Math.random()*s); for(var k=0;k<3;k++){ g.lineTo(Math.random()*s, Math.random()*s); } g.stroke(); } }
+function patBubbles(g,s){ g.strokeStyle='rgba(255,255,255,0.12)'; g.lineWidth=0.8; for(var i=0;i<3;i++){ var r=2+Math.random()*3, x=Math.random()*s, y=Math.random()*s; g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.stroke(); } }
+function patVeins(g,s){ g.strokeStyle='rgba(255,255,255,0.16)'; g.lineWidth=1.0; for(var i=0;i<2;i++){ g.beginPath(); g.moveTo(0, Math.random()*s); g.bezierCurveTo(s*0.3,Math.random()*s, s*0.6,Math.random()*s, s,Math.random()*s); g.stroke(); } }
+function getSkinPattern(style){ switch(style){ case 'glass':return makePatternCanvas(patGlass,28); case 'metal':return makePatternCanvas(patBrushed,24); case 'gem':return makePatternCanvas(patFacet,24); case 'satin':return makePatternCanvas(patSatin,28); case 'chrome':return makePatternCanvas(patChrome,24); case 'porcelain':return makePatternCanvas(patSpeckle,24); case 'carbon':return makePatternCanvas(patWeave,24); case 'frost':return makePatternCanvas(patCrackle,28); case 'velvet':return makePatternCanvas(patBubbles,28); case 'marble':return makePatternCanvas(patVeins,28); default:return null; } }
+function shade(hex,amt){ var m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); if(!m) return hex; var r=parseInt(m[1],16),g=parseInt(m[2],16),b=parseInt(m[3],16); r=Math.max(0,Math.min(255,r+amt)); g=Math.max(0,Math.min(255,g+amt)); b=Math.max(0,Math.min(255,b+amt)); return 'rgb('+r+','+g+','+b+')'; }
+function currentSkinStyle(){ for(var i=0;i<SKINS.length;i++){ if(SKINS[i].id===applied.skin) return SKINS[i].style; } return 'metal'; }
+function drawBlockStyle(c,x,y,s,baseHex,style,opt){
+  var placed = opt && opt.placed;
+  var R=Math.max(4, s*.18);
+  function rrS(){ rr(c, x, y, s, s, Math.max(4, s*0.18)); }
+  function drawRim(alpha,color,wMul){ if(alpha==null)alpha=0.30; if(color==null)color='rgba(0,0,0,.30)'; if(wMul==null)wMul=0.05; rrS(); c.lineWidth=Math.max(1, s*wMul); c.strokeStyle=color; c.globalAlpha=alpha; c.stroke(); c.globalAlpha=1; }
+  function glint(ox,oy,rad,a){ if(a==null)a=0.35; var g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad); g.addColorStop(0,'rgba(255,255,255,'+a+')'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; rrS(); c.fill(); }
 
+  var styleNow = style||'metal';
+
+  if(styleNow==='glass'){
+    var body=c.createLinearGradient(x,y,x,y+s);
+    body.addColorStop(0,'rgba(255,255,255,0.30)');
+    body.addColorStop(0.35, baseHex);
+    body.addColorStop(1, shade(baseHex,-22));
+    rrS(); c.fillStyle=body; c.fill();
+    var pat=getSkinPattern('glass'); if(pat){ c.save(); rrS(); c.fillStyle=pat; c.globalAlpha=0.32; c.fill(); c.restore(); }
+    if(SHOW_BLOCK_RIM) drawRim(0.35,'rgba(0,0,0,.35)',0.06);
+    glint(s*0.25, s*0.22, s*0.46, 0.28);
+  } else if(styleNow==='metal'){
+    var body2=c.createLinearGradient(x,y,x,y+s);
+    body2.addColorStop(0, shade(baseHex,14));
+    body2.addColorStop(1, shade(baseHex,-26));
+    rrS(); c.fillStyle=body2; c.fill();
+    var pat2=getSkinPattern('metal'); if(pat2){ c.save(); rrS(); c.fillStyle=pat2; c.globalAlpha=0.55; c.fill(); c.restore(); }
+    if(SHOW_BLOCK_RIM) { drawRim(0.28,'rgba(0,0,0,.40)',0.06); rr(c,x+2,y+2,s-4,s-4,R-3); c.strokeStyle='rgba(255,255,255,.12)'; c.lineWidth=1; c.stroke(); }
+  } else if(styleNow==='gem'){
+    var body3=c.createLinearGradient(x,y,x+s,y+s);
+    body3.addColorStop(0, shade(baseHex,30));
+    body3.addColorStop(0.5, baseHex);
+    body3.addColorStop(1, shade(baseHex,-30));
+    rrS(); c.fillStyle=body3; c.fill();
+    var pat3=getSkinPattern('gem'); if(pat3){ c.save(); rrS(); c.fillStyle=pat3; c.globalAlpha=0.38; c.fill(); c.restore(); }
+    if(SHOW_BLOCK_RIM) drawRim(0.34,'rgba(0,0,0,.38)',0.06);
+  } else if(styleNow==='satin'){
+    var body4=c.createLinearGradient(x,y,x,y+s);
+    body4.addColorStop(0, shade(baseHex,12));
+    body4.addColorStop(0.5, baseHex);
+    body4.addColorStop(1, shade(baseHex,-12));
+    rrS(); c.fillStyle=body4; c.fill();
+    var pat4=getSkinPattern('satin'); if(pat4){ c.save(); rrS(); c.fillStyle=pat4; c.globalAlpha=0.26; c.fill(); c.restore(); }
+    if(SHOW_BLOCK_RIM) drawRim(0.25,'rgba(0,0,0,.28)',0.05);
+  } else if(styleNow==='chrome'){
+    var body5=c.createLinearGradient(x,y,x,y+s);
+    body5.addColorStop(0,'rgba(255,255,255,.65)');
+    body5.addColorStop(0.2, shade(baseHex,28));
+    body5.addColorStop(0.5, shade(baseHex,-22));
+    body5.addColorStop(0.8, shade(baseHex,24));
+    body5.addColorStop(1,'rgba(255,255,255,.48)');
+    rrS(); c.fillStyle=body5; c.fill();
+    var pat5=getSkinPattern('chrome'); if(pat5){ c.save(); rrS(); c.fillStyle=pat5; c.globalAlpha=0.38; c.fill(); c.restore(); }
+    if(SHOW_BLOCK_RIM) drawRim(0.36,'rgba(0,0,0,.34)',0.06);
+    glint(s*0.5, s*0.25, s*0.55, 0.24);
+  } else if(styleNow==='porcelain'){
+    var body6=c.createLinearGradient(x,y,x,y+s);
+    body6.addColorStop(0, shade(baseHex,10));
+    body6.addColorStop(1, shade(baseHex,-10));
+    rrS(); c.fillStyle=body6; c.fill();
+    var pat6=getSkinPattern('porcelain'); if(pat6){ c.save(); rrS(); c.fillStyle=pat6; c.globalAlpha=0.24; c.fill(); c.restore(); }
+    if(SHOW_BLOCK_RIM) drawRim(0.22,'rgba(0,0,0,.22)',0.045);
+  } else if(styleNow==='carbon'){
+    var body7=c.createLinearGradient(x,y,x,y+s);
+    body7.addColorStop(0, shade(baseHex,8));
+    body7.addColorStop(1, shade(baseHex,-18));
+    rrS(); c.fillStyle=body7; c.fill();
+    var pat7=getSkinPattern('carbon'); if(pat7){ c.save(); rrS(); c.fillStyle=pat7; c.globalAlpha=0.42; c.fill(); c.restore(); }
+    if(SHOW_BLOCK_RIM) drawRim(0.32,'rgba(0,0,0,.40)',0.06);
+  } else if(styleNow==='frost'){
+    var body8=c.createLinearGradient(x,y,x,y+s);
+    body8.addColorStop(0, shade(baseHex,18));
+    body8.addColorStop(1, shade(baseHex,-26));
+    rrS(); c.fillStyle=body8; c.fill();
+    var pat8=getSkinPattern('frost'); if(pat8){ c.save(); rrS(); c.fillStyle=pat8; c.globalAlpha=0.26; c.fill(); c.restore(); }
+    if(SHOW_BLOCK_RIM) drawRim(0.30,'rgba(0,0,0,.32)',0.055);
+  } else if(styleNow==='velvet'){
+    var body9=c.createLinearGradient(x,y,x,y+s);
+    body9.addColorStop(0, shade(baseHex,16));
+    body9.addColorStop(1, shade(baseHex,-16));
+    rrS(); c.fillStyle=body9; c.fill();
+    var pat9=getSkinPattern('velvet'); if(pat9){ c.save(); rrS(); c.fillStyle=pat9; c.globalAlpha=0.22; c.fill(); c.restore(); }
+  } else if(styleNow==='marble'){
+    var body10=c.createLinearGradient(x,y,x,y+s);
+    body10.addColorStop(0, shade(baseHex,8));
+    body10.addColorStop(1, shade(baseHex,-16));
+    rrS(); c.fillStyle=body10; c.fill();
+    var pat10=getSkinPattern('marble'); if(pat10){ c.save(); rrS(); c.fillStyle=pat10; c.globalAlpha=0.28; c.fill(); c.restore(); }
+    if(SHOW_BLOCK_RIM) drawRim(0.30,'rgba(0,0,0,.30)',0.055);
+  } else {
+    var body11=c.createLinearGradient(x,y,x,y+s);
+    body11.addColorStop(0, baseHex);
+    body11.addColorStop(1, shade(baseHex,-18));
+    rrS(); c.fillStyle=body11; c.fill();
+    if(SHOW_BLOCK_RIM) drawRim(0.28,'rgba(0,0,0,.30)',0.06);
+  }
+
+  if(placed){
+    rr(c,x+1.2,y+1.2,s-2.4,s-2.4,Math.max(5, R-1));
+    c.lineWidth=Math.max(1, s*.06);
+    c.strokeStyle='rgba(255,255,255,.12)';
+    if(SHOW_BLOCK_RIM) c.stroke();
+  }
+}
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
-/* ===== Tray render — (bez suvišnih okvira) ===== */
 function drawPieceToCanvas(piece){
   var scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
   var c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -273,7 +473,6 @@ function renderTray(){
   }
 }
 
-/* ===== Scoring & Obstacles ===== */
 var SCORE_CFG = { perBlock: 8, lineBase: 300, comboStep: 0.3, levelStep: 0.05 };
 function levelMultiplier(){ return 1 + (state.level - 1) * SCORE_CFG.levelStep; }
 function scoreForClear(lines){ if(lines<=0) return 0; var combo = 1 + (lines - 1) * SCORE_CFG.comboStep; return Math.round(SCORE_CFG.lineBase * lines * combo * levelMultiplier()); }
@@ -282,7 +481,6 @@ function obstaclesForLevel(lvl){ var maxCells = BOARD*BOARD; return Math.min(Mat
 function applyObstacles(n){ var p=0,g=0; while(p<n && g<400){ g++; var x=Math.floor(Math.random()*BOARD), y=Math.floor(Math.random()*BOARD); if(state.grid[y][x]===0){ state.grid[y][x]=2; p++; } } }
 function checkLevelUp(){ var need = state.level * LEVEL_STEP_SCORE; if(state.score >= need && state.level < LEVELS_MAX && state.mode==='obstacles'){ state.level++; state.maxLevel = Math.max(state.maxLevel, state.level); LS('bp8.level.max', String(state.maxLevel)); applyObstacles(Math.max(1, Math.floor(obstaclesForLevel(state.level)*0.6))); if(lvlEl) lvlEl.textContent = state.level; showToast('Level UP → '+state.level); requestDraw(); } }
 
-/* ===== Draw ===== */
 function draw(){
   if(!ctx || !canvas) return;
   var s=state.cell, W=s*BOARD, H=s*BOARD;
@@ -301,11 +499,10 @@ function draw(){
     }
   }
 
-  /* CHANGED: preview bloka uvek iznad svega (source-over + viši z-index već setovan) */
   if(state.dragging && state.dragging.px!=null){
     ctx.globalCompositeOperation = 'source-over';
     var d = state.dragging, piece=d.piece, px2=d.px, py2=d.py, valid=d.valid;
-    var liftY=72, offsetX=8; // blok iznad prsta
+    var liftY=72, offsetX=8;
     var baseX=px2-(piece.w*s)/2+offsetX;
     var baseY=py2-(piece.h*s)/2-liftY;
     for(var i=0;i<piece.blocks.length;i++){
@@ -315,13 +512,11 @@ function draw(){
   }
 }
 
-/* ===== FX ===== */
 var particles=[];
 function spawnParticles(cells){ if(!fctx) return; var s=state.cell,d=DPR; for(var i=0;i<cells.length;i++){ var xy=cells[i], bx=xy[0], by=xy[1]; for(var j=0;j<6;j++){ var base={x:(bx+0.5)*s*d,y:(by+0.5)*s*d,vx:(Math.random()-0.5)*2,vy:(-Math.random()*2-0.5),life:40,r:2,color:'#ffffffaa',shape:'dot'}; particles.push(base);} } }
 function stepFX(){ if(!fctx || !fxCnv){ requestAnimationFrame(stepFX); return; } fctx.setTransform(1,0,0,1,0,0); fctx.clearRect(0,0,fxCnv.width,fxCnv.height); for(var i=0;i<particles.length;i++){ var p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--; fctx.globalAlpha=Math.max(0,p.life/40); fctx.fillStyle=p.color; fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill(); } for(i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1); requestAnimationFrame(stepFX); }
 requestAnimationFrame(stepFX);
 
-/* ===== Place / Refill / Game over ===== */
 function place(piece,gx,gy){
   var placedBlocks = piece.blocks.length;
   for(var i=0;i<piece.blocks.length;i++){ var dx=piece.blocks[i][0], dy=piece.blocks[i][1]; state.grid[gy+dy][gx+dx]=1; }
@@ -362,7 +557,6 @@ function place(piece,gx,gy){
 }
 function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
-/* ===== Drag ===== */
 var POINTER={active:false,fromSlotIndex:null};
 function getCanvasPos(e){ var r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; }
 function startDragFromSlot(e){
@@ -414,7 +608,6 @@ window.addEventListener('pointerup', onPointerUp, {passive:true});
 window.addEventListener('pointercancel', onPointerCancel, {passive:true});
 window.addEventListener('lostpointercapture', onPointerCancel, {passive:true});
 
-/* ===== UI helpers ===== */
 function showToast(msg){
   var t=document.getElementById('toast');
   if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t);
@@ -427,7 +620,6 @@ function applyTheme(t){ if(document.body && document.body.classList){ if(t==='li
 function saveBest(b){ LS('bp8.best', JSON.stringify(b)); }
 function loadBest(){ var s=LS('bp8.best'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 
-/* ===== Buttons / Events ===== */
 if(resetBtn) resetBtn.addEventListener('click', function(){ newGame(state.mode); });
 if(backBtn)  backBtn.addEventListener('click', function(){ goHome(); });
 
@@ -465,13 +657,12 @@ if(btnClaim)   btnClaim.addEventListener('click', function(){
   claimMilestoneReward();
 });
 
-/* Kolekcija modal + TABOVI */
 if(collectionBtn){
   collectionBtn.addEventListener('click', function(){
     if(!collectionModal) return;
     collectionModal.style.display='flex';
     renderCollection();
-    setTab('themes'); // default
+    setTab('themes');
   });
 }
 if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; if(cbd) cbd.addEventListener('click', function(){ collectionModal.style.display='none'; }); }
@@ -487,7 +678,6 @@ function setTab(which){
   if(panelSkins)  panelSkins.setAttribute('aria-hidden', themesSel? 'true':'false');
 }
 
-/* ===== Flow ===== */
 function startGame(mode){
   state.mode=mode||'classic';
   if(start) start.style.display='none';
@@ -507,13 +697,11 @@ function newGame(mode){
   requestDraw();
 }
 
-/* ===== Resize ===== */
 function sizeToScreen(){
   if(!canvas) return;
   var headerEl = document.querySelector('header');
   var headerH  = headerEl ? headerEl.offsetHeight : 60;
-  /* CHANGED: fiksna visina za tray da grid ne “skače” kad je veći blok */
-  var trayH    = 120;  /* umesto trayEl.offsetHeight */
+  var trayH    = 120;
   var chrome   = 28;
 
   var availH = Math.max(260, window.innerHeight - headerH - trayH - chrome);
@@ -528,7 +716,6 @@ function sizeToScreen(){
   if(fctx){ fctx.setTransform(1,0,0,1,0,0); }
   state.cell=cell;
 
-  // global bg canvas
   if(bg){
     var w=window.innerWidth, h=window.innerHeight;
     if(bg.width!==Math.floor(w*DPR) || bg.height!==Math.floor(h*DPR)){
@@ -541,18 +728,52 @@ var drawQueued=false; function requestDraw(){ if(!drawQueued){ drawQueued=true; 
 window.addEventListener('resize', sizeToScreen, {passive:true});
 sizeToScreen();
 
-/* ===== Ach motor (sačuvan) ===== */
 var TARGETS = { blocks: function(i){return 300*i;}, lines: function(i){return 40*i;}, score: function(i){return 50000*i;} };
-/* ... (ostaje kao u tvom fajlu) ... */
+function createAchievementsModel(){ var list=[],i; for(i=1;i<=1000;i++){ var title='',kind='',target=0,key=''; if(i%3===1){ kind='blocks'; target=TARGETS.blocks(i); title='Postavi '+target+' blokova'; key='blocksPlaced'; } else if(i%3===2){ kind='lines'; target=TARGETS.lines(i);  title='Očisti '+target+' linija';  key='linesCleared'; } else { kind='score'; target=TARGETS.score(i);  title='Osvoji '+(target.toLocaleString('sr-RS'))+' poena'; key='totalScore'; } var node={id:i,title:title,kind:kind,key:key,target:target,done:false}; if(i%50===0){ var adsNeeded=(i/50)*5; node.milestone={type:(i%100===0)?'skin':'theme', adsRequired:adsNeeded, adsExtMax:Math.floor(adsNeeded*0.8), adsExt:0, adsInt:0, claimed:false}; } list.push(node);} var model={list:list, currentMilestoneIndex: findFirstOpenMilestoneIndex(list)}; saveAch(model); return model; }
+function findFirstOpenMilestoneIndex(list){ for(var i=0;i<list.length;i++){ var a=list[i]; if(a.milestone && !(a.milestone.claimed)) return i; } return -1; }
+function getCurrentMilestoneIndex(){ return ach.currentMilestoneIndex!=null ? ach.currentMilestoneIndex : findFirstOpenMilestoneIndex(ach.list); }
+function indexToBlock(idx){ return Math.max(1, Math.ceil((idx+1)/50)); }
+function blockRange(block){ var start=(block-1)*50; var end=block*50-1; return {start:start,end:end}; }
+function blockProgress50(block){ var r=blockRange(block),start=r.start,end=r.end; var done=0; for(var i=start;i<end;i++) if(ach.list[i].done) done++; var ms=ach.list[end].milestone; if(ms && ms.claimed) done+=1; return {done:done,total:50}; }
+function rewardNameForMilestone(id){ var slot=id/50; var themePool=THEMES.slice(1); var skinPool=SKINS.slice(1); if(id%100===0){ var idx=Math.min(Math.max(1, Math.floor(slot/2)), skinPool.length); return {type:'skin', name: skinPool[idx-1].name, idx:idx}; } else { var idx2=Math.min(Math.max(1, Math.floor((slot+1)/2)), themePool.length); return {type:'theme', name: themePool[idx2-1].name, idx:idx2}; } }
+function renderAchievementsPage(){
+  if(!achList) return;
+  var perPage=50, startIdx=(achPage-1)*perPage, endIdx=Math.min(startIdx+perPage, ach.list.length);
+  if(achPageLbl) achPageLbl.textContent=String(achPage);
+  achList.innerHTML='';
+  for(var i=startIdx;i<endIdx;i++){
+    var a=ach.list[i]; var progress=Math.min(1, getStat(a.key)/a.target);
+    var card=document.createElement('div'); card.className='ach-card'+(a.milestone?' milestone':'')+(a.done?' done':'');
+    var rewardTag=''; if(a.milestone){ var info=rewardNameForMilestone(a.id); rewardTag=(info.type==='skin'?' • 🎁 SKIN: '+info.name:' • 🎁 TEMA: '+info.name); }
+    card.innerHTML='<h4>'+(a.done?'✅ ':'')+'#'+a.id+' — '+a.title+rewardTag+'</h4>'+
+      '<div class="meta"><span class="badge">'+a.kind+'</span><span class="small">'+Math.min(getStat(a.key),a.target).toLocaleString('sr-RS')+' / '+a.target.toLocaleString('sr-RS')+'</span></div>'+
+      '<div class="progress"><i style="width:'+(progress*100).toFixed(1)+'%"></i></div>';
+    achList.appendChild(card);
+  }
+}
+function renderMilestoneBoxForBlock(block){
+  if(!msTitle||!msDesc||!msCounters||!msBlockProg||!msBar||!btnWatchAd||!btnClaim) return;
+  var r=blockRange(block), start=r.start, end=r.end, node=ach.list[end], ms=node?node.milestone:null;
+  if(!ms){ msTitle.textContent='Blok '+block; msDesc.textContent='Nema nagrade'; msCounters.textContent=''; msBlockProg.textContent=''; msBar.style.width='0%'; btnWatchAd.setAttribute('aria-disabled','true'); btnClaim.setAttribute('aria-disabled','true'); return; }
+  var info=rewardNameForMilestone(node.id), extMax=ms.adsExtMax, need=ms.adsRequired;
+  var total=Math.min(ms.adsExt, extMax)+ms.adsInt; var pct=Math.min(100,(total/need)*100);
+  var blk50=blockProgress50(block); var blkOK=(blk50.done>=49);
+  msTitle.textContent='Milestone '+node.id; msDesc.textContent=(info.type==='skin'?'🎁 SKIN — '+info.name:'🎁 TEMA — '+info.name);
+  msCounters.textContent='🎬 '+total+'/'+need+' (van max '+extMax+')';
+  msBlockProg.textContent='📦 '+blk50.done+'/'+blk50.total;
+  msBar.style.width=pct.toFixed(1)+'%';
+  if(total>=need) btnWatchAd.setAttribute('aria-disabled','true'); else btnWatchAd.setAttribute('aria-disabled','false');
+  btnClaim.setAttribute('aria-disabled', (total>=need && blkOK)?'false':'true');
+  ach.currentMilestoneIndex=end; saveAch(ach);
+}
+function achievementsTick(){ for(var i=0;i<ach.list.length;i++){ var a=ach.list[i]; if(a.done||a.milestone) continue; if(getStat(a.key)>=a.target) a.done=true; } saveAch(ach); if(achievementsModal && achievementsModal.style.display==='flex'){ renderAchievementsPage(); renderMilestoneBoxForBlock(achPage);} }
 
-/* ===== Kolekcija (render) ===== */
 function renderCollection(){
   if(!themesGrid || !skinsGrid) return;
   var i, themeSlots=THEMES.length, skinSlots=SKINS.length;
 
   themesGrid.innerHTML='';
   for(i=1;i<=themeSlots;i++){
-    /* CHANGED: otključano u DEV režimu */
     var unlocked = DEV_UNLOCK || (i<= (stats.themesUnlocked||0));
     var t = THEMES[i-1];
     var d=document.createElement('div');
@@ -564,7 +785,6 @@ function renderCollection(){
 
   skinsGrid.innerHTML='';
   for(i=1;i<=skinSlots;i++){
-    /* CHANGED: otključano u DEV režimu */
     var unlockedS = DEV_UNLOCK || (i<= (stats.skinsUnlocked||0));
     var s = SKINS[i-1];
     var d2=document.createElement('div');
@@ -584,9 +804,22 @@ function renderCollection(){
   };
 }
 
-/* ===== persist helpers / ach / ads ===== */
-/* ... (ostavljao sam kao u tvom kodu, bez drugih izmjena) ... */
+function getStat(key){ return stats[key]||0; }
+function saveStats(s){ LS('bp8.stats', JSON.stringify(s)); }
+function loadStats(){ var s=LS('bp8.stats'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+function saveAch(a){ LS('bp8.ach', JSON.stringify(a)); }
+function loadAch(){ var s=LS('bp8.ach'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+function saveApplied(a){ LS('bp8.applied', JSON.stringify(a)); }
+function loadApplied(){ var s=LS('bp8.applied'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+function applyAccentFromTheme(themeId){ var t=null; for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===themeId){ t=THEMES[i]; break; } } if(t && t.accent){ document.documentElement.style.setProperty('--accent', t.accent); } }
+
+function addExternalAd(){ var idx=getCurrentMilestoneIndex(); if(idx<0) return; var ms=ach.list[idx].milestone; if(ms.claimed) return; if(ms.adsExt < ms.adsExtMax){ ms.adsExt++; saveAch(ach); if(achievementsModal && achievementsModal.style.display==='flex') renderMilestoneBoxForBlock(indexToBlock(idx)); } }
+function addInternalAd(){ var idx=getCurrentMilestoneIndex(); if(idx<0) return; var ms=ach.list[idx].milestone; if(ms.claimed) return; var need=ms.adsRequired; var extMax=ms.adsExtMax; var total=Math.min(ms.adsExt, extMax)+ms.adsInt; if(total>=need) return; ms.adsInt++; saveAch(ach); renderMilestoneBoxForBlock(indexToBlock(idx)); }
+function claimMilestoneReward(){ var idx=getCurrentMilestoneIndex(); if(idx<0) return; var node=ach.list[idx]; var ms=node.milestone; var block=indexToBlock(idx); var blk50=blockProgress50(block); var blkOK=(blk50.done>=49); var need=ms.adsRequired; var extMax=ms.adsExtMax; var total=Math.min(ms.adsExt, extMax)+ms.adsInt; if(!(total>=need && blkOK)) return; ms.claimed=true; var info=rewardNameForMilestone(node.id); if(info.type==='theme'){ stats.themesUnlocked++; showToast('🎨 Nova tema: '+info.name); } else { stats.skinsUnlocked++; showToast('🧊 Novi skin: '+info.name); } saveStats(stats); ach.currentMilestoneIndex = findFirstOpenMilestoneIndex(ach.list); saveAch(ach); var nextIdx=(ach.currentMilestoneIndex>=0?ach.currentMilestoneIndex:((block-1)*50)); renderMilestoneBoxForBlock(indexToBlock(nextIdx)); renderAchievementsPage(); if(collectionModal && collectionModal.style.display==='flex') renderCollection(); }
+function watchAdInAchievements(){ if(!btnWatchAd || btnWatchAd.getAttribute('aria-disabled')==='true') return; btnWatchAd.setAttribute('aria-disabled','true'); setTimeout(function(){ addInternalAd(); btnWatchAd.setAttribute('aria-disabled','false'); }, 900); }
+window.simulateExternalAd = function(){ addExternalAd(); stats.externalAds++; saveStats(stats); showToast('🎬 +1 rewarded ad'); };
 
 if(!startClassic){ if(start) start.style.display='none'; if(app) app.style.display='flex'; newGame('classic'); }
 
 })();
+```0
