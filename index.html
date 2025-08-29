@@ -90,6 +90,7 @@
     .tray{
       display:grid; grid-template-columns:repeat(3,1fr);
       gap:8px; padding:6px 16px 12px; margin-top:-2px; /* blizu grida */
+      overflow: visible; /* CHANGED: da veći blokovi ne povećavaju visinu i ne guraju grid */
     }
     .slot{
       background:transparent; border:0; /* uklonjen okvir slotova */
