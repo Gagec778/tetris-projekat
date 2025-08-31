@@ -99,7 +99,7 @@ var state = {
   dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved)
 };
 
-/* Stats */
+/* Stats — odmah otključaj sve teme/skinove */
 var stats = loadStats() || { totalScore:0, blocksPlaced:0, linesCleared:0, externalAds:0, themesUnlocked:0, skinsUnlocked:0 };
 
 /* ===== TEME & SKINOVI ===== */
@@ -130,6 +130,11 @@ var SKINS = [
   { id:'s09', name:'Velvet Glow',    style:'velvet' },
   { id:'s10', name:'Stone Marble',   style:'marble' }
 ];
+
+/* Odmah full unlock (prisilno, bez menjanja ostalog) */
+stats.themesUnlocked = THEMES.length;
+stats.skinsUnlocked  = SKINS.length;
+saveStats(stats);
 
 var applied = loadApplied() || { theme:'t00', skin:'s00' };
 applyAccentFromTheme(applied.theme);
@@ -239,7 +244,7 @@ function drawAurora(c,w,h){
   c.restore();
 }
 
-/* petlja pozadine */
+/* petlja pozadine — radi stalno */
 if(bg){
   (function loopBG(){
     var b=bg.getContext('2d');
@@ -673,7 +678,7 @@ if(collectionBtn){
     if(!collectionModal) return;
     collectionModal.style.display='flex';
     renderCollection();
-    setTab('themes');
+    setTab('themes'); // default
   });
 }
 if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; if(cbd) cbd.addEventListener('click', function(){ collectionModal.style.display='none'; }); }
@@ -829,22 +834,22 @@ function saveApplied(a){ LS('bp8.applied', JSON.stringify(a)); }
 function loadApplied(){ var s=LS('bp8.applied'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 function applyAccentFromTheme(themeId){ var t=null; for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===themeId){ t=THEMES[i]; break; } } if(t && t.accent){ document.documentElement.style.setProperty('--accent', t.accent); } }
 
-/* ===== Ads u Ach modal ===== */
+/* ===== Ads 80/20 u Ach modal ===== */
 function addExternalAd(){ var idx=getCurrentMilestoneIndex(); if(idx<0) return; var ms=ach.list[idx].milestone; if(ms.claimed) return; if(ms.adsExt < ms.adsExtMax){ ms.adsExt++; saveAch(ach); if(achievementsModal && achievementsModal.style.display==='flex') renderMilestoneBoxForBlock(indexToBlock(idx)); } }
 function addInternalAd(){ var idx=getCurrentMilestoneIndex(); if(idx<0) return; var ms=ach.list[idx].milestone; if(ms.claimed) return; var need=ms.adsRequired; var extMax=ms.adsExtMax; var total=Math.min(ms.adsExt, extMax)+ms.adsInt; if(total>=need) return; ms.adsInt++; saveAch(ach); renderMilestoneBoxForBlock(indexToBlock(idx)); }
 function claimMilestoneReward(){ var idx=getCurrentMilestoneIndex(); if(idx<0) return; var node=ach.list[idx]; var ms=node.milestone; var block=indexToBlock(idx); var blk50=blockProgress50(block); var blkOK=(blk50.done>=49); var need=ms.adsRequired; var extMax=ms.adsExtMax; var total=Math.min(ms.adsExt, extMax)+ms.adsInt; if(!(total>=need && blkOK)) return; ms.claimed=true; var info=rewardNameForMilestone(node.id); if(info.type==='theme'){ stats.themesUnlocked++; showToast('🎨 Nova tema: '+info.name); } else { stats.skinsUnlocked++; showToast('🧊 Novi skin: '+info.name); } saveStats(stats); ach.currentMilestoneIndex = findFirstOpenMilestoneIndex(ach.list); saveAch(ach); var nextIdx=(ach.currentMilestoneIndex>=0?ach.currentMilestoneIndex:((block-1)*50)); renderMilestoneBoxForBlock(indexToBlock(nextIdx)); renderAchievementsPage(); if(collectionModal && collectionModal.style.display==='flex') renderCollection(); }
 function watchAdInAchievements(){ if(!btnWatchAd || btnWatchAd.getAttribute('aria-disabled')==='true') return; btnWatchAd.setAttribute('aria-disabled','true'); setTimeout(function(){ addInternalAd(); btnWatchAd.setAttribute('aria-disabled','false'); }, 900); }
 window.simulateExternalAd = function(){ addExternalAd(); stats.externalAds++; saveStats(stats); showToast('🎬 +1 rewarded ad'); };
 
-/* ===== INIT fallback (auto start classic ako nema dugmadi) ===== */
+/* ===== INIT ===== */
 if(!startClassic){ if(start) start.style.display='none'; if(app) app.style.display='flex'; newGame('classic'); }
 
 })(); // kraj glavne IIFE
 } // kraj init()
 
-// Pokretanje tek kada DOM postoji
+// Startuj tek kad DOM postoji (fix za GitHub Pages tajming)
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init, { once: true });
 } else {
   init();
-      }
+}
