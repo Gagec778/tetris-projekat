@@ -377,9 +377,9 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
-/* ===== Tray render ===== */
+/* ===== Tray render — približeno gridu ===== */
 function drawPieceToCanvas(piece){
-  var scale=24, pad=6, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
+  var scale=24, pad=4, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
   var c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
   var cx=c.getContext('2d'); cx.scale(DPR,DPR); cx.imageSmoothingEnabled=false;
   for(var i=0;i<piece.blocks.length;i++){ var dx=piece.blocks[i][0],dy=piece.blocks[i][1]; drawBlockStyle(cx, pad+dx*scale, pad+dy*scale, scale-2, piece.color, currentSkinStyle()); }
@@ -388,14 +388,27 @@ function drawPieceToCanvas(piece){
 function renderTray(){
   if(!trayEl) return;
   trayEl.innerHTML='';
+  // maksimalno blizu gridu
+  trayEl.style.paddingTop='0px';
+  trayEl.style.marginTop='-6px';
+  trayEl.style.gap='6px';
+
   for(var i=0;i<state.hand.length;i++){
     var p=state.hand[i];
     var div=document.createElement('div');
     var fits=canFitAnywhere(p);
     div.className='slot'+(p.used?' used':'')+(p.used?'':(fits?' good':' bad'));
+    div.style.border='none';
+    div.style.background='transparent';
+    div.style.minHeight='auto';
+    div.style.padding='2px';
+    div.style.justifyContent='center';
+    div.style.alignItems='center';
+
     div.setAttribute('data-index', String(i));
     var pieceCanvas = drawPieceToCanvas(p);
     div.appendChild(pieceCanvas);
+
     if(!p.used){
       var handler = function(e){ startDragFromSlot(e); };
       div.addEventListener('pointerdown', handler, {passive:false});
@@ -434,8 +447,7 @@ function draw(){
       else if(v===2){ rr(ctx,px+1,py+1,s-2,s-2,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); }
     }
   }
-
-  // (drag preview sada ide na dragLayer, ne ovde)
+  // drag preview ide na dragLayer (zasebno)
 }
 
 /* ===== FX ===== */
@@ -459,9 +471,7 @@ function place(piece,gx,gy){
   if(cells.length) spawnParticles(cells);
 
   var linesCleared = fullRows.length + fullCols.length;
-  var placePts = SCORE_CFG.perBlock * placedBlocks;
-  var clearPts = scoreForClear(linesCleared);
-  var gained = (placePts + clearPts);
+  var gained = SCORE_CFG.perBlock * placedBlocks + scoreForClear(linesCleared);
 
   state.score += gained; if(scoreEl) scoreEl.textContent=state.score;
   stats.totalScore += gained; stats.blocksPlaced += placedBlocks; stats.linesCleared += linesCleared; saveStats(stats);
@@ -485,15 +495,16 @@ function place(piece,gx,gy){
 }
 function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
-/* ===== Drag preko celog ekrana (dragLayer) ===== */
+/* ===== DRAG preko celog ekrana — PRECIZNO poravnanje ===== */
 var POINTER={active:false,fromSlotIndex:null};
 function getViewportPos(e){ return {x:e.clientX, y:e.clientY}; }
-function getGridGxGyFromPoint(px,py){
+function getGridGxGyFromPoint(px,py,piece){
   var r=canvas.getBoundingClientRect();
   var s=state.cell;
-  var offsetX=8, liftY=72;
-  var baseX = (px - r.left) - (s*0.5) + offsetX;
-  var baseY = (py - r.top)  - (s*0.5) - liftY;
+  // isti offseti kao u preview-u (da padne tačno gde vidiš preview)
+  var liftY=72, offsetX=8;
+  var baseX = (px - r.left) - (piece.w*s)/2 + offsetX;
+  var baseY = (py - r.top)  - (piece.h*s)/2 - liftY;
   var gx=Math.round(baseX/s), gy=Math.round(baseY/s);
   return {gx:gx, gy:gy};
 }
@@ -530,8 +541,8 @@ function startDragFromSlot(e){
 
   var pos=getViewportPos(e);
   state.dragging.vx=pos.x; state.dragging.vy=pos.y;
-  var gxy=getGridGxGyFromPoint(pos.x,pos.y);
-  var p=state.dragging.piece, maxX=BOARD-p.w, maxY=BOARD-p.h;
+  var gxy=getGridGxGyFromPoint(pos.x,pos.y,piece);
+  var p=piece, maxX=BOARD-p.w, maxY=BOARD-p.h;
   if(gxy.gx<0||gxy.gx>maxX||gxy.gy<0||gxy.gy>maxY){ state.dragging.valid=false; state.dragging.gx=null; state.dragging.gy=null; }
   else { var ok=canPlace(p,gxy.gx,gxy.gy); state.dragging.valid=ok; state.dragging.gx=gxy.gx; state.dragging.gy=gxy.gy; }
   renderDragLayer();
@@ -540,8 +551,9 @@ function onPointerMove(e){
   if(!POINTER.active||!state.dragging) return;
   var pos=getViewportPos(e);
   state.dragging.vx=pos.x; state.dragging.vy=pos.y;
-  var gxy=getGridGxGyFromPoint(pos.x,pos.y);
-  var p=state.dragging.piece, maxX=BOARD-p.w, maxY=BOARD-p.h;
+  var piece=state.dragging.piece;
+  var gxy=getGridGxGyFromPoint(pos.x,pos.y,piece);
+  var p=piece, maxX=BOARD-p.w, maxY=BOARD-p.h;
   if(gxy.gx<0||gxy.gx>maxX||gxy.gy<0||gxy.gy>maxY){ state.dragging.valid=false; state.dragging.gx=null; state.dragging.gy=null; }
   else { var ok=canPlace(p,gxy.gx,gxy.gy); state.dragging.valid=ok; state.dragging.gx=gxy.gx; state.dragging.gy=gxy.gy; }
   renderDragLayer();
