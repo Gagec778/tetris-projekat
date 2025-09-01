@@ -29,16 +29,21 @@
       z-index:0; pointer-events:none; /* ne blokira klikove */
     }
 
-    /* START SCREEN */
-    #startScreen{ position:relative; width:100%; height:100vh; overflow:hidden; z-index:1; }
+    /* START SCREEN – stabilno centriranje (fix pomeranja ulevo/udesno) */
+    #startScreen{
+      position:relative; width:100%; height:100vh; overflow:hidden; z-index:1;
+      display:grid; place-items:center; /* centralno poravnanje koje se ne “rasipa” */
+    }
     .ss-inner{
-      position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center;
-      height:100%; gap:16px; padding:24px; text-align:center;
+      position:relative; z-index:2;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:16px; padding:24px; text-align:center; width:100%;
+      max-width:600px; margin-left:auto; margin-right:auto; /* dodatno sidrenje */
     }
     .ss-inner h1{ margin:0; font-size:28px; letter-spacing:1px; text-shadow:0 6px 30px rgba(0,0,0,.35); }
 
     /* CTA dugmad (Classic/Obstacles) – kolona, blago veća */
-    .cta{ display:flex; flex-direction:column; gap:12px; margin-top:8px; width:min(320px, 90%); }
+    .cta{ display:flex; flex-direction:column; gap:12px; margin-top:8px; width:min(320px, 90%); margin-left:auto; margin-right:auto; }
     .primary, .secondary{
       background:rgba(255,255,255,.06);
       border:1px solid rgba(255,255,255,.08);
@@ -78,16 +83,18 @@
     }
 
     .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:6px 16px; position:relative; }
+    /* Pomeraj grid “vrlo malo” nagore */
+    .board-area canvas{ transform: translateY(-6px); } /* ~6px gore */
     canvas{ touch-action:none; }
 
     .tray{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px 16px 14px; }
-    .slot{
-      background:rgba(12,18,30,.55); border:1px dashed rgba(255,255,255,.12); border-radius:16px;
-      min-height:96px; display:flex; align-items:center; justify-content:center; transition:.18s; position:relative;
-      backdrop-filter: blur(6px);
+    /* U potpunosti ukloni okvire i pozadinu slotova (i pre nego što JS prebriše inline) */
+    .tray .slot{
+      border:none !important;
+      background:transparent !important;
+      min-height:auto !important;
+      box-shadow:none !important;
     }
-    .slot.used{ opacity:.35 } .slot.good{ border-color:var(--good); box-shadow:0 0 0 2px color-mix(in oklab, var(--good) 35%, transparent); }
-    .slot.bad{ border-color:var(--bad); box-shadow:0 0 0 2px color-mix(in oklab, var(--bad) 35%, transparent); }
 
     .footer{ text-align:center; opacity:.55; font-size:12px; padding-bottom:10px }
 
