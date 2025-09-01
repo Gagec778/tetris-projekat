@@ -29,7 +29,7 @@
       z-index:0; pointer-events:none;
     }
 
-    /* START SCREEN – stabilno centriranje (fix pomeranja ulevo/udesno) */
+    /* START SCREEN – stabilno centriranje */
     #startScreen{
       position:relative; width:100%; height:100vh; overflow:hidden; z-index:1;
       display:grid; place-items:center;
@@ -42,7 +42,6 @@
     }
     .ss-inner h1{ margin:0; font-size:28px; letter-spacing:1px; text-shadow:0 6px 30px rgba(0,0,0,.35); }
 
-    /* CTA dugmad – kolona, blago veća */
     .cta{
       display:flex; flex-direction:column; gap:12px; margin-top:8px;
       width:min(320px, 90%); margin-left:auto; margin-right:auto;
@@ -86,32 +85,30 @@
     }
 
     .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:6px 16px; position:relative; }
-    /* Grid mrvicu bliže traci */
-    .board-area canvas{ transform: translateY(-10px); } /* ~10px gore */
+    /* Grid još bliže traci (mrvicu više naviše) */
+    .board-area canvas#game{ transform: translateY(-14px); }
     canvas{ touch-action:none; }
 
-    /* TRAY: fiksirana visina i centriranje, bez okvira; canvasi se ne mogu “raširiti” */
+    /* TRAY — bez okvira, stabilna visina, jako blizu grida */
     .tray{
       display:grid; grid-template-columns:repeat(3, minmax(0,1fr));
       align-items:center; justify-items:center;
-      gap:10px; padding:6px 16px 12px;
-      min-height:94px; /* stabilizuje visinu da blok ne može da “gurne” layout */
+      gap:10px; padding:4px 16px 10px;  /* manji razmak do grida */
+      min-height:92px;
     }
     .slot{
-      /* bez okvira/podloge; kontrolisana visina */
       border:none !important;
       background:transparent !important;
       min-height:auto !important;
       box-shadow:none !important;
 
       display:flex; align-items:center; justify-content:center;
-      height:88px; /* SLOT visina */
+      height:86px;
       width:100%;
     }
-    /* canvasi blokova uvek staju u slot i ostaju centrirani */
     .slot canvas{
       display:block;
-      max-height:80px;  /* plafon za visinu piona u traci */
+      max-height:80px;
       max-width:100%;
       height:auto; width:auto;
       margin:auto;
@@ -177,6 +174,12 @@
     .col-card .badge{ align-self:flex-start; background:rgba(255,255,255,.08); padding:3px 8px; border-radius:999px; font-size:12px; }
     .col-card .apply{ align-self:flex-end; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06); }
     .activeTag{ position:absolute; top:8px; right:10px; font-size:11px; background:#1f8b4c; border:1px solid #2bb36a; padding:2px 6px; border-radius:999px; }
+
+    /* === DRAG OVERLAY (NOVO) — preko svega, bez hvatanja klikova === */
+    #dragLayer{
+      position:fixed; inset:0; z-index:60; pointer-events:none; display:block;
+      width:100vw; height:100vh;
+    }
   </style>
 </head>
 <body>
@@ -194,7 +197,6 @@
 
     <div class="ss-inner">
       <h1>BLOCK • 8×8</h1>
-      <!-- nema opisa ispod naslova -->
       <div class="cta">
         <button id="startClassic" class="primary">▶ Classic</button>
         <button id="startObstacles" class="secondary">🧱 Obstacles</button>
@@ -313,6 +315,9 @@
       </div>
     </div>
   </div>
+
+  <!-- DRAG OVERLAY CANVAS (NOVO) -->
+  <canvas id="dragLayer"></canvas>
 
   <!-- JS -->
   <script src="script.js"></script>
