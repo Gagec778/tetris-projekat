@@ -17,7 +17,7 @@
     *{ box-sizing:border-box; }
     html,body{ height:100%; margin:0; background:var(--bg); color:var(--text);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
-      overflow:hidden;
+      overflow:hidden; /* 1) fiksirano — nema skrola stranice */
     }
     button{ font:inherit; cursor:pointer; border:0; background:transparent; color:inherit; }
     button:focus{ outline:none; }
@@ -26,46 +26,40 @@
     /* GLOBAL BG CANVAS (iza svega) */
     #bg{
       position:fixed; inset:0; width:100vw; height:100vh; display:block;
-      z-index:0; pointer-events:none;
+      z-index:0; pointer-events:none; /* ne blokira klikove */
     }
 
-    /* START SCREEN – stabilno centriranje */
-    #startScreen{
-      position:relative; width:100%; height:100vh; overflow:hidden; z-index:1;
-      display:grid; place-items:center;
-    }
+    /* START SCREEN */
+    #startScreen{ position:relative; width:100%; height:100vh; overflow:hidden; z-index:1; }
     .ss-inner{
-      position:relative; z-index:2;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:16px; padding:24px; text-align:center; width:100%;
-      max-width:600px; margin-left:auto; margin-right:auto;
+      position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      height:100%; gap:16px; padding:24px; text-align:center;
     }
     .ss-inner h1{ margin:0; font-size:28px; letter-spacing:1px; text-shadow:0 6px 30px rgba(0,0,0,.35); }
+    .sub{ max-width:560px; opacity:.75; font-size:14px; }
+    .cta{ display:flex; gap:12px; margin-top:8px; flex-wrap:wrap; justify-content:center; }
 
-    .cta{
-      display:flex; flex-direction:column; gap:12px; margin-top:8px;
-      width:min(320px, 90%); margin-left:auto; margin-right:auto;
-    }
-    .primary, .secondary{
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.08);
-      padding:14px 18px; border-radius:14px; font-weight:700;
-    }
     .primary{
       background:linear-gradient(180deg,#0d111a,#0c121e);
-      color:#ffd87a;
+      border:1px solid rgba(255,255,255,.08);
+      color:#ffd87a; padding:12px 18px; border-radius:14px; font-weight:700;
       box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.06);
     }
+    .secondary{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      padding:12px 18px; border-radius:14px; font-weight:700;
+    }
 
-    /* gornje ikonice – veće */
+    /* gornje ikonice (desni gornji ugao) */
     .top-icons{
       position:fixed; right:12px; top:12px; z-index:3; display:flex; flex-direction:column; gap:8px;
       align-items:flex-end;
     }
     .icon-btn{
-      width:48px; height:48px; display:grid; place-items:center;
+      width:42px; height:42px; display:grid; place-items:center;
       background:rgba(12,18,30,.55); border:1px solid rgba(255,255,255,.08);
-      border-radius:12px; font-size:22px; box-shadow:0 10px 25px rgba(0,0,0,.35);
+      border-radius:12px; font-size:20px; box-shadow:0 10px 25px rgba(0,0,0,.35);
       backdrop-filter: blur(6px);
     }
     .icon-btn:active{ transform:translateY(1px); }
@@ -85,34 +79,16 @@
     }
 
     .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:6px 16px; position:relative; }
-    /* Grid još bliže traci (mrvicu više naviše) */
-    .board-area canvas#game{ transform: translateY(-14px); }
     canvas{ touch-action:none; }
 
-    /* TRAY — bez okvira, stabilna visina, jako blizu grida */
-    .tray{
-      display:grid; grid-template-columns:repeat(3, minmax(0,1fr));
-      align-items:center; justify-items:center;
-      gap:10px; padding:4px 16px 10px;  /* manji razmak do grida */
-      min-height:92px;
-    }
+    .tray{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px 16px 14px; }
     .slot{
-      border:none !important;
-      background:transparent !important;
-      min-height:auto !important;
-      box-shadow:none !important;
-
-      display:flex; align-items:center; justify-content:center;
-      height:86px;
-      width:100%;
+      background:rgba(12,18,30,.55); border:1px dashed rgba(255,255,255,.12); border-radius:16px;
+      min-height:96px; display:flex; align-items:center; justify-content:center; transition:.18s; position:relative;
+      backdrop-filter: blur(6px);
     }
-    .slot canvas{
-      display:block;
-      max-height:80px;
-      max-width:100%;
-      height:auto; width:auto;
-      margin:auto;
-    }
+    .slot.used{ opacity:.35 } .slot.good{ border-color:var(--good); box-shadow:0 0 0 2px color-mix(in oklab, var(--good) 35%, transparent); }
+    .slot.bad{ border-color:var(--bad); box-shadow:0 0 0 2px color-mix(in oklab, var(--bad) 35%, transparent); }
 
     .footer{ text-align:center; opacity:.55; font-size:12px; padding-bottom:10px }
 
@@ -174,12 +150,6 @@
     .col-card .badge{ align-self:flex-start; background:rgba(255,255,255,.08); padding:3px 8px; border-radius:999px; font-size:12px; }
     .col-card .apply{ align-self:flex-end; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06); }
     .activeTag{ position:absolute; top:8px; right:10px; font-size:11px; background:#1f8b4c; border:1px solid #2bb36a; padding:2px 6px; border-radius:999px; }
-
-    /* === DRAG OVERLAY (NOVO) — preko svega, bez hvatanja klikova === */
-    #dragLayer{
-      position:fixed; inset:0; z-index:60; pointer-events:none; display:block;
-      width:100vw; height:100vh;
-    }
   </style>
 </head>
 <body>
@@ -197,6 +167,7 @@
 
     <div class="ss-inner">
       <h1>BLOCK • 8×8</h1>
+      <div class="sub">Pomeraj blokove, popuni red/kolonu i skupljaj poene. Čisto, brzo i luks izgled.</div>
       <div class="cta">
         <button id="startClassic" class="primary">▶ Classic</button>
         <button id="startObstacles" class="secondary">🧱 Obstacles</button>
@@ -207,7 +178,8 @@
   <!-- APP (IGRA) -->
   <div class="wrap" id="app">
     <header>
-      <div class="brand">BLOCK • 8×8</div>
+      <!-- Izbačeno ime iz gornjeg panela (brand ostavljen prazan radi rasporeda) -->
+      <div class="brand"></div>
       <div class="hud">
         <div class="pill">Score: <span id="score">0</span></div>
         <div id="levelPill" class="pill">Lvl: <span id="lvl">1</span></div>
@@ -316,8 +288,8 @@
     </div>
   </div>
 
-  <!-- DRAG OVERLAY CANVAS (NOVO) -->
-  <canvas id="dragLayer"></canvas>
+  <!-- Drag overlay da se blok uvek crta iznad svega -->
+  <canvas id="dragLayer" style="position:fixed; inset:0; width:100vw; height:100vh; z-index:30; pointer-events:none;"></canvas>
 
   <!-- JS -->
   <script src="script.js"></script>
