@@ -15,9 +15,10 @@
     }
 
     *{ box-sizing:border-box; }
-    html,body{ height:100%; margin:0; background:var(--bg); color:var(--text);
+    html,body{
+      height:100%; margin:0; background:var(--bg); color:var(--text);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
-      overflow:hidden; /* 1) fiksirano — nema skrola stranice */
+      overflow:hidden;
     }
     button{ font:inherit; cursor:pointer; border:0; background:transparent; color:inherit; }
     button:focus{ outline:none; }
@@ -26,7 +27,7 @@
     /* GLOBAL BG CANVAS (iza svega) */
     #bg{
       position:fixed; inset:0; width:100vw; height:100vh; display:block;
-      z-index:0; pointer-events:none; /* ne blokira klikove */
+      z-index:0; pointer-events:none;
     }
 
     /* START SCREEN */
@@ -65,7 +66,9 @@
     .icon-btn:active{ transform:translateY(1px); }
 
     /* APP (igra) */
-    .wrap{ display:none; flex-direction:column; height:100vh; max-width:720px; margin:0 auto; position:relative; z-index:1; }
+    .wrap{
+      display:none; flex-direction:column; height:100vh; max-width:720px; margin:0 auto; position:relative; z-index:1;
+    }
     header{ padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .brand{ font-weight:800; letter-spacing:.4px; opacity:.9 }
     .hud{ display:flex; gap:10px; align-items:center; }
@@ -78,10 +81,25 @@
       color:var(--text); padding:8px 12px; border-radius:12px; font-weight:700;
     }
 
-    .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:6px 16px; position:relative; }
+    /* Fiksiraj grid bliže vrhu (bez skakanja) */
+    .board-area{
+      flex:1;
+      display:flex;
+      align-items:flex-start;        /* nije centriran vertikalno */
+      justify-content:center;        /* centriran horizontalno */
+      padding:6px 16px 0;            /* malo bliže gornjoj ivici */
+      position:relative;
+    }
     canvas{ touch-action:none; }
 
-    .tray{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px 16px 14px; }
+    /* Fiksna visina trake da visina figura ne pomera grid */
+    .tray{
+      display:grid; grid-template-columns:repeat(3,1fr);
+      gap:10px; padding:10px 16px 14px;
+      height:120px;                 /* fiksirano */
+      overflow:hidden;              /* da ništa ne gura layout */
+      align-content:center;
+    }
     .slot{
       background:rgba(12,18,30,.55); border:1px dashed rgba(255,255,255,.12); border-radius:16px;
       min-height:96px; display:flex; align-items:center; justify-content:center; transition:.18s; position:relative;
@@ -212,7 +230,7 @@
     </div>
   </div>
 
-  <!-- ACHIEVEMENTS MODAL -->
+    <!-- ACHIEVEMENTS MODAL -->
   <div id="achievementsModal" class="overlay" style="display:none">
     <div class="backdrop"></div>
     <div class="panel">
