@@ -148,20 +148,6 @@ function createGrid(n){ var arr=[]; for(var i=0;i<n;i++){ var row=[]; for(var j=
 function rr(c,x,y,w,h,r){ r=Math.min(r,w*.5,h*.5); c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v); }
 
-/* === Tween broja (score animacija) === */
-function tweenNumber(el, from, to, dur){
-  if(!el) return;
-  var start=null;
-  function step(ts){
-    if(!start) start=ts;
-    var t=Math.min(1, (ts-start)/dur);
-    var v=Math.round(from + (to-from)*(1 - Math.pow(1-t,3))); // easeOutCubic
-    el.textContent = v;
-    if(t<1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
 /* ===== Aurora BG ===== */
 function drawAurora(c,w,h){
   var pal=(function(){ for(var i=0;i<THEMES.length;i++){ if(THEMES[i].id===applied.theme) return THEMES[i].palette; } return 'starterAurora'; })();
@@ -385,7 +371,7 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
   if(placed){
     rr(c,x+1.2,y+1.2,s-2.4,s-2.4,Math.max(5, R-1));
     c.lineWidth=Math.max(1, s*.06);
-    c.strokeStyle='rgba(255,255,255,.12)'; // SHOW_BLOCK_RIM=false => ne crta
+    c.strokeStyle='rgba(255,255,255,.12)'; // ne crta se jer je SHOW_BLOCK_RIM=false
   }
 }
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
@@ -402,6 +388,7 @@ function drawPieceToCanvas(piece){
 function renderTray(){
   if(!trayEl) return;
   trayEl.innerHTML='';
+  // maksimalno blizu gridu
   trayEl.style.paddingTop='0px';
   trayEl.style.marginTop='-6px';
   trayEl.style.gap='6px';
@@ -440,7 +427,7 @@ function scoreForClear(lines){ if(lines<=0) return 0; var combo = 1 + (lines - 1
 var LEVELS_MAX = 100; var LEVEL_STEP_SCORE = 10000;
 function obstaclesForLevel(lvl){ var maxCells = BOARD*BOARD; return Math.min(Math.round(3 + lvl*1.2), Math.round(maxCells*0.15)); }
 function applyObstacles(n){ var p=0,g=0; while(p<n && g<400){ g++; var x=Math.floor(Math.random()*BOARD), y=Math.floor(Math.random()*BOARD); if(state.grid[y][x]===0){ state.grid[y][x]=2; p++; } } }
-function checkLevelUp(){ var need = state.level * LEVEL_STEP_SCORE; if(state.score >= need && state.level < LEVELS_MAX && state.mode==='obstacles'){ state.level++; state.maxLevel = Math.max(state.maxLevel, state.level); LS('bp8.level.max', String(state.maxLevel)); applyObstacles(Math.max(1, Math.floor(obstaclesForLevel(state.level)*0.6))); if(lvlEl) lvlEl.textContent = state.level; showToast('Level UP → '+state.level); beep(880,.12,.035); requestDraw(); } }
+function checkLevelUp(){ var need = state.level * LEVEL_STEP_SCORE; if(state.score >= need && state.level < LEVELS_MAX && state.mode==='obstacles'){ state.level++; state.maxLevel = Math.max(state.maxLevel, state.level); LS('bp8.level.max', String(state.maxLevel)); applyObstacles(Math.max(1, Math.floor(obstaclesForLevel(state.level)*0.6))); if(lvlEl) lvlEl.textContent = state.level; showToast('Level UP → '+state.level); requestDraw(); } }
 
 /* ===== Draw (grid) ===== */
 function draw(){
@@ -457,7 +444,22 @@ function draw(){
       var v=state.grid[y][x];
       var px=x*s, py=y*s;
       if(v===1){ drawPlaced(ctx,px,py,s); }
-      else if(v===2){ rr(ctx,px+1,py+1,s-2,s-2,9); ctx.fillStyle=OBSTACLE_COLOR; ctx.fill(); }
+      else if(v===2){
+        // Prepreke: blagi emboss da se jasnije razlikuju
+        rr(ctx,px+1,py+1,s-2,s-2,9);
+        var grad=ctx.createLinearGradient(px,py,px,py+s);
+        grad.addColorStop(0, '#334054');
+        grad.addColorStop(1, OBSTACLE_COLOR);
+        ctx.fillStyle=grad; ctx.fill();
+
+        // tanak unutrašnji “rim” radi definicije
+        ctx.save();
+        ctx.lineWidth=Math.max(1, s*0.05);
+        ctx.strokeStyle='rgba(255,255,255,0.06)';
+        rr(ctx,px+1.4,py+1.4,s-2.8,s-2.8,8);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
   }
   // drag preview ide na dragLayer (zasebno)
@@ -465,7 +467,7 @@ function draw(){
 
 /* ===== FX ===== */
 var particles=[];
-var flashes=[]; // line flashes
+var fxWasCleared=true; // štednja: da ne čistimo stalno kada nema čestica
 
 function spawnParticles(cells){
   if(!fctx) return;
@@ -477,40 +479,32 @@ function spawnParticles(cells){
       particles.push(base);
     }
   }
-}
-function addLineFlash(rows, cols){
-  var life=14; // ~90–110ms @60fps
-  for(var i=0;i<rows.length;i++) flashes.push({type:'row', idx:rows[i], life:life});
-  for(var j=0;j<cols.length;j++) flashes.push({type:'col', idx:cols[j], life:life});
+  fxWasCleared=false;
 }
 function stepFX(){
   if(!fctx || !fxCnv){ requestAnimationFrame(stepFX); return; }
-  fctx.setTransform(1,0,0,1,0,0); fctx.clearRect(0,0,fxCnv.width,fxCnv.height);
 
-  // particles
-  for(var i=0;i<particles.length;i++){
-    var p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--;
-    fctx.globalAlpha=Math.max(0,p.life/40); fctx.fillStyle=p.color; fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill();
-  }
-  for(i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
-
-  // line flashes
-  for(var k=flashes.length-1;k>=0;k--){
-    var fl=flashes[k]; var s=state.cell; var a=fl.life/14;
-    fctx.save();
-    fctx.globalAlpha = a*0.35;
-    fctx.fillStyle = '#ffffff';
-    if(fl.type==='row'){
-      var y=fl.idx*s*DPR;
-      fctx.fillRect(0, y, fxCnv.width, Math.max(2, s*DPR));
-    }else{
-      var x=fl.idx*s*DPR;
-      fctx.fillRect(x, 0, Math.max(2, s*DPR), fxCnv.height);
+  if(particles.length===0){
+    // Jednokratno očisti pa “idle” (štedi CPU/bateriju)
+    if(!fxWasCleared){
+      fctx.setTransform(1,0,0,1,0,0);
+      fctx.clearRect(0,0,fxCnv.width,fxCnv.height);
+      fxWasCleared=true;
     }
-    fctx.restore();
-    fl.life--;
-    if(fl.life<=0) flashes.splice(k,1);
+    requestAnimationFrame(stepFX);
+    return;
   }
+
+  fctx.setTransform(1,0,0,1,0,0);
+  fctx.clearRect(0,0,fxCnv.width,fxCnv.height);
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--;
+    fctx.globalAlpha=Math.max(0,p.life/40);
+    fctx.fillStyle=p.color;
+    fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill();
+  }
+  for(var k=particles.length-1;k>=0;k--) if(particles[k].life<=0) particles.splice(k,1);
 
   requestAnimationFrame(stepFX);
 }
@@ -528,15 +522,12 @@ function place(piece,gx,gy){
   var cells=[];
   for(var r=0;r<fullRows.length;r++){ var ry=fullRows[r]; for(x=0;x<BOARD;x++){ cells.push([x,ry]); } state.grid[ry]=[]; for(x=0;x<BOARD;x++) state.grid[ry][x]=0; }
   for(var c=0;c<fullCols.length;c++){ var cx=fullCols[c]; for(y=0;y<BOARD;y++){ cells.push([cx,y]); state.grid[y][cx]=0; } }
-  if(cells.length){ spawnParticles(cells); addLineFlash(fullRows, fullCols); beep(740,.08,.035); haptic(30); }
+  if(cells.length) spawnParticles(cells);
 
   var linesCleared = fullRows.length + fullCols.length;
   var gained = SCORE_CFG.perBlock * placedBlocks + scoreForClear(linesCleared);
 
-  var prev = state.score;
-  state.score += gained;
-  if(scoreEl) tweenNumber(scoreEl, prev, state.score, 240);
-
+  state.score += gained; if(scoreEl) scoreEl.textContent=state.score;
   stats.totalScore += gained; stats.blocksPlaced += placedBlocks; stats.linesCleared += linesCleared; saveStats(stats);
 
   if(state.score>(state.best[state.mode]||0)){ state.best[state.mode]=state.score; saveBest(state.best); if(bestEl) bestEl.textContent=state.score; }
@@ -544,17 +535,21 @@ function place(piece,gx,gy){
   achievementsTick();
 
   piece.used=true;
-  for(i=0;i<state.hand.length;i++){ if(state.hand[i].id===piece.id){ state.hand[i]={blocks:piece.blocks,w:piece.w,h:piece.h,color:piece.color,used:true,id:piece.id}; } }
+  for(var ii=0;ii<state.hand.length;ii++){ if(state.hand[ii].id===piece.id){ state.hand[ii]={blocks:piece.blocks,w:piece.w,h:piece.h,color:piece.color,used:true,id:piece.id}; } }
   renderTray();
-  var allUsed=true; for(i=0;i<state.hand.length;i++){ if(!state.hand[i].used){ allUsed=false; break; } }
-  if(allUsed) refillHand();
-
-  // tihi tick na svako uspešno postavljanje
-  beep(520,.05,.025);
+  var allUsed=true; for(ii=0;ii<state.hand.length;ii++){ if(!state.hand[ii].used){ allUsed=false; break; } }
+  if(allUsed){
+    refillHand();
+    // Uteg: odmah proveri da li nova ruka ima bar jedan validan potez (classic)
+    if(state.mode!=='obstacles' && !anyFits()){
+      if(goStats) goStats.textContent='Score: '+state.score+' • Best: '+(state.best[state.mode]||0);
+      if(gameOver) gameOver.style.display='flex';
+    }
+  }
 
   if(state.mode!=='obstacles' && !anyFits()){
     if(goStats) goStats.textContent='Score: '+state.score+' • Best: '+(state.best[state.mode]||0);
-    if(gameOver){ openModal(gameOver); shakeElement(goStats, 400); }
+    if(gameOver) gameOver.style.display='flex';
   }
   if(state.mode==='obstacles') checkLevelUp();
   requestDraw();
@@ -564,12 +559,22 @@ function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray
 /* ===== DRAG preko celog ekrana — PRECIZNO poravnanje ===== */
 var POINTER={active:false,fromSlotIndex:null};
 function getViewportPos(e){ return {x:e.clientX, y:e.clientY}; }
+
+// Uteg: skalirani offseti (stabilan preview na svim veličinama)
+function getDragOffsets(){
+  var s = state.cell || 36;
+  return {
+    liftY: Math.round(s*2.0),     // ranije 72
+    offsetX: Math.round(s*0.20)   // ranije 8
+  };
+}
+
 function getGridGxGyFromPoint(px,py,piece){
   var r=canvas.getBoundingClientRect();
   var s=state.cell;
-  var liftY=72, offsetX=8;
-  var baseX = (px - r.left) - (piece.w*s)/2 + offsetX;
-  var baseY = (py - r.top)  - (piece.h*s)/2 - liftY;
+  var offs=getDragOffsets();
+  var baseX = (px - r.left) - (piece.w*s)/2 + offs.offsetX;
+  var baseY = (py - r.top)  - (piece.h*s)/2 - offs.liftY;
   var gx=Math.round(baseX/s), gy=Math.round(baseY/s);
   return {gx:gx, gy:gy};
 }
@@ -579,27 +584,16 @@ function renderDragLayer(){
   dragCtx.clearRect(0,0,dragLayer.width,dragLayer.height);
   dragCtx.scale(DPR,DPR);
 
-  var d=state.dragging, piece=d.piece, px=d.vx, py=d.vy, valid=d.valid;
+  var d=state.dragging, piece=d.piece, px=d.vx, py=d.vy;
   var s=state.cell;
-  var liftY=72, offsetX=8;
-  var baseX = px - (piece.w*s)/2 + offsetX;
-  var baseY = py - (piece.h*s)/2 - liftY;
+  var offs=getDragOffsets();
+  var baseX = px - (piece.w*s)/2 + offs.offsetX;
+  var baseY = py - (piece.h*s)/2 - offs.liftY;
 
   for(var i=0;i<piece.blocks.length;i++){
     var dx=piece.blocks[i][0], dy=piece.blocks[i][1];
-    drawPreview(dragCtx, baseX+dx*s, baseY+dy*s, s, piece.color, valid);
+    drawPreview(dragCtx, baseX+dx*s, baseY+dy*s, s, piece.color, d.valid);
   }
-
-  // dodatni outline siluete (valid/invalid)
-  dragCtx.save();
-  dragCtx.lineWidth = Math.max(1, s*0.06);
-  dragCtx.strokeStyle = valid ? 'rgba(80,220,140,.85)' : 'rgba(240,80,90,.85)';
-  for(i=0;i<piece.blocks.length;i++){
-    var dx2=piece.blocks[i][0], dy2=piece.blocks[i][1];
-    rr(dragCtx, baseX+dx2*s+1, baseY+dy2*s+1, s-2, s-2, Math.max(5, s*0.22-1));
-    dragCtx.stroke();
-  }
-  dragCtx.restore();
 }
 function startDragFromSlot(e){
   var target = e.currentTarget || e.target;
@@ -641,7 +635,9 @@ function onPointerUp(){
   var slot = (trayEl && trayEl.querySelector) ? trayEl.querySelector(sel) : null;
   POINTER.active=false; document.body.style.cursor='';
   if(d.valid && d.gx!=null && d.gy!=null) place(d.piece,d.gx,d.gy);
-  else if(slot && slot.classList) slot.classList.remove('used');
+  // Uvek očisti vizuelno stanje slota
+  if(slot && slot.classList) slot.classList.remove('used');
+
   state.dragging=null;
   if(dragCtx) { dragCtx.setTransform(1,0,0,1,0,0); dragCtx.clearRect(0,0,dragLayer.width,dragLayer.height); }
   requestDraw();
@@ -674,89 +670,26 @@ function applyTheme(t){ if(document.body && document.body.classList){ if(t==='li
 function saveBest(b){ LS('bp8.best', JSON.stringify(b)); }
 function loadBest(){ var s=LS('bp8.best'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
 
-/* ===== SFX & Haptics ===== */
-var AC=null;
-function acq(){ try{ return AC||(AC=new (window.AudioContext||window.webkitAudioContext)()); }catch(_){ return null; } }
-function beep(freq, time, vol){
-  if(!settings.sound) return;
-  var ctx=acq(); if(!ctx) return;
-  var o=ctx.createOscillator(), g=ctx.createGain();
-  o.type='sine'; o.frequency.value=freq;
-  g.gain.value=vol;
-  o.connect(g); g.connect(ctx.destination);
-  o.start();
-  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+time);
-  o.stop(ctx.currentTime+time+0.02);
-}
-function haptic(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch(_){ } }
-
-/* ===== Modal fade/scale helpers ===== */
-function openModal(mod){
-  if(!mod) return;
-  var panel = mod.querySelector('.panel');
-  mod.style.display='flex';
-  mod.style.opacity='0';
-  if(panel){ panel.style.transform='scale(0.96)'; panel.style.opacity='0'; }
-  requestAnimationFrame(function(){
-    mod.style.transition='opacity .18s';
-    mod.style.opacity='1';
-    if(panel){
-      panel.style.transition='transform .18s ease, opacity .18s';
-      panel.style.transform='scale(1)';
-      panel.style.opacity='1';
-    }
-  });
-}
-function closeModal(mod){
-  if(!mod) return;
-  var panel = mod.querySelector('.panel');
-  mod.style.transition='opacity .16s';
-  mod.style.opacity='0';
-  if(panel){
-    panel.style.transition='transform .16s ease, opacity .16s';
-    panel.style.transform='scale(0.98)';
-    panel.style.opacity='0';
-  }
-  setTimeout(function(){ mod.style.display='none'; }, 170);
-}
-
-/* ===== Shake animacija ===== */
-function shakeElement(el, dur){
-  if(!el) return;
-  var start=null;
-  function step(ts){
-    if(!start) start=ts;
-    var t=(ts-start)/dur;
-    var p=1-t;
-    var amp=6*p;
-    var x=Math.sin(t*20*Math.PI)*amp;
-    el.style.transform='translateX('+x.toFixed(2)+'px)';
-    if(t<1) requestAnimationFrame(step);
-    else el.style.transform='';
-  }
-  requestAnimationFrame(step);
-}
-
 /* ===== Buttons / Events ===== */
 if(resetBtn) resetBtn.addEventListener('click', function(){ newGame(state.mode); });
 if(backBtn)  backBtn.addEventListener('click', function(){ goHome(); });
 
-if(settingsBtn) settingsBtn.addEventListener('click', function(){ openModal(settingsModal); });
-if(settingsModal){ var bd = settingsModal.querySelector ? settingsModal.querySelector('.backdrop') : null; if(bd) bd.addEventListener('click', function(){ closeModal(settingsModal); }); }
-if(closeSettings) closeSettings.addEventListener('click', function(){ closeModal(settingsModal); });
+if(settingsBtn) settingsBtn.addEventListener('click', function(){ if(settingsModal) settingsModal.style.display='flex'; });
+if(settingsModal){ var bd = settingsModal.querySelector ? settingsModal.querySelector('.backdrop') : null; if(bd) bd.addEventListener('click', function(){ settingsModal.style.display='none'; }); }
+if(closeSettings) closeSettings.addEventListener('click', function(){ settingsModal.style.display='none'; });
 if(setThemeBtn) setThemeBtn.addEventListener('click', function(){ settings.theme=(settings.theme==='dark'?'light':'dark'); LS('bp8.theme',settings.theme); applyTheme(settings.theme); });
 if(setSound) setSound.addEventListener('click', function(){ settings.sound=!settings.sound; LS('bp8.sound', (settings.sound?'1':'0')); updateSoundLabel(); });
 if(resetBest) resetBest.addEventListener('click', function(){ SAFE.removeItem && SAFE.removeItem('bp8.best'); state.best={classic:0,obstacles:0}; if(bestEl) bestEl.textContent=0; showToast('Best resetovan'); });
 
-if(playAgain) playAgain.addEventListener('click', function(){ closeModal(gameOver); newGame(state.mode); });
-if(goMenu)   goMenu.addEventListener('click', function(){ closeModal(gameOver); goHome(); });
+if(playAgain) playAgain.addEventListener('click', function(){ if(gameOver) gameOver.style.display='none'; newGame(state.mode); });
+if(goMenu)   goMenu.addEventListener('click', function(){ if(gameOver) gameOver.style.display='none'; goHome(); });
 if(startClassic)   startClassic.addEventListener('click', function(){ startGame('classic'); });
 if(startObstacles) startObstacles.addEventListener('click', function(){ startGame('obstacles'); });
 
 if(achBtn){
   achBtn.addEventListener('click', function(){
     if(!achievementsModal) return;
-    openModal(achievementsModal);
+    achievementsModal.style.display='flex';
     var curIdx = getCurrentMilestoneIndex();
     var block = indexToBlock(curIdx>=0?curIdx:0);
     achPage = Math.max(1, Math.min(20, block));
@@ -764,8 +697,8 @@ if(achBtn){
     renderMilestoneBoxForBlock(block);
   });
 }
-if(achievementsModal){ var abd = achievementsModal.querySelector ? achievementsModal.querySelector('.backdrop') : null; if(abd) abd.addEventListener('click', function(){ closeModal(achievementsModal); }); }
-if(closeAch) closeAch.addEventListener('click', function(){ closeModal(achievementsModal); });
+if(achievementsModal){ var abd = achievementsModal.querySelector ? achievementsModal.querySelector('.backdrop') : null; if(abd) abd.addEventListener('click', function(){ achievementsModal.style.display='none'; }); }
+if(closeAch) closeAch.addEventListener('click', function(){ achievementsModal.style.display='none'; });
 if(achPrev) achPrev.addEventListener('click', function(){ achPage=Math.max(1, achPage-1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
 if(achNext) achNext.addEventListener('click', function(){ achPage=Math.min(20, achPage+1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
 
@@ -779,22 +712,22 @@ if(btnClaim)   btnClaim.addEventListener('click', function(){
 if(collectionBtn){
   collectionBtn.addEventListener('click', function(){
     if(!collectionModal) return;
-    openModal(collectionModal);
+    collectionModal.style.display='flex';
     renderCollection();
     setTab('themes'); // default
   });
 }
-if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; if(cbd) cbd.addEventListener('click', function(){ closeModal(collectionModal); }); }
-if(closeCollection) closeCollection.addEventListener('click', function(){ closeModal(collectionModal); });
+if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; if(cbd) cbd.addEventListener('click', function(){ collectionModal.style.display='none'; }); }
+if(closeCollection) closeCollection.addEventListener('click', function(){ collectionModal.style.display='none'; });
 
 if(tabThemes) tabThemes.addEventListener('click', function(){ setTab('themes'); });
-if(tabSkins)  tabSkins  .addEventListener('click', function(){ setTab('skins'); });
+if(tabSkins)  tabSkins.addEventListener('click', function(){ setTab('skins'); });
 function setTab(which){
   var themesSel = (which==='themes');
   if(tabThemes) tabThemes.setAttribute('aria-selected', themesSel? 'true':'false');
-  if(tabSkins)  tabSkins .setAttribute('aria-selected', themesSel? 'false':'true');
+  if(tabSkins)  tabSkins.setAttribute('aria-selected', themesSel? 'false':'true');
   if(panelThemes) panelThemes.setAttribute('aria-hidden', themesSel? 'false':'true');
-  if(panelSkins)  panelSkins .setAttribute('aria-hidden', themesSel? 'true':'false');
+  if(panelSkins)  panelSkins.setAttribute('aria-hidden', themesSel? 'true':'false');
 }
 
 /* ===== Flow ===== */
