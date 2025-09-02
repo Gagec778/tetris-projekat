@@ -100,7 +100,11 @@ var maxLevelSaved = parseInt(LS('bp8.level.max')||'1',10);
 var state = {
   grid:createGrid(BOARD), cell:36, score:0,
   mode:'classic', best:bestByMode, hand:[],
-  dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved)
+  dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved),
+
+  // === FX PREMIUM START: combo stanje ===
+  comboCount: 0
+  // === FX PREMIUM END ===
 };
 
 /* Stats — odmah otključaj sve teme/skinove */
@@ -469,6 +473,127 @@ function draw(){
 var particles=[];
 var fxWasCleared=true; // štednja: da ne čistimo stalno kada nema čestica
 
+// === FX PREMIUM START: sweep + float text + combo badge ===
+var sweeps=[]; // {type:'row'|'col', pos:number(px*dpr), life:int, max:int}
+var floats=[]; // {x,y,vy,life,max,text}
+var comboBadge=null; // {n, life, max}
+
+function fxAccent(){ return (getCss('--accent')||'#2ec5ff').trim()||'#2ec5ff'; }
+function fxGold(){ return '#ffd85e'; }
+
+function spawnSweepRow(yPx){ sweeps.push({type:'row', pos:yPx, life:0, max:26}); }      // ~420ms @60fps
+function spawnSweepCol(xPx){ sweeps.push({type:'col', pos:xPx, life:0, max:26}); }
+
+function spawnFloatText(x,y,text){
+  floats.push({x:x, y:y, vy:-0.9*DPR, life:0, max:40, text:text});
+}
+function showCombo(n){
+  if(n<2){ comboBadge=null; return; }
+  comboBadge = { n:n, life:0, max:66 }; // ~1.1s
+}
+
+function drawRoundedRect(c,x,y,w,h,r){
+  c.beginPath();
+  var rr = Math.min(r, w*0.5, h*0.5);
+  c.moveTo(x+rr,y);
+  c.arcTo(x+w,y,x+w,y+h,rr);
+  c.arcTo(x+w,y+h,x,y+h,rr);
+  c.arcTo(x,y+h,x,y,rr);
+  c.arcTo(x,y,x+w,y,rr);
+  c.closePath();
+}
+
+function renderSweeps(){
+  if(!fctx||!fxCnv||sweeps.length===0) return;
+  var W=fxCnv.width, H=fxCnv.height;
+  for(var i=sweeps.length-1;i>=0;i--){
+    var s=sweeps[i]; s.life++;
+    var t=s.life/s.max;
+    var alpha = (t<0.2? t/0.2 : (t>0.85? (1-t)/0.15 : 1));
+    fctx.globalAlpha = Math.max(0, Math.min(1, alpha)) * 0.9;
+
+    if(s.type==='row'){
+      var grad=fctx.createLinearGradient(0, s.pos, W, s.pos);
+      grad.addColorStop(0.00,'rgba(255,255,255,0)');
+      grad.addColorStop(0.10,'rgba(255,255,255,0.9)');
+      grad.addColorStop(0.35, fxAccent());
+      grad.addColorStop(0.70,'rgba(255,255,255,0)');
+      fctx.fillStyle=grad;
+      var h = Math.max(4*DPR, (6*DPR));
+      var x = -W*0.2 + W*1.4*t;
+      fctx.fillRect(x, s.pos - h*0.5, W*0.3, h);
+    }else{
+      var grad2=fctx.createLinearGradient(s.pos, 0, s.pos, H);
+      grad2.addColorStop(0.00,'rgba(255,255,255,0)');
+      grad2.addColorStop(0.10,'rgba(255,255,255,0.9)');
+      grad2.addColorStop(0.35, fxAccent());
+      grad2.addColorStop(0.70,'rgba(255,255,255,0)');
+      fctx.fillStyle=grad2;
+      var w = Math.max(4*DPR, (6*DPR));
+      var y = H*1.2 - H*1.4*t;
+      fctx.fillRect(s.pos - w*0.5, y, w, H*0.3);
+    }
+
+    if(s.life>=s.max) sweeps.splice(i,1);
+  }
+  fctx.globalAlpha=1;
+}
+
+function renderFloats(){
+  if(!fctx || floats.length===0) return;
+  fctx.textAlign='center';
+  fctx.textBaseline='middle';
+  fctx.font = Math.max(12*DPR, (14*DPR))+'px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+  for(var i=floats.length-1;i>=0;i--){
+    var f=floats[i]; f.life++; f.y+=f.vy;
+    var a = (f.life<8? f.life/8 : Math.max(0, (f.max - f.life)/10));
+    fctx.globalAlpha = Math.min(1, a);
+    fctx.fillStyle = fxGold();
+    // tekst + blagi "glow"
+    fctx.shadowColor = fxGold();
+    fctx.shadowBlur = 8*DPR;
+    fctx.fillText(f.text, f.x, f.y);
+    fctx.shadowBlur = 0;
+    if(f.life>=f.max) floats.splice(i,1);
+  }
+  fctx.globalAlpha=1;
+}
+
+function renderComboBadge(){
+  if(!fctx || !comboBadge) return;
+  comboBadge.life++;
+  var t = comboBadge.life / comboBadge.max;
+  var a = (t<0.5? 1 : Math.max(0, (comboBadge.max - comboBadge.life)/12));
+  var W=fxCnv.width, pad=10*DPR, bw=140*DPR, bh=40*DPR;
+  var x = (W - bw)/2, y = pad + 8*DPR;
+
+  fctx.globalAlpha = Math.min(1,a);
+  // pločica
+  drawRoundedRect(fctx, x, y, bw, bh, 12*DPR);
+  fctx.fillStyle = 'rgba(255,255,255,0.08)';
+  fctx.fill();
+  fctx.lineWidth = 1*DPR;
+  fctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  fctx.stroke();
+
+  // tekst
+  fctx.textAlign='center';
+  fctx.textBaseline='middle';
+  fctx.fillStyle='#ffffff';
+  fctx.font = (12*DPR)+'px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+  fctx.fillText('COMBO', x + bw/2, y + bh*0.35);
+
+  fctx.fillStyle = fxGold();
+  fctx.font = (20*DPR)+'px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+  fctx.shadowColor = fxGold(); fctx.shadowBlur = 10*DPR;
+  fctx.fillText('×'+comboBadge.n, x + bw/2, y + bh*0.72);
+  fctx.shadowBlur = 0;
+
+  fctx.globalAlpha=1;
+  if(comboBadge.life>=comboBadge.max) comboBadge=null;
+}
+// === FX PREMIUM END ===
+
 function spawnParticles(cells){
   if(!fctx) return;
   var s=state.cell,d=DPR;
@@ -484,7 +609,7 @@ function spawnParticles(cells){
 function stepFX(){
   if(!fctx || !fxCnv){ requestAnimationFrame(stepFX); return; }
 
-  if(particles.length===0){
+  if(particles.length===0 && sweeps.length===0 && floats.length===0 && !comboBadge){
     // Jednokratno očisti pa “idle” (štedi CPU/bateriju)
     if(!fxWasCleared){
       fctx.setTransform(1,0,0,1,0,0);
@@ -497,6 +622,8 @@ function stepFX(){
 
   fctx.setTransform(1,0,0,1,0,0);
   fctx.clearRect(0,0,fxCnv.width,fxCnv.height);
+
+  // particles
   for(var i=0;i<particles.length;i++){
     var p=particles[i];
     p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--;
@@ -505,6 +632,15 @@ function stepFX(){
     fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill();
   }
   for(var k=particles.length-1;k>=0;k--) if(particles[k].life<=0) particles.splice(k,1);
+
+  // === FX PREMIUM START: render novog sloja ===
+  renderSweeps();
+  renderFloats();
+  renderComboBadge();
+  // === FX PREMIUM END ===
+
+  fxWasCleared=false;
+  fctx.globalAlpha=1;
 
   requestAnimationFrame(stepFX);
 }
@@ -525,7 +661,44 @@ function place(piece,gx,gy){
   if(cells.length) spawnParticles(cells);
 
   var linesCleared = fullRows.length + fullCols.length;
-  var gained = SCORE_CFG.perBlock * placedBlocks + scoreForClear(linesCleared);
+  var gainedClear = scoreForClear(linesCleared);
+  var gained = SCORE_CFG.perBlock * placedBlocks + gainedClear;
+
+  // === FX PREMIUM START: sweep + float + combo hook ===
+  if(linesCleared>0 && fctx && fxCnv){
+    var s = state.cell, d = DPR;
+    // Sweep efekti po svakoj liniji
+    for(var iR=0;iR<fullRows.length;iR++){
+      var row = fullRows[iR];
+      var yPx = (row + 0.5) * s * d;
+      spawnSweepRow(yPx);
+    }
+    for(var iC=0;iC<fullCols.length;iC++){
+      var col = fullCols[iC];
+      var xPx = (col + 0.5) * s * d;
+      spawnSweepCol(xPx);
+    }
+    // Lebdeći tekst po liniji (poeni za clear / linije)
+    var perLine = Math.max(1, Math.round(gainedClear / Math.max(1, linesCleared)));
+    for(var iR2=0;iR2<fullRows.length;iR2++){
+      var yPx2 = (fullRows[iR2] + 0.5) * s * d;
+      var xMid = (s*BOARD*0.5) * d;
+      spawnFloatText(xMid, yPx2, '+'+perLine);
+    }
+    for(var iC2=0;iC2<fullCols.length;iC2++){
+      var xPx2 = (fullCols[iC2] + 0.5) * s * d;
+      var yMid = (s*BOARD*0.5) * d;
+      spawnFloatText(xPx2, yMid, '+'+perLine);
+    }
+
+    // Combo brojač (niz poteza sa clear-om)
+    state.comboCount = (state.comboCount||0) + 1;
+    showCombo(state.comboCount);
+  } else {
+    // Ako potez bez clear-a, reset combo niza
+    state.comboCount = 0;
+  }
+  // === FX PREMIUM END ===
 
   state.score += gained; if(scoreEl) scoreEl.textContent=state.score;
   stats.totalScore += gained; stats.blocksPlaced += placedBlocks; stats.linesCleared += linesCleared; saveStats(stats);
@@ -742,6 +915,12 @@ function newGame(mode){
   state.grid=createGrid(BOARD);
   state.score=0; if(scoreEl) scoreEl.textContent=0; if(bestEl) bestEl.textContent=String(state.best[mode]||0);
   state.hand=[]; refillHand();
+  // === FX PREMIUM START: reset combo i FX state ===
+  state.comboCount = 0;
+  sweeps.length = 0; floats.length = 0; particles.length = 0; comboBadge = null; fxWasCleared=false;
+  if(fctx && fxCnv){ fctx.setTransform(1,0,0,1,0,0); fctx.clearRect(0,0,fxCnv.width,fxCnv.height); }
+  // === FX PREMIUM END ===
+
   if(mode==='obstacles'){
     if(levelPill) levelPill.style.display='inline-flex';
     state.level = 1; if(lvlEl) lvlEl.textContent = state.level; applyObstacles(obstaclesForLevel(state.level));
