@@ -102,7 +102,7 @@ var state = {
   mode:'classic', best:bestByMode, hand:[],
   dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved),
 
-  // === FX PREMIUM STATE ===
+  // FX stanje
   comboCount: 0
 };
 
@@ -220,14 +220,10 @@ var SHAPES=(function(){
     [[0,0],[1,0],[0,1],[0,2]],
     [[0,0],[1,0],[1,1],[1,2]],
 
-    // === NOVE FORME (smanjuju ponavljanja) ===
-    // S
+    // nove — S, Z, plus, mala L
     [[1,0],[2,0],[0,1],[1,1]],
-    // Z
     [[0,0],[1,0],[1,1],[2,1]],
-    // Plus ✚ (5 blokova)
     [[1,0],[1,1],[0,1],[2,1],[1,2]],
-    // Mala L-trimina
     [[0,0],[1,0],[0,1]]
   ];
   return raw.map(function(shape){
@@ -262,7 +258,6 @@ function anyFits(){
 
 /* ===== GRID overlay & rim ===== */
 function isAuroraPlus(){ return applied.theme==='t01'; }
-// (novo) grid samo ćelije
 function drawGridCells(c, s){
   c.save();
   c.lineWidth=1;
@@ -276,7 +271,6 @@ function drawGridCells(c, s){
   }
   c.restore();
 }
-// (novo) spoljašnji okvir posebno – da uvek legne PREKO blokova
 function drawOuterRim(c, W, H, s){
   c.save();
   var accent = getCss('--accent') || '#2ec5ff';
@@ -392,7 +386,6 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
     rr(c,x+1.2,y+1.2,s-2.4,s-2.4,Math.max(5, R-1));
     c.lineWidth=Math.max(1, s*.06);
     c.strokeStyle='rgba(255,255,255,.12)';
-    // (rim ne crtamo jer je SHOW_BLOCK_RIM=false)
   }
 }
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
@@ -410,10 +403,8 @@ function renderTray(){
   if(!trayEl) return;
   trayEl.innerHTML='';
 
-  // Nalepljeno uz grid:
   trayEl.style.paddingTop='0px';
   trayEl.style.gap='6px';
-  // povuci naviše prema gridu
   var pull = Math.round((state.cell||36)*0.9);
   trayEl.style.marginTop = (-pull)+'px';
 
@@ -461,7 +452,6 @@ function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.scale(DPR,DPR);
 
-  // Prvo samo linije ćelija (iza blokova)
   drawGridCells(ctx, s);
 
   for(var y=0;y<BOARD;y++){
@@ -470,7 +460,6 @@ function draw(){
       var px=x*s, py=y*s;
       if(v===1){ drawPlaced(ctx,px,py,s); }
       else if(v===2){
-        // Prepreke
         rr(ctx,px+1,py+1,s-2,s-2,9);
         var grad=ctx.createLinearGradient(px,py,px,py+s);
         grad.addColorStop(0, '#334054');
@@ -487,35 +476,26 @@ function draw(){
     }
   }
 
-  // Na kraju uvek spoljašnji okvir (da blokovi ne “ulaze” u okvir)
   drawOuterRim(ctx, W, H, s);
-  // drag preview ide na dragLayer (zasebno)
 }
 
 /* ===== FX ===== */
 var particles=[];
 var fxWasCleared=true;
 
-// === FX PREMIUM: Block Blast stil ===
-var sweeps=[];      // {type:'row'|'col', pos:number(px*dpr), life:int, max:int}
-var floats=[];      // {x,y,vy,life,max,text}
-var comboBadge=null;// {n,life,max}
-var pops=[];        // {x,y,size,life,max}
-var rings=[];       // {x,y,r0,life,max}
+var sweeps=[];      // sweep trake
+var floats=[];      // lebdeći tekst
+var comboBadge=null;// combo kartica
+var pops=[];        // “pop shrink”
+var rings=[];       // prsten
 
 function fxAccent(){ return (getCss('--accent')||'#2ec5ff').trim()||'#2ec5ff'; }
 function fxGold(){ return '#ffd85e'; }
 
 function spawnSweepRow(yPx){ sweeps.push({type:'row', pos:yPx, life:0, max:30}); }
 function spawnSweepCol(xPx){ sweeps.push({type:'col', pos:xPx, life:0, max:30}); }
-
-function spawnFloatText(x,y,text){
-  floats.push({x:x, y:y, vy:-1.0*DPR, life:0, max:42, text:text});
-}
-function showCombo(n){
-  if(n<2){ comboBadge=null; return; }
-  comboBadge = { n:n, life:0, max:72 };
-}
+function spawnFloatText(x,y,text){ floats.push({x:x, y:y, vy:-1.0*DPR, life:0, max:42, text:text}); }
+function showCombo(n){ if(n<2){ comboBadge=null; return; } comboBadge = { n:n, life:0, max:72 }; }
 function spawnPop(x,y,size){ pops.push({x:x,y:y,size:size,life:0,max:26}); }
 function spawnRing(x,y){ rings.push({x:x,y:y,r0:6*DPR,life:0,max:28}); }
 
@@ -621,8 +601,8 @@ function renderPops(){
   for(var i=pops.length-1;i>=0;i--){
     var p=pops[i]; p.life++;
     var t = p.life/p.max;
-    var scale = Math.max(0, 1 - t);           // skuplja se
-    var s = p.size * (0.9*scale + 0.1);       // ne do nule potpuno
+    var scale = Math.max(0, 1 - t);
+    var s = p.size * (0.9*scale + 0.1);
     var x = p.x - s/2, y = p.y - s/2;
 
     fctx.globalAlpha = Math.max(0, 1 - t*1.1);
@@ -648,18 +628,17 @@ function renderRings(){
     if(r.life>=r.max) rings.splice(i,1);
   }
 }
-  /* ===== FX helpers (spawn) ===== */
+
+/* ===== FX helpers (spawn) ===== */
 function spawnParticles(cells){
   if(!fctx || !cells || !cells.length) return;
   var s = state.cell, d = DPR;
 
-  // setovi za sweep
   var rows = new Set(), cols = new Set();
 
   for(var i=0;i<cells.length;i++){
     var xy=cells[i], bx=xy[0], by=xy[1];
 
-    // dots (zvezdice) – kao prašina
     for(var j=0;j<8;j++){
       var base={
         x:(bx+0.5)*s*d, y:(by+0.5)*s*d,
@@ -669,7 +648,6 @@ function spawnParticles(cells){
       particles.push(base);
     }
 
-    // Block Blast stil: pop + prsten iz centra ćelije
     var cx=(bx+0.5)*s*d, cy=(by+0.5)*s*d;
     spawnPop(cx, cy, Math.max(12*d, s*d*0.65));
     spawnRing(cx, cy);
@@ -677,7 +655,6 @@ function spawnParticles(cells){
     rows.add(by); cols.add(bx);
   }
 
-  // linijske “sweep” trake
   rows.forEach(function(ry){ spawnSweepRow((ry+0.5)*s*d); });
   cols.forEach(function(cx){ spawnSweepCol((cx+0.5)*s*d); });
 
@@ -687,7 +664,6 @@ function spawnParticles(cells){
 function stepFX(){
   if(!fctx || !fxCnv){ requestAnimationFrame(stepFX); return; }
 
-  // ništa aktivno → očisti jednom i idle
   var hasFancy = sweeps.length||floats.length||comboBadge||pops.length||rings.length;
   if(particles.length===0 && !hasFancy){
     if(!fxWasCleared){
@@ -702,7 +678,6 @@ function stepFX(){
   fctx.setTransform(1,0,0,1,0,0);
   fctx.clearRect(0,0,fxCnv.width,fxCnv.height);
 
-  // ----- klasične “zvezdice” (dot particles)
   for(var i=0;i<particles.length;i++){
     var p=particles[i];
     p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--;
@@ -713,7 +688,6 @@ function stepFX(){
   for(var k=particles.length-1;k>=0;k--) if(particles[k].life<=0) particles.splice(k,1);
   fctx.globalAlpha=1;
 
-  // ----- premium FX slojevi
   renderPops();
   renderRings();
   renderSweeps();
@@ -755,11 +729,10 @@ function place(piece,gx,gy){
   state.score += gained;
   if(scoreEl) scoreEl.textContent=state.score;
 
-  // combo logika + float badge kao u Block Blast
   if(linesCleared>0){
     state.comboCount = (state.comboCount||0) + 1;
     showCombo(state.comboCount);
-    var cx = (state.cell*BOARD*DPR)/2, cy = (state.cell*DPR)*0.8; // iznad table
+    var cx = (state.cell*BOARD*DPR)/2, cy = (state.cell*DPR)*0.8;
     spawnFloatText(cx, cy, '+'+gainedClear);
   }else{
     state.comboCount = 0;
@@ -797,14 +770,12 @@ function place(piece,gx,gy){
   if(state.mode==='obstacles') checkLevelUp();
   requestDraw();
 }
-
 function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
-/* ===== DRAG preko celog ekrana — PRECIZNO poravnanje ===== */
+/* ===== DRAG preko celog ekrana ===== */
 var POINTER={active:false,fromSlotIndex:null};
 function getViewportPos(e){ return {x:e.clientX, y:e.clientY}; }
 
-// stabilan preview
 function getDragOffsets(){
   var s = state.cell || 36;
   return { liftY: Math.round(s*2.0), offsetX: Math.round(s*0.20) };
@@ -954,7 +925,7 @@ if(collectionBtn){
     if(!collectionModal) return;
     collectionModal.style.display='flex';
     renderCollection();
-    setTab('themes'); // default
+    setTab('themes');
   });
 }
 if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; if(cbd) cbd.addEventListener('click', function(){ collectionModal.style.display='none'; }); }
@@ -1017,7 +988,6 @@ function sizeToScreen(){
   if(fctx){ fctx.setTransform(1,0,0,1,0,0); }
   state.cell=cell;
 
-  // drag overlay full screen
   if(dragLayer){
     var w=window.innerWidth, h=window.innerHeight;
     dragLayer.style.width=w+'px'; dragLayer.style.height=h+'px';
@@ -1025,7 +995,6 @@ function sizeToScreen(){
     if(dragCtx){ dragCtx.setTransform(1,0,0,1,0,0); dragCtx.clearRect(0,0,dragLayer.width,dragLayer.height); }
   }
 
-  // global bg canvas
   if(bg){
     var bw=window.innerWidth, bh=window.innerHeight;
     if(bg.width!==Math.floor(bw*DPR) || bg.height!==Math.floor(bh*DPR)){
@@ -1038,7 +1007,7 @@ var drawQueued=false; function requestDraw(){ if(!drawQueued){ drawQueued=true; 
 window.addEventListener('resize', sizeToScreen, {passive:true});
 sizeToScreen();
 
-/* ===== Ach motor (original, bez promena funkcionalnosti) ===== */
+/* ===== Ach motor (sačuvan) ===== */
 var TARGETS = { blocks: function(i){return 300*i;}, lines: function(i){return 40*i;}, score: function(i){return 50000*i;} };
 function createAchievementsModel(){
   var list=[],i;
@@ -1107,7 +1076,7 @@ function renderMilestoneBoxForBlock(block){
   var blk50=blockProgress50(block); var blkOK=(blk50.done>=49);
   msTitle.textContent='Milestone '+node.id; msDesc.textContent=(info.type==='skin'?'🎁 SKIN — '+info.name:'🎁 TEMA — '+info.name);
   msCounters.textContent='🎬 '+total+'/'+need+' (van max '+extMax+')';
-  msBlockProg.textContent='📦 '+blk50.done+'/'+blk50.total';
+  msBlockProg.textContent='📦 '+blk50.done+'/'+blk50.total;
   msBar.style.width=pct.toFixed(1)+'%';
   if(total>=need) btnWatchAd.setAttribute('aria-disabled','true'); else btnWatchAd.setAttribute('aria-disabled','false');
   btnClaim.setAttribute('aria-disabled', (total>=need && blkOK)?'false':'true');
