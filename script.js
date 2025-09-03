@@ -1019,7 +1019,7 @@ function createAchievementsModel(){
     var node={id:i,title:title,kind:kind,key:key,target:target,done:false};
     if(i%50===0){
       var adsNeeded=(i/50)*5;
-      node.milestone={type:(i%100===0)?'skin':'theme', adsRequired:adsNeeded, adsExtMax=Math.floor(adsNeeded*0.8), adsExt:0, adsInt:0, claimed:false};
+      node.milestone={type:(i%100===0)?'skin':'theme', adsRequired:adsNeeded, adsExtMax:Math.floor(adsNeeded*0.8), adsExt:0, adsInt:0, claimed:false};
     }
     list.push(node);
   }
