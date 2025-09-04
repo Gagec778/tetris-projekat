@@ -1,4 +1,4 @@
-(function(){
+document.addEventListener('DOMContentLoaded', function() {
 'use strict';
 
 /* ===== DOM REFS ===== */
@@ -1134,4 +1134,4 @@ if(!startClassic){
   newGame('classic');
 }
 
-})(); // kraj
+}); // kraj DOMContentLoaded
