@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-  alert('SCRIPT SE POKRENUO!');
 'use strict';
 
 /* ===== DOM REFS ===== */
