@@ -100,10 +100,7 @@ var maxLevelSaved = parseInt(LS('bp8.level.max')||'1',10);
 var state = {
   grid:createGrid(BOARD), cell:36, score:0,
   mode:'classic', best:bestByMode, hand:[],
-  dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved),
-
-  // FX stanje
-  comboCount: 0
+  dragging:null, level:1, maxLevel: Math.max(1,maxLevelSaved)
 };
 
 /* Stats — odmah otključaj sve teme/skinove */
@@ -210,7 +207,6 @@ if(bg){
 /* ===== Shapes / Pieces ===== */
 var SHAPES=(function(){
   var raw=[
-    // postojeće
     [[0,0]],
     [[0,0],[1,0]], [[0,0],[1,0],[2,0]], [[0,0],[1,0],[2,0],[3,0]], [[0,0],[1,0],[2,0],[3,0],[4,0]],
     [[0,0],[0,1]], [[0,0],[0,1],[0,2]], [[0,0],[0,1],[0,2],[0,3]], [[0,0],[0,1],[0,2],[0,3],[0,4]],
@@ -218,13 +214,7 @@ var SHAPES=(function(){
     [[0,0],[1,0],[2,0],[0,1]],
     [[0,0],[1,0],[2,0],[1,1]],
     [[0,0],[1,0],[0,1],[0,2]],
-    [[0,0],[1,0],[1,1],[1,2]],
-
-    // nove — S, Z, plus, mala L
-    [[1,0],[2,0],[0,1],[1,1]],
-    [[0,0],[1,0],[1,1],[2,1]],
-    [[1,0],[1,1],[0,1],[2,1],[1,2]],
-    [[0,0],[1,0],[0,1]]
+    [[0,0],[1,0],[1,1],[1,2]]
   ];
   return raw.map(function(shape){
     var minx=Infinity,miny=Infinity,i;
@@ -258,7 +248,7 @@ function anyFits(){
 
 /* ===== GRID overlay & rim ===== */
 function isAuroraPlus(){ return applied.theme==='t01'; }
-function drawGridCells(c, s){
+function drawPanelAndGridOverlay(c, W, H, s){
   c.save();
   c.lineWidth=1;
   c.strokeStyle='rgba(255,255,255,.16)';
@@ -269,10 +259,6 @@ function drawGridCells(c, s){
       c.stroke();
     }
   }
-  c.restore();
-}
-function drawOuterRim(c, W, H, s){
-  c.save();
   var accent = getCss('--accent') || '#2ec5ff';
   var outerColor = isAuroraPlus() ? '#d4af37' : (accent.trim() || '#2ec5ff');
   c.lineWidth = isAuroraPlus() ? Math.max(2.2, s*0.10) : Math.max(2, s*0.08);
@@ -285,7 +271,19 @@ function drawOuterRim(c, W, H, s){
 /* ===== SKIN render – bez okvira ===== */
 var SHOW_BLOCK_RIM=false;
 
-var patternCache=new Map();
+/* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
+/*  KOMPATIBILNI KEŠ UMESTO Map (radi i na starim WebView-ovima) */
+var patternCache=(function(){
+  if(typeof Map==='function'){ return new Map(); }
+  var store=Object.create(null);
+  return {
+    has:function(k){ return Object.prototype.hasOwnProperty.call(store,k); },
+    get:function(k){ return store[k]; },
+    set:function(k,v){ store[k]=v; }
+  };
+})();
+/* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< */
+
 function makePatternCanvas(drawFn,size){ if(size==null) size=24; var key=(drawFn&&drawFn.name?drawFn.name:'p')+':'+size; if(patternCache.has(key)) return patternCache.get(key); var c=document.createElement('canvas'); c.width=c.height=size; var g=c.getContext('2d'); g.clearRect(0,0,size,size); drawFn(g,size); var pat=g.createPattern(c,'repeat'); patternCache.set(key,pat); return pat; }
 function patGlass(g,s){ g.strokeStyle='rgba(255,255,255,0.18)'; g.lineWidth=0.9; g.beginPath(); g.moveTo(0, s*0.22); g.lineTo(s, 0); g.stroke(); g.beginPath(); g.moveTo(0, s*0.62); g.lineTo(s, s*0.38); g.stroke(); }
 function patBrushed(g,s){ g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=0.9; for(var x=0;x<s;x+=3){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,s); g.stroke(); } }
@@ -385,13 +383,13 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
   if(placed){
     rr(c,x+1.2,y+1.2,s-2.4,s-2.4,Math.max(5, R-1));
     c.lineWidth=Math.max(1, s*.06);
-    c.strokeStyle='rgba(255,255,255,.12)';
+    c.strokeStyle='rgba(255,255,255,.12)'; // ne crta se jer je SHOW_BLOCK_RIM=false
   }
 }
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
 
-/* ===== Tray render — nalepljen uz grid ===== */
+/* ===== Tray render — približeno gridu ===== */
 function drawPieceToCanvas(piece){
   var scale=24, pad=4, w=piece.w*scale+pad*2, h=piece.h*scale+pad*2;
   var c=document.createElement('canvas'); c.width=w*DPR; c.height=h*DPR; c.style.width=w+'px'; c.style.height=h+'px';
@@ -402,11 +400,10 @@ function drawPieceToCanvas(piece){
 function renderTray(){
   if(!trayEl) return;
   trayEl.innerHTML='';
-
+  // maksimalno blizu gridu
   trayEl.style.paddingTop='0px';
+  trayEl.style.marginTop='-6px';
   trayEl.style.gap='6px';
-  var pull = Math.round((state.cell||36)*0.9);
-  trayEl.style.marginTop = (-pull)+'px';
 
   for(var i=0;i<state.hand.length;i++){
     var p=state.hand[i];
@@ -452,7 +449,7 @@ function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.scale(DPR,DPR);
 
-  drawGridCells(ctx, s);
+  drawPanelAndGridOverlay(ctx, W, H, s);
 
   for(var y=0;y<BOARD;y++){
     for(var x=0;x<BOARD;x++){
@@ -460,12 +457,14 @@ function draw(){
       var px=x*s, py=y*s;
       if(v===1){ drawPlaced(ctx,px,py,s); }
       else if(v===2){
+        // Prepreke: blagi emboss da se jasnije razlikuju
         rr(ctx,px+1,py+1,s-2,s-2,9);
         var grad=ctx.createLinearGradient(px,py,px,py+s);
         grad.addColorStop(0, '#334054');
         grad.addColorStop(1, OBSTACLE_COLOR);
         ctx.fillStyle=grad; ctx.fill();
 
+        // tanak unutrašnji “rim” radi definicije
         ctx.save();
         ctx.lineWidth=Math.max(1, s*0.05);
         ctx.strokeStyle='rgba(255,255,255,0.06)';
@@ -475,197 +474,30 @@ function draw(){
       }
     }
   }
-
-  drawOuterRim(ctx, W, H, s);
+  // drag preview ide na dragLayer (zasebno)
 }
 
 /* ===== FX ===== */
 var particles=[];
-var fxWasCleared=true;
+var fxWasCleared=true; // štednja: da ne čistimo stalno kada nema čestica
 
-var sweeps=[];      // sweep trake
-var floats=[];      // lebdeći tekst
-var comboBadge=null;// combo kartica
-var pops=[];        // “pop shrink”
-var rings=[];       // prsten
-
-function fxAccent(){ return (getCss('--accent')||'#2ec5ff').trim()||'#2ec5ff'; }
-function fxGold(){ return '#ffd85e'; }
-
-function spawnSweepRow(yPx){ sweeps.push({type:'row', pos:yPx, life:0, max:30}); }
-function spawnSweepCol(xPx){ sweeps.push({type:'col', pos:xPx, life:0, max:30}); }
-function spawnFloatText(x,y,text){ floats.push({x:x, y:y, vy:-1.0*DPR, life:0, max:42, text:text}); }
-function showCombo(n){ if(n<2){ comboBadge=null; return; } comboBadge = { n:n, life:0, max:72 }; }
-function spawnPop(x,y,size){ pops.push({x:x,y:y,size:size,life:0,max:26}); }
-function spawnRing(x,y){ rings.push({x:x,y:y,r0:6*DPR,life:0,max:28}); }
-
-function drawRoundedRect(c,x,y,w,h,r){
-  c.beginPath();
-  var rr = Math.min(r, w*0.5, h*0.5);
-  c.moveTo(x+rr,y);
-  c.arcTo(x+w,y,x+w,y+h,rr);
-  c.arcTo(x+w,y+h,x,y+h,rr);
-  c.arcTo(x,y+h,x,y,rr);
-  c.arcTo(x,y,x+w,y,rr);
-  c.closePath();
-}
-
-function renderSweeps(){
-  if(!fctx||!fxCnv||sweeps.length===0) return;
-  var W=fxCnv.width, H=fxCnv.height;
-  for(var i=sweeps.length-1;i>=0;i--){
-    var s=sweeps[i]; s.life++;
-    var t=s.life/s.max;
-    var alpha = (t<0.2? t/0.2 : (t>0.88? (1-t)/0.12 : 1));
-    fctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-
-    if(s.type==='row'){
-      var grad=fctx.createLinearGradient(0, s.pos, W, s.pos);
-      grad.addColorStop(0.00,'rgba(255,255,255,0)');
-      grad.addColorStop(0.12,'rgba(255,255,255,0.9)');
-      grad.addColorStop(0.45, fxAccent());
-      grad.addColorStop(0.86,'rgba(255,255,255,0)');
-      fctx.fillStyle=grad;
-      var h = Math.max(5*DPR, (7*DPR));
-      var x = -W*0.25 + W*1.5*t;
-      fctx.fillRect(x, s.pos - h*0.5, W*0.32, h);
-    }else{
-      var grad2=fctx.createLinearGradient(s.pos, 0, s.pos, H);
-      grad2.addColorStop(0.00,'rgba(255,255,255,0)');
-      grad2.addColorStop(0.12,'rgba(255,255,255,0.9)');
-      grad2.addColorStop(0.45, fxAccent());
-      grad2.addColorStop(0.86,'rgba(255,255,255,0)');
-      fctx.fillStyle=grad2;
-      var w = Math.max(5*DPR, (7*DPR));
-      var y = H*1.25 - H*1.5*t;
-      fctx.fillRect(s.pos - w*0.5, y, w, H*0.32);
-    }
-    if(s.life>=s.max) sweeps.splice(i,1);
-  }
-  fctx.globalAlpha=1;
-}
-
-function renderFloats(){
-  if(!fctx || floats.length===0) return;
-  fctx.textAlign='center';
-  fctx.textBaseline='middle';
-  fctx.font = Math.max(12*DPR, (14*DPR))+'px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-  for(var i=floats.length-1;i>=0;i--){
-    var f=floats[i]; f.life++; f.y+=f.vy;
-    var a = (f.life<10? f.life/10 : Math.max(0, (f.max - f.life)/10));
-    fctx.globalAlpha = Math.min(1, a);
-    fctx.fillStyle = fxGold();
-    fctx.shadowColor = fxGold();
-    fctx.shadowBlur = 10*DPR;
-    fctx.fillText(f.text, f.x, f.y);
-    fctx.shadowBlur = 0;
-    if(f.life>=f.max) floats.splice(i,1);
-  }
-  fctx.globalAlpha=1;
-}
-
-function renderComboBadge(){
-  if(!fctx || !comboBadge) return;
-  comboBadge.life++;
-  var t = comboBadge.life / comboBadge.max;
-  var a = (t<0.55? 1 : Math.max(0, (comboBadge.max - comboBadge.life)/14));
-  var W=fxCnv.width, pad=10*DPR, bw=150*DPR, bh=44*DPR;
-  var x = (W - bw)/2, y = pad + 8*DPR;
-
-  fctx.globalAlpha = Math.min(1,a);
-  drawRoundedRect(fctx, x, y, bw, bh, 12*DPR);
-  fctx.fillStyle = 'rgba(255,255,255,0.08)';
-  fctx.fill();
-  fctx.lineWidth = 1*DPR;
-  fctx.strokeStyle = 'rgba(255,255,255,0.12)';
-  fctx.stroke();
-
-  fctx.textAlign='center';
-  fctx.textBaseline='middle';
-  fctx.fillStyle='#ffffff';
-  fctx.font = (12*DPR)+'px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-  fctx.fillText('COMBO', x + bw/2, y + bh*0.35);
-
-  fctx.fillStyle = fxGold();
-  fctx.font = (22*DPR)+'px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-  fctx.shadowColor = fxGold(); fctx.shadowBlur = 12*DPR;
-  fctx.fillText('×'+comboBadge.n, x + bw/2, y + bh*0.72);
-  fctx.shadowBlur = 0;
-
-  fctx.globalAlpha=1;
-  if(comboBadge.life>=comboBadge.max) comboBadge=null;
-}
-
-function renderPops(){
-  if(!fctx || pops.length===0) return;
-  for(var i=pops.length-1;i>=0;i--){
-    var p=pops[i]; p.life++;
-    var t = p.life/p.max;
-    var scale = Math.max(0, 1 - t);
-    var s = p.size * (0.9*scale + 0.1);
-    var x = p.x - s/2, y = p.y - s/2;
-
-    fctx.globalAlpha = Math.max(0, 1 - t*1.1);
-    drawBlockStyle(fctx, x, y, s, fxAccent(), currentSkinStyle());
-    fctx.globalAlpha = 1;
-
-    if(p.life>=p.max) pops.splice(i,1);
-  }
-}
-
-function renderRings(){
-  if(!fctx || rings.length===0) return;
-  for(var i=rings.length-1;i>=0;i--){
-    var r=rings[i]; r.life++;
-    var t=r.life/r.max;
-    var radius = r.r0 + t*28*DPR;
-    var a = Math.max(0, 1 - t);
-    fctx.beginPath();
-    fctx.arc(r.x, r.y, radius, 0, Math.PI*2);
-    fctx.strokeStyle = 'rgba(255,255,255,'+(0.35*a)+')';
-    fctx.lineWidth = 2*DPR*(1-t);
-    fctx.stroke();
-    if(r.life>=r.max) rings.splice(i,1);
-  }
-}
-
-/* ===== FX helpers (spawn) ===== */
 function spawnParticles(cells){
-  if(!fctx || !cells || !cells.length) return;
-  var s = state.cell, d = DPR;
-
-  var rows = new Set(), cols = new Set();
-
+  if(!fctx) return;
+  var s=state.cell,d=DPR;
   for(var i=0;i<cells.length;i++){
     var xy=cells[i], bx=xy[0], by=xy[1];
-
-    for(var j=0;j<8;j++){
-      var base={
-        x:(bx+0.5)*s*d, y:(by+0.5)*s*d,
-        vx:(Math.random()-0.5)*2, vy:(-Math.random()*2-0.6),
-        life:42, r:1.8, color:'#ffffffaa'
-      };
+    for(var j=0;j<6;j++){
+      var base={x:(bx+0.5)*s*d,y:(by+0.5)*s*d,vx:(Math.random()-0.5)*2,vy:(-Math.random()*2-0.5),life:40,r:2,color:'#ffffffaa',shape:'dot'};
       particles.push(base);
     }
-
-    var cx=(bx+0.5)*s*d, cy=(by+0.5)*s*d;
-    spawnPop(cx, cy, Math.max(12*d, s*d*0.65));
-    spawnRing(cx, cy);
-
-    rows.add(by); cols.add(bx);
   }
-
-  rows.forEach(function(ry){ spawnSweepRow((ry+0.5)*s*d); });
-  cols.forEach(function(cx){ spawnSweepCol((cx+0.5)*s*d); });
-
   fxWasCleared=false;
 }
-
 function stepFX(){
   if(!fctx || !fxCnv){ requestAnimationFrame(stepFX); return; }
 
-  var hasFancy = sweeps.length||floats.length||comboBadge||pops.length||rings.length;
-  if(particles.length===0 && !hasFancy){
+  if(particles.length===0){
+    // Jednokratno očisti pa “idle” (štedi CPU/bateriju)
     if(!fxWasCleared){
       fctx.setTransform(1,0,0,1,0,0);
       fctx.clearRect(0,0,fxCnv.width,fxCnv.height);
@@ -677,7 +509,6 @@ function stepFX(){
 
   fctx.setTransform(1,0,0,1,0,0);
   fctx.clearRect(0,0,fxCnv.width,fxCnv.height);
-
   for(var i=0;i<particles.length;i++){
     var p=particles[i];
     p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--;
@@ -686,13 +517,6 @@ function stepFX(){
     fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill();
   }
   for(var k=particles.length-1;k>=0;k--) if(particles[k].life<=0) particles.splice(k,1);
-  fctx.globalAlpha=1;
-
-  renderPops();
-  renderRings();
-  renderSweeps();
-  renderFloats();
-  renderComboBadge();
 
   requestAnimationFrame(stepFX);
 }
@@ -701,62 +525,34 @@ requestAnimationFrame(stepFX);
 /* ===== Place / Refill / Game over ===== */
 function place(piece,gx,gy){
   var placedBlocks = piece.blocks.length;
-  for(var i=0;i<piece.blocks.length;i++){
-    var dx=piece.blocks[i][0], dy=piece.blocks[i][1];
-    state.grid[gy+dy][gx+dx]=1;
-  }
+  for(var i=0;i<piece.blocks.length;i++){ var dx=piece.blocks[i][0], dy=piece.blocks[i][1]; state.grid[gy+dy][gx+dx]=1; }
 
   var fullRows=[], fullCols=[], x,y,ok;
   for(y=0;y<BOARD;y++){ ok=true; for(x=0;x<BOARD;x++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullRows.push(y); }
   for(x=0;x<BOARD;x++){ ok=true; for(y=0;y<BOARD;y++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullCols.push(x); }
 
   var cells=[];
-  for(var r=0;r<fullRows.length;r++){
-    var ry=fullRows[r];
-    for(x=0;x<BOARD;x++) cells.push([x,ry]);
-    state.grid[ry]=[]; for(x=0;x<BOARD;x++) state.grid[ry][x]=0;
-  }
-  for(var c=0;c<fullCols.length;c++){
-    var cx=fullCols[c];
-    for(y=0;y<BOARD;y++){ cells.push([cx,y]); state.grid[y][cx]=0; }
-  }
+  for(var r=0;r<fullRows.length;r++){ var ry=fullRows[r]; for(x=0;x<BOARD;x++){ cells.push([x,ry]); } state.grid[ry]=[]; for(x=0;x<BOARD;x++) state.grid[ry][x]=0; }
+  for(var c=0;c<fullCols.length;c++){ var cx=fullCols[c]; for(y=0;y<BOARD;y++){ cells.push([cx,y]); state.grid[y][cx]=0; } }
   if(cells.length) spawnParticles(cells);
 
   var linesCleared = fullRows.length + fullCols.length;
-  var gainedClear  = scoreForClear(linesCleared);
-  var gained       = SCORE_CFG.perBlock * placedBlocks + gainedClear;
+  var gained = SCORE_CFG.perBlock * placedBlocks + scoreForClear(linesCleared);
 
-  state.score += gained;
-  if(scoreEl) scoreEl.textContent=state.score;
-
-  if(linesCleared>0){
-    state.comboCount = (state.comboCount||0) + 1;
-    showCombo(state.comboCount);
-    var cx = (state.cell*BOARD*DPR)/2, cy = (state.cell*DPR)*0.8;
-    spawnFloatText(cx, cy, '+'+gainedClear);
-  }else{
-    state.comboCount = 0;
-  }
-
+  state.score += gained; if(scoreEl) scoreEl.textContent=state.score;
   stats.totalScore += gained; stats.blocksPlaced += placedBlocks; stats.linesCleared += linesCleared; saveStats(stats);
 
-  if(state.score>(state.best[state.mode]||0)){
-    state.best[state.mode]=state.score; saveBest(state.best);
-    if(bestEl) bestEl.textContent=state.score;
-  }
+  if(state.score>(state.best[state.mode]||0)){ state.best[state.mode]=state.score; saveBest(state.best); if(bestEl) bestEl.textContent=state.score; }
 
   achievementsTick();
 
   piece.used=true;
-  for(var ii=0;ii<state.hand.length;ii++){
-    if(state.hand[ii].id===piece.id){
-      state.hand[ii]={blocks:piece.blocks,w:piece.w,h:piece.h,color:piece.color,used:true,id:piece.id};
-    }
-  }
+  for(var ii=0;ii<state.hand.length;ii++){ if(state.hand[ii].id===piece.id){ state.hand[ii]={blocks:piece.blocks,w:piece.w,h:piece.h,color:piece.color,used:true,id:piece.id}; } }
   renderTray();
   var allUsed=true; for(ii=0;ii<state.hand.length;ii++){ if(!state.hand[ii].used){ allUsed=false; break; } }
   if(allUsed){
     refillHand();
+    // Uteg: odmah proveri da li nova ruka ima bar jedan validan potez (classic)
     if(state.mode!=='obstacles' && !anyFits()){
       if(goStats) goStats.textContent='Score: '+state.score+' • Best: '+(state.best[state.mode]||0);
       if(gameOver) gameOver.style.display='flex';
@@ -772,13 +568,17 @@ function place(piece,gx,gy){
 }
 function refillHand(){ state.hand=[newPiece(),newPiece(),newPiece()]; renderTray(); }
 
-/* ===== DRAG preko celog ekrana ===== */
+/* ===== DRAG preko celog ekrana — PRECIZNO poravnanje ===== */
 var POINTER={active:false,fromSlotIndex:null};
 function getViewportPos(e){ return {x:e.clientX, y:e.clientY}; }
 
+// Uteg: skalirani offseti (stabilan preview na svim veličinama)
 function getDragOffsets(){
   var s = state.cell || 36;
-  return { liftY: Math.round(s*2.0), offsetX: Math.round(s*0.20) };
+  return {
+    liftY: Math.round(s*2.0),     // ranije 72
+    offsetX: Math.round(s*0.20)   // ranije 8
+  };
 }
 
 function getGridGxGyFromPoint(px,py,piece){
@@ -847,6 +647,7 @@ function onPointerUp(){
   var slot = (trayEl && trayEl.querySelector) ? trayEl.querySelector(sel) : null;
   POINTER.active=false; document.body.style.cursor='';
   if(d.valid && d.gx!=null && d.gy!=null) place(d.piece,d.gx,d.gy);
+  // Uvek očisti vizuelno stanje slota
   if(slot && slot.classList) slot.classList.remove('used');
 
   state.dragging=null;
@@ -925,7 +726,7 @@ if(collectionBtn){
     if(!collectionModal) return;
     collectionModal.style.display='flex';
     renderCollection();
-    setTab('themes');
+    setTab('themes'); // default
   });
 }
 if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; if(cbd) cbd.addEventListener('click', function(){ collectionModal.style.display='none'; }); }
@@ -948,18 +749,11 @@ function startGame(mode){
   if(app) app.style.display='flex';
   sizeToScreen(); newGame(mode);
 }
-function goHome(){
-  if(app) app.style.display='none';
-  if(start) start.style.display='flex';
-  state.dragging=null;
-  if(dragCtx){ dragCtx.setTransform(1,0,0,1,0,0); dragCtx.clearRect(0,0,dragLayer.width,dragLayer.height);}
-  requestDraw();
-}
+function goHome(){ if(app) app.style.display='none'; if(start) start.style.display='flex'; state.dragging=null; if(dragCtx){ dragCtx.setTransform(1,0,0,1,0,0); dragCtx.clearRect(0,0,dragLayer.width,dragLayer.height);} requestDraw(); }
 function newGame(mode){
   state.grid=createGrid(BOARD);
   state.score=0; if(scoreEl) scoreEl.textContent=0; if(bestEl) bestEl.textContent=String(state.best[mode]||0);
   state.hand=[]; refillHand();
-  state.comboCount=0;
   if(mode==='obstacles'){
     if(levelPill) levelPill.style.display='inline-flex';
     state.level = 1; if(lvlEl) lvlEl.textContent = state.level; applyObstacles(obstaclesForLevel(state.level));
@@ -988,6 +782,7 @@ function sizeToScreen(){
   if(fctx){ fctx.setTransform(1,0,0,1,0,0); }
   state.cell=cell;
 
+  // drag overlay na ceo ekran
   if(dragLayer){
     var w=window.innerWidth, h=window.innerHeight;
     dragLayer.style.width=w+'px'; dragLayer.style.height=h+'px';
@@ -995,6 +790,7 @@ function sizeToScreen(){
     if(dragCtx){ dragCtx.setTransform(1,0,0,1,0,0); dragCtx.clearRect(0,0,dragLayer.width,dragLayer.height); }
   }
 
+  // global bg canvas
   if(bg){
     var bw=window.innerWidth, bh=window.innerHeight;
     if(bg.width!==Math.floor(bw*DPR) || bg.height!==Math.floor(bh*DPR)){
