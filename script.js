@@ -971,9 +971,9 @@ window.addEventListener('resize', sizeToScreen, {passive:true});
 sizeToScreen();
 
 /* ===== Ach motor (sačuvan) ===== */
-var TARGETS = { blocks: function(i){return 300*i;}, lines: function(i){return 40*i;}, score: function(i){return 50000*i;} };
 function createAchievementsModel(){
   var list=[],i;
+  var TARGETS = { blocks: function(i){return 300*i;}, lines: function(i){return 40*i;}, score: function(i){return 50000*i;} };
   for(i=1;i<=1000;i++){
     var title='',kind='',target=0,key='';
     if(i%3===1){ kind='blocks'; target=TARGETS.blocks(i); title='Postavi '+target+' blokova'; key='blocksPlaced'; }
