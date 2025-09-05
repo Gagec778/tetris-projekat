@@ -320,7 +320,7 @@ function shade(hex,amt){ var m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
 function currentSkinStyle(){ for(var i=0;i<SKINS.length;i++){ if(SKINS[i].id===applied.skin) return SKINS[i].style; } return 'metal'; }
 function drawBlockStyle(c, x, y, s, baseHex, style, opt) {
     var placed = opt && opt.placed;
-    var R = Math.max(6, s * .22);
+    var R = Math.max(6, s * .22); // Radius za zaobljene ivice
     function rrS() { rr(c, x + 1, y + 1, s - 2, s - 2, R); }
     function glint(ox, oy, rad, a) {
         if (a == null) a = 0.35;
@@ -334,165 +334,183 @@ function drawBlockStyle(c, x, y, s, baseHex, style, opt) {
 
     var styleNow = style || 'metal';
 
-    // Osnovni gradijent za pozadinu bloka
+    // Osnovni gradijent za pozadinu bloka (uvek prisutan za dubinu)
     let baseGradient = c.createLinearGradient(x, y, x + s, y + s);
-    baseGradient.addColorStop(0, shade(baseHex, 20));
-    baseGradient.addColorStop(1, shade(baseHex, -20));
+    baseGradient.addColorStop(0, shade(baseHex, 25)); // Svjetliji početak
+    baseGradient.addColorStop(0.5, baseHex);          // Originalna boja u sredini
+    baseGradient.addColorStop(1, shade(baseHex, -30)); // Tamniji kraj
 
+    rrS(); // Primeni zaobljene ivice
+    c.fillStyle = baseGradient;
+    c.fill();
+
+    // Dodatni efekti na osnovu stila
     if (styleNow === 'glass') {
-        // Glass: plavi, transparentni izgled sa prelamanjem svetlosti
-        const glassColor = '#41a0ff';
-        rrS(); c.fillStyle = 'rgba(255,255,255,0.1)'; c.fill(); // Tamnija pozadina
+        // Glass Lux: visoki sjaj, transparentnost, prelamanje svetlosti
+        rrS(); c.fillStyle = 'rgba(255,255,255,0.15)'; c.fill(); // Suptilna, svetla podloga
         let light = c.createLinearGradient(x, y, x+s, y+s);
-        light.addColorStop(0, 'rgba(255,255,255,0.8)');
+        light.addColorStop(0, 'rgba(255,255,255,0.9)');
         light.addColorStop(0.5, 'rgba(255,255,255,0)');
-        light.addColorStop(1, 'rgba(255,255,255,0.3)');
-        c.fillStyle = light; c.globalAlpha = 0.6; rrS(); c.fill();
+        light.addColorStop(1, 'rgba(255,255,255,0.4)');
+        c.fillStyle = light; c.globalAlpha = 0.7; rrS(); c.fill(); // Jaki odsjaji
         let body = c.createLinearGradient(x, y, x, y + s);
-        body.addColorStop(0, shade(glassColor, 30));
-        body.addColorStop(0.5, glassColor);
-        body.addColorStop(1, shade(glassColor, -30));
-        c.globalAlpha = 0.6; rrS(); c.fillStyle = body; c.fill();
+        body.addColorStop(0, shade(baseHex, 40)); // Još svetlije
+        body.addColorStop(0.5, baseHex);
+        body.addColorStop(1, shade(baseHex, -40)); // Još tamnije
+        c.globalAlpha = 0.5; rrS(); c.fillStyle = body; c.fill();
         c.globalAlpha = 1;
-        glint(s*0.3, s*0.3, s*0.4, 0.6);
-        c.strokeStyle = 'rgba(255,255,255,0.2)'; c.lineWidth = 1; rrS(); c.stroke();
+        glint(s*0.3, s*0.3, s*0.45, 0.7); // Veći i sjajniji glint
+        c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 1.5; rrS(); c.stroke(); // Izraženiji obris
     } else if (styleNow === 'metal') {
-        // Metallic Matte: Brušeni metal sa jasnim odsjajima
-        let metalColor = '#8c95a6';
+        // Metallic Matte: Brušeni metal sa dubljim odsjajima i finom teksturom
+        let metalColor = baseHex;
         let body = c.createLinearGradient(x, y, x + s, y + s);
-        body.addColorStop(0, shade(metalColor, 35));
+        body.addColorStop(0, shade(metalColor, 40)); // Svjetliji vrh
         body.addColorStop(0.5, shade(metalColor, 0));
-        body.addColorStop(1, shade(metalColor, -45));
+        body.addColorStop(1, shade(metalColor, -50)); // Tamnije dno
         rrS(); c.fillStyle = body; c.fill();
         let pat = getSkinPattern('metal');
         if (pat) {
-            c.save(); rrS(); c.fillStyle = pat; c.globalAlpha = 0.5; c.fill(); c.restore();
+            c.save(); rrS(); c.fillStyle = pat; c.globalAlpha = 0.6; c.fill(); c.restore(); // Gušća brušena tekstura
         }
+        glint(s*0.2, s*0.2, s*0.3, 0.4); // Manji, oštriji glint
+        c.strokeStyle = 'rgba(255,255,255,0.15)'; c.lineWidth = 1; rrS(); c.stroke();
     } else if (styleNow === 'gem') {
-        // Gem Cut: Fasetirani dragulj sa 3D dubinom
+        // Gem Cut: Fasetirani dragulj sa još više dubine i svjetlucanja
         let gemColor = baseHex;
         c.save();
         rr(c, x + 1, y + 1, s - 2, s - 2, R);
-        c.clip();
-        let grad = c.createRadialGradient(x + s/2, y + s/2, 0, x + s/2, y + s/2, s * 0.7);
-        grad.addColorStop(0, shade(gemColor, 60));
-        grad.addColorStop(0.5, gemColor);
-        grad.addColorStop(1, shade(gemColor, -40));
+        c.clip(); // Isječak za unutrašnje fasetiranje
+        let grad = c.createRadialGradient(x + s/2, y + s/2, 0, x + s/2, y + s/2, s * 0.8);
+        grad.addColorStop(0, shade(gemColor, 70)); // Ekstra svjetlo u centru
+        grad.addColorStop(0.4, gemColor);
+        grad.addColorStop(1, shade(gemColor, -50)); // Dublja tama
         c.fillStyle = grad; c.fillRect(x,y,s,s);
-        c.strokeStyle = 'rgba(255,255,255,0.4)';
-        c.lineWidth = 1.5;
+        c.strokeStyle = 'rgba(255,255,255,0.6)'; // Sjajnije ivice fasetiranja
+        c.lineWidth = 1.8; // Malo deblje
+        // Više linija za složenije fasetiranje
         c.beginPath();
-        c.moveTo(x + s/2, y); c.lineTo(x, y + s/2); c.lineTo(x + s/2, y+s); c.lineTo(x + s, y + s/2); c.closePath();
-        c.stroke();
+        c.moveTo(x + s*0.1, y + s*0.5); c.lineTo(x + s*0.5, y + s*0.1); c.lineTo(x + s*0.9, y + s*0.5);
+        c.lineTo(x + s*0.5, y + s*0.9); c.closePath(); c.stroke();
         c.beginPath();
-        c.moveTo(x + s/2, y + s/2);
-        c.lineTo(x, y + s/2);
-        c.lineTo(x + s/2, y);
-        c.lineTo(x + s/2, y + s/2);
-        c.lineTo(x + s, y + s/2);
-        c.lineTo(x + s/2, y + s);
-        c.lineTo(x + s/2, y + s/2);
+        c.moveTo(x + s*0.2, y + s*0.2); c.lineTo(x + s*0.8, y + s*0.2); c.lineTo(x + s*0.8, y + s*0.8); c.lineTo(x + s*0.2, y + s*0.8); c.closePath();
         c.stroke();
+        glint(s*0.3, s*0.3, s*0.4, 0.8); // Glint preko fasetiranja
         c.restore();
     } else if (styleNow === 'satin') {
-        // Satin Candy: mekani, perlast sjaj
+        // Satin Candy: bogatiji, perlast sjaj sa dubljim bojama
         let satinColor = baseHex;
         let body = c.createLinearGradient(x, y, x, y + s);
-        body.addColorStop(0, shade(satinColor, 30));
+        body.addColorStop(0, shade(satinColor, 40));
         body.addColorStop(0.5, satinColor);
-        body.addColorStop(1, shade(satinColor, -30));
+        body.addColorStop(1, shade(satinColor, -40));
         rrS(); c.fillStyle = body; c.fill();
-        let satinHighlight = c.createLinearGradient(x, y + s*0.2, x, y + s*0.8);
-        satinHighlight.addColorStop(0, 'rgba(255,255,255,0.1)');
-        satinHighlight.addColorStop(0.5, 'rgba(255,255,255,0.4)');
-        satinHighlight.addColorStop(1, 'rgba(255,255,255,0.1)');
+        let satinHighlight = c.createLinearGradient(x, y + s*0.1, x, y + s*0.9);
+        satinHighlight.addColorStop(0, 'rgba(255,255,255,0.2)');
+        satinHighlight.addColorStop(0.5, 'rgba(255,255,255,0.6)'); // Jači highlight
+        satinHighlight.addColorStop(1, 'rgba(255,255,255,0.2)');
         c.fillStyle = satinHighlight; c.fill();
+        glint(s*0.2, s*0.2, s*0.3, 0.3); // Suptilni glint
     } else if (styleNow === 'chrome') {
-        // Liquid Chrome: visoki odsjaj, tečni metal
+        // Liquid Chrome: ekstremni sjaj, realističniji metalni odsjaji
         let chromeColor = baseHex;
         let body = c.createLinearGradient(x, y, x, y+s);
-        body.addColorStop(0, 'rgba(255,255,255,0.9)');
-        body.addColorStop(0.25, shade(chromeColor, 40));
-        body.addColorStop(0.5, shade(chromeColor, -40));
-        body.addColorStop(0.75, shade(chromeColor, 30));
-        body.addColorStop(1, 'rgba(255,255,255,0.7)');
+        body.addColorStop(0, 'rgba(255,255,255,1.0)'); // Najsvetliji vrh
+        body.addColorStop(0.2, shade(chromeColor, 50));
+        body.addColorStop(0.5, shade(chromeColor, -50));
+        body.addColorStop(0.8, shade(chromeColor, 40));
+        body.addColorStop(1, 'rgba(255,255,255,0.9)'); // Blistavo dno
         rrS(); c.fillStyle = body; c.fill();
-        glint(s * 0.5, s * 0.25, s * 0.6, 0.5);
+        glint(s * 0.5, s * 0.2, s * 0.7, 0.6); // Veći i centralniji glint
+        c.strokeStyle = 'rgba(255,255,255,0.4)'; c.lineWidth = 1.2; rrS(); c.stroke();
     } else if (styleNow === 'porcelain') {
-        // Porcelain: glatko, sa suptilnim varijacijama
+        // Porcelain: izuzetno glatko, sa finim pukotinama i dubinom
         let porcelainColor = baseHex;
         let body = c.createLinearGradient(x, y, x, y + s);
-        body.addColorStop(0, shade(porcelainColor, 20));
-        body.addColorStop(1, shade(porcelainColor, -20));
+        body.addColorStop(0, shade(porcelainColor, 30));
+        body.addColorStop(1, shade(porcelainColor, -30));
         rrS(); c.fillStyle = body; c.fill();
         let specklePat = makePatternCanvas(g => {
-            g.fillStyle = 'rgba(255,255,255,0.1)';
-            for(let i=0; i<5; i++){ g.fillRect(Math.random()*24, Math.random()*24, 1, 1); }
+            g.fillStyle = 'rgba(255,255,255,0.15)'; // Više sitnih detalja
+            for(let i=0; i<10; i++){ g.fillRect(Math.random()*24, Math.random()*24, 1, 1); }
         }, 24);
-        c.save(); rrS(); c.fillStyle = specklePat; c.globalAlpha = 0.8; c.fill(); c.restore();
+        c.save(); rrS(); c.fillStyle = specklePat; c.globalAlpha = 0.9; c.fill(); c.restore();
+        glint(s*0.3, s*0.3, s*0.35, 0.2); // Veoma suptilan glint
+        c.strokeStyle = 'rgba(255,255,255,0.08)'; c.lineWidth = 1; rrS(); c.stroke();
     } else if (styleNow === 'carbon') {
-        // Carbon Weave: 3D efekat tkanja
-        let carbonColor = '#1e1e1e';
-        let weaveColor1 = '#303030';
-        let weaveColor2 = '#101010';
+        // Carbon Weave: izraženiji 3D efekat, dublji tonovi
+        let carbonColor = shade(baseHex, -50); // Tamnija baza
+        let weaveColor1 = shade(baseHex, -30);
+        let weaveColor2 = shade(baseHex, -70);
         rrS(); c.fillStyle = carbonColor; c.fill();
         c.save(); c.clip();
-        c.lineWidth = 1.5 * DPR;
+        c.lineWidth = 1.8 * DPR; // Deblje linije
         c.strokeStyle = weaveColor1;
-        for (let i = 0; i < s * DPR; i += 6) {
+        for (let i = 0; i < s * DPR; i += 5) { // Gušće tkanje
             c.beginPath(); c.moveTo(x, y + i / DPR); c.lineTo(x + s, y + i / DPR); c.stroke();
             c.beginPath(); c.moveTo(x + i / DPR, y); c.lineTo(x + i / DPR, y + s); c.stroke();
         }
-        c.strokeStyle = 'rgba(255,255,255,0.08)';
-        c.lineWidth = 1;
-        for (let i = 0; i < s * DPR; i += 6) {
+        c.strokeStyle = 'rgba(255,255,255,0.12)'; // Sjajniji niti
+        c.lineWidth = 1.2;
+        for (let i = 0; i < s * DPR; i += 5) {
             c.beginPath(); c.moveTo(x + i / DPR, y + s); c.lineTo(x + s, y); c.stroke();
             c.beginPath(); c.moveTo(x, y + i / DPR); c.lineTo(x + i / DPR, y); c.stroke();
         }
-        glint(s*0.3, s*0.3, s*0.4, 0.15);
+        glint(s*0.3, s*0.3, s*0.45, 0.2); // Jasniji glint
         c.restore();
     } else if (styleNow === 'frost') {
-        // Frosted Ice: zaleđeni, napukli izgled
-        let iceColor = '#d0f0ff';
+        // Frosted Ice: realističniji led sa više "kristala"
+        let iceColor = baseHex;
         let body = c.createLinearGradient(x, y, x, y + s);
-        body.addColorStop(0, shade(iceColor, 10));
-        body.addColorStop(1, shade(iceColor, -20));
+        body.addColorStop(0, shade(iceColor, 20));
+        body.addColorStop(1, shade(iceColor, -30));
         rrS(); c.fillStyle = body; c.fill();
         let cracklePat = makePatternCanvas(g => {
-            g.strokeStyle='rgba(255,255,255,0.25)'; g.lineWidth=1;
-            for(let i=0;i<5;i++){ g.beginPath(); g.moveTo(Math.random()*28, Math.random()*28); g.lineTo(Math.random()*28, Math.random()*28); g.stroke(); }
+            g.strokeStyle='rgba(255,255,255,0.4)'; g.lineWidth=1.2; // Jasnije pukotine
+            for(let i=0;i<7;i++){ g.beginPath(); g.moveTo(Math.random()*28, Math.random()*28); g.lineTo(Math.random()*28, Math.random()*28); g.stroke(); }
         }, 28);
         c.save(); rrS(); c.fillStyle = cracklePat; c.fill(); c.restore();
-        glint(s*0.2,s*0.2,s*0.5,0.5);
+        glint(s*0.2,s*0.2,s*0.55,0.6); // Jaki, "hladni" glint
+        c.strokeStyle = 'rgba(255,255,255,0.2)'; c.lineWidth = 1.5; rrS(); c.stroke();
     } else if (styleNow === 'velvet') {
-        // Velvet Glow: mekano, baršunasto
+        // Velvet Glow: mekši, dublji baršunasti sjaj
         let velvetColor = baseHex;
         let body = c.createLinearGradient(x, y, x, y + s);
-        body.addColorStop(0, shade(velvetColor, 30));
-        body.addColorStop(1, shade(velvetColor, -30));
+        body.addColorStop(0, shade(velvetColor, 40));
+        body.addColorStop(1, shade(velvetColor, -40));
         rrS(); c.fillStyle = body; c.fill();
-        let glowGradient = c.createRadialGradient(x + s/2, y + s/2, 0, x + s/2, y + s/2, s*0.8);
-        glowGradient.addColorStop(0, 'rgba(255,255,255,0.4)');
+        let glowGradient = c.createRadialGradient(x + s/2, y + s/2, 0, x + s/2, y + s/2, s*0.9); // Veći i intenzivniji sjaj
+        glowGradient.addColorStop(0, 'rgba(255,255,255,0.5)');
         glowGradient.addColorStop(1, 'rgba(255,255,255,0)');
         c.fillStyle = glowGradient; c.fill();
+        c.strokeStyle = 'rgba(255,255,255,0.1)'; c.lineWidth = 1; rrS(); c.stroke();
     } else if (styleNow === 'marble') {
-        // Stone Marble: realistične kamene "vene"
+        // Stone Marble: sofisticiraniji mermer sa detaljnijim venama
         let marbleColor = baseHex;
         let body = c.createLinearGradient(x, y, x, y + s);
-        body.addColorStop(0, shade(marbleColor, 15));
-        body.addColorStop(1, shade(marbleColor, -15));
+        body.addColorStop(0, shade(marbleColor, 25));
+        body.addColorStop(1, shade(marbleColor, -25));
         rrS(); c.fillStyle = body; c.fill();
         let veinPat = makePatternCanvas(g => {
-            g.strokeStyle='rgba(255,255,255,0.25)'; g.lineWidth=1;
-            for(let i=0;i<3;i++){ g.beginPath(); g.moveTo(0, Math.random()*28); g.bezierCurveTo(28*0.3,Math.random()*28, 28*0.6,Math.random()*28, 28,Math.random()*28); g.stroke(); }
+            g.strokeStyle='rgba(255,255,255,0.4)'; g.lineWidth=1.5; // Izraženije vene
+            for(let i=0;i<4;i++){ g.beginPath(); g.moveTo(0, Math.random()*28); g.bezierCurveTo(28*0.3,Math.random()*28, 28*0.6,Math.random()*28, 28,Math.random()*28); g.stroke(); }
         }, 28);
-        c.save(); rrS(); c.fillStyle = veinPat; c.globalAlpha = 0.7; c.fill(); c.restore();
+        c.save(); rrS(); c.fillStyle = veinPat; c.globalAlpha = 0.8; c.fill(); c.restore();
+        glint(s*0.3, s*0.3, s*0.3, 0.2); // Suptilan odsjaj
+        c.strokeStyle = 'rgba(255,255,255,0.15)'; c.lineWidth = 1.2; rrS(); c.stroke();
     } else {
-        // Fallback na originalni stil
+        // Fallback na originalni stil, ali sa poboljšanim gradijentom
         baseGradient = c.createLinearGradient(x, y, x, y + s);
-        baseGradient.addColorStop(0, baseHex);
-        baseGradient.addColorStop(1, shade(baseHex, -18));
+        baseGradient.addColorStop(0, shade(baseHex, 20));
+        baseGradient.addColorStop(1, shade(baseHex, -25));
         rrS(); c.fillStyle = baseGradient; c.fill();
+        c.strokeStyle = 'rgba(255,255,255,0.1)'; c.lineWidth = 1; rrS(); c.stroke();
+    }
+    // Dodatni highlight za "placed" blokove - može da se koristi za vizuelnu razliku
+    if (placed) {
+        c.globalAlpha = 0.1;
+        rrS(); c.fillStyle = '#ffffff'; c.fill();
+        c.globalAlpha = 1;
     }
 }
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
@@ -591,7 +609,7 @@ var particles=[];
 var fxWasCleared=true; // štednja: da ne čistimo stalno kada nema čestica
 var clearingCells=[];
 
-// === FX PREMIUM START: sweep + float text + combo badge ===
+// === FX PREMIUM START: combo stanje ===
 var sweeps=[]; // {type:'row'|'col', pos:number(px*dpr), life:int, max:int}
 var floats=[]; // {x,y,vy,life,max,text}
 var comboBadge=null; // {n, life, max}
