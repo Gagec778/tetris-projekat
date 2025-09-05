@@ -17,7 +17,7 @@
     *{ box-sizing:border-box; }
     html,body{ height:100%; margin:0; background:var(--bg); color:var(--text);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
-      overflow:hidden; /* 1) fiksirano — nema skrola stranice */
+      overflow:hidden;
     }
     button{ font:inherit; cursor:pointer; border:0; background:transparent; color:inherit; }
     button:focus{ outline:none; }
@@ -26,7 +26,7 @@
     /* GLOBAL BG CANVAS (iza svega) */
     #bg{
       position:fixed; inset:0; width:100vw; height:100vh; display:block;
-      z-index:0; pointer-events:none; /* ne blokira klikove */
+      z-index:0; pointer-events:none;
     }
 
     /* START SCREEN */
@@ -39,6 +39,10 @@
     .sub{ max-width:560px; opacity:.75; font-size:14px; }
     .cta{ display:flex; gap:12px; margin-top:8px; flex-wrap:wrap; justify-content:center; }
 
+    /* Dugme animacije */
+    .primary, .secondary{
+        transition: transform .2s cubic-bezier(.175,.885,.32,1.275), box-shadow .2s ease-in-out;
+    }
     .primary{
       background:linear-gradient(180deg,#0d111a,#0c121e);
       border:1px solid rgba(255,255,255,.08);
@@ -49,7 +53,11 @@
       background:rgba(255,255,255,.06);
       border:1px solid rgba(255,255,255,.08);
       padding:12px 18px; border-radius:14px; font-weight:700;
+      box-shadow:0 6px 20px rgba(0,0,0,.2);
     }
+    .primary:hover{ transform: translateY(-2px) scale(1.02); box-shadow:0 12px 36px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08); }
+    .secondary:hover{ transform: translateY(-2px) scale(1.02); box-shadow:0 8px 25px rgba(0,0,0,.25); }
+    .primary:active, .secondary:active{ transform: translateY(0) scale(0.98); box-shadow:0 2px 10px rgba(0,0,0,.2); }
 
     /* gornje ikonice (desni gornji ugao) */
     .top-icons{
@@ -61,7 +69,9 @@
       background:rgba(12,18,30,.55); border:1px solid rgba(255,255,255,.08);
       border-radius:12px; font-size:20px; box-shadow:0 10px 25px rgba(0,0,0,.35);
       backdrop-filter: blur(6px);
+      transition:transform .15s ease, box-shadow .15s ease;
     }
+    .icon-btn:hover{ transform: translateY(-1px); box-shadow:0 12px 30px rgba(0,0,0,.45); }
     .icon-btn:active{ transform:translateY(1px); }
 
     /* APP (igra) */
@@ -76,10 +86,29 @@
     .btn{
       background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
       color:var(--text); padding:8px 12px; border-radius:12px; font-weight:700;
+      transition:transform .15s ease, box-shadow .15s ease;
     }
+    .btn:hover{ transform: translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.2); }
+    .btn:active{ transform: translateY(0); box-shadow:0 1px 6px rgba(0,0,0,.15); }
 
     .board-area{ flex:1; display:flex; align-items:center; justify-content:center; padding:6px 16px; position:relative; }
     canvas{ touch-action:none; }
+    
+    /* Novi glow efekat na kanvasu */
+    #game-container {
+        position: relative;
+        box-shadow: 0 0 0 0px var(--accent);
+        transition: box-shadow .3s ease-in-out;
+        border-radius: 16px; /* Prilagodi zaobljenost ivica kontejnera */
+    }
+    #game-container.glow {
+        animation: glow-pulse 1.8s infinite ease-in-out;
+    }
+    @keyframes glow-pulse {
+        0%, 100% { box-shadow: 0 0 10px 0px color-mix(in oklab, var(--accent) 50%, transparent); }
+        50% { box-shadow: 0 0 20px 8px color-mix(in oklab, var(--accent) 80%, transparent); }
+    }
+
 
     .tray{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px 16px 14px; }
     .slot{
@@ -92,13 +121,17 @@
 
     .footer{ text-align:center; opacity:.55; font-size:12px; padding-bottom:10px }
 
-    /* Overlays */
+    /* Overlays (modali) */
     .overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:20; }
     .overlay .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.55); backdrop-filter: blur(4px); }
     .overlay .panel{
       position:relative; z-index:2; background:rgba(12,18,30,.85); border:1px solid rgba(255,255,255,.08);
       border-radius:16px; padding:16px; width:min(720px, calc(100% - 24px)); color:var(--text);
       box-shadow:0 30px 80px rgba(0,0,0,.45); max-height:86vh; overflow:hidden;
+      opacity:0; transform: translateY(20px); transition: opacity .3s ease, transform .3s ease;
+    }
+    .overlay.open .panel{
+      opacity:1; transform: translateY(0);
     }
     .overlay h3, .overlay h2{ margin:0 0 10px 0; }
 
@@ -154,10 +187,8 @@
 </head>
 <body>
 
-  <!-- GLOBAL AURORA BG (iza svega) -->
   <canvas id="bg"></canvas>
 
-  <!-- START SCREEN -->
   <div id="startScreen">
     <div class="top-icons">
       <button id="settingsBtn" class="icon-btn" title="Podešavanja">⚙️</button>
@@ -175,7 +206,6 @@
     </div>
   </div>
 
-  <!-- APP (IGRA) -->
   <div class="wrap" id="app">
     <header>
       <div class="brand"></div>
@@ -191,16 +221,17 @@
     </header>
 
     <div class="board-area">
-      <canvas id="game" width="360" height="360" aria-label="8x8 tabla"></canvas>
-      <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
+      <div id="game-container">
+        <canvas id="game" width="360" height="360" aria-label="8x8 tabla"></canvas>
+        <canvas id="fx" width="360" height="360" style="position:absolute; inset:0; pointer-events:none"></canvas>
+      </div>
     </div>
 
     <div class="tray" id="tray"></div>
     <div class="footer">Lux aurora pozadina • zaobljen grid • metal/glass/gem skinovi</div>
   </div>
 
-  <!-- SETTINGS MODAL -->
-  <div id="settingsModal" class="overlay" style="display:none">
+  <div id="settingsModal" class="overlay">
     <div class="backdrop"></div>
     <div class="panel">
       <h3>Podešavanja</h3>
@@ -212,8 +243,7 @@
     </div>
   </div>
 
-  <!-- ACHIEVEMENTS MODAL -->
-  <div id="achievementsModal" class="overlay" style="display:none">
+  <div id="achievementsModal" class="overlay">
     <div class="backdrop"></div>
     <div class="panel">
       <div class="ach-top">
@@ -249,8 +279,7 @@
     </div>
   </div>
 
-  <!-- KOLEKCIJA (poseban modal sa TABOVIMA) -->
-  <div id="collectionModal" class="overlay" style="display:none">
+  <div id="collectionModal" class="overlay">
     <div class="backdrop"></div>
     <div class="panel">
       <h3>🎨 Kolekcija</h3>
@@ -274,8 +303,7 @@
     </div>
   </div>
 
-  <!-- GAME OVER -->
-  <div id="gameOver" class="overlay" style="display:none">
+  <div id="gameOver" class="overlay">
     <div class="backdrop"></div>
     <div class="panel">
       <h2>Kraj igre</h2>
@@ -287,11 +315,8 @@
     </div>
   </div>
 
-  <!-- Drag overlay da se blok uvek crta iznad svega -->
   <canvas id="dragLayer" style="position:fixed; inset:0; width:100vw; height:100vh; z-index:30; pointer-events:none;"></canvas>
 
-  <!-- JS -->
-  <script src="./script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
-
