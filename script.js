@@ -68,6 +68,7 @@ var dragCtx   = dragLayer ? dragLayer.getContext('2d') : null;
 
 /* ===== AUDIO ===== */
 var audio = (function(){
+  // Bazični audio motor za igru
   var sounds = {
     // Generisani WAV fajlovi sa kraćim Base64 kodom
     place: new Audio('data:audio/wav;base64,UklGRjIAAJX/yHlChzY4Qf8A7OQBAAAB304AAMmRygFqAgAAhAYAAI0DygE4BwAADv7/AAAAAAADQAEAGQAEAAAAdOQASg8AAA=='),
@@ -77,8 +78,6 @@ var audio = (function(){
   function play(name, lines){
     if(!settings.sound) return;
     if(name === 'clear' && lines > 0){
-      sounds.clearBase.pause();
-      sounds.clearBase.currentTime = 0;
       for(let i=0; i<lines; i++){
         setTimeout(function(){
           sounds.clearBase.play();
@@ -213,6 +212,7 @@ function drawAurora(c,w,h){
     case 'sunset':        blob(w*.30,h*.38,Math.max(w,h)*.90,'255,120,80',0.46); blob(w*.76,h*.70,Math.max(w,h)*.80,'255,200,120',0.34); break;
     case 'noirGold':      blob(w*.28,h*.36,Math.max(w,h)*.80,'220,180,80',0.36); blob(w*.70,h*.74,Math.max(w,h)*.85,'255,220,150',0.26); break;
     case 'neon':          blob(w*.30,h*.40,Math.max(w,h)*.90,'0,255,200',0.42); blob(w*.72,h*.68,Math.max(w,h)*.85,'0,180,255',0.30); break;
+    case 'ivory':         blob(w*.34,h*.44,Math.max(w,h)*.80,'255,240,200',0.32); blob(w*.70,h*.72,Math.max(w,h)*.80,'250,220,160',0.26); break;
     case 'emerald':       blob(w*.30,h*.42,Math.max(w,h)*.90,'60,255,180',0.40); blob(w*.72,h*.70,Math.max(w,h)*.85,'30,220,150',0.32); break;
     case 'ocean':         blob(w*.34,h*.42,Math.max(w,h)*.85,'80,180,255',0.40); blob(w*.72,h*.70,Math.max(w,h)*.90,'0,120,255',0.28); break;
     case 'desert':        blob(w*.20,h*.32,Math.max(w,h)*.80,'255,200,120',0.38); blob(w*.78,h*.76,Math.max(w,h)*.85,'255,160,80',0.30); break;
@@ -326,74 +326,102 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
   var styleNow = style||'metal';
 
   if(styleNow==='glass'){
+    // Poboljšani Glass: više prozirnosti, naglašeni odsjaj
     var body=c.createLinearGradient(x,y,x,y+s);
-    body.addColorStop(0,'rgba(255,255,255,0.30)');
+    body.addColorStop(0,'rgba(255,255,255,0.45)');
     body.addColorStop(0.35, baseHex);
-    body.addColorStop(1, shade(baseHex,-22));
+    body.addColorStop(0.65, shade(baseHex, -15));
+    body.addColorStop(1, shade(baseHex, -45));
     rrS(); c.fillStyle=body; c.fill();
-    var pat=getSkinPattern('glass'); if(pat){ c.save(); rrS(); c.fillStyle=pat; c.globalAlpha=0.32; c.fill(); c.restore(); }
-    glint(s*0.25, s*0.22, s*0.46, 0.28);
+    var pat=getSkinPattern('glass'); if(pat){ c.save(); rrS(); c.fillStyle=pat; c.globalAlpha=0.45; c.fill(); c.restore(); }
+    glint(x+s*0.25, y+s*0.22, s*0.46, 0.4);
+    glint(x+s*0.8, y+s*0.85, s*0.3, 0.2);
   } else if(styleNow==='metal'){
+    // Poboljšani Metal: više dubine i "brušene" teksture
     var body2=c.createLinearGradient(x,y,x,y+s);
-    body2.addColorStop(0, shade(baseHex,14));
-    body2.addColorStop(1, shade(baseHex,-26));
+    body2.addColorStop(0, shade(baseHex,20));
+    body2.addColorStop(0.4, baseHex);
+    body2.addColorStop(1, shade(baseHex,-40));
     rrS(); c.fillStyle=body2; c.fill();
-    var pat2=getSkinPattern('metal'); if(pat2){ c.save(); rrS(); c.fillStyle=pat2; c.globalAlpha=0.55; c.fill(); c.restore(); }
+    var pat2=getSkinPattern('metal'); if(pat2){ c.save(); rrS(); c.fillStyle=pat2; c.globalAlpha=0.65; c.fill(); c.restore(); }
   } else if(styleNow==='gem'){
+    // Poboljšani Gem: fasetirani, 3D izgled
+    c.save();
+    c.beginPath();
+    c.moveTo(x+s*.5, y+s*.1);
+    c.lineTo(x+s*.9, y+s*.3);
+    c.lineTo(x+s*.9, y+s*.7);
+    c.lineTo(x+s*.5, y+s*.9);
+    c.lineTo(x+s*.1, y+s*.7);
+    c.lineTo(x+s*.1, y+s*.3);
+    c.closePath();
+    c.clip();
     var body3=c.createLinearGradient(x,y,x+s,y+s);
-    body3.addColorStop(0, shade(baseHex,30));
+    body3.addColorStop(0, shade(baseHex,40));
     body3.addColorStop(0.5, baseHex);
-    body3.addColorStop(1, shade(baseHex,-30));
-    rrS(); c.fillStyle=body3; c.fill();
-    var pat3=getSkinPattern('gem'); if(pat3){ c.save(); rrS(); c.fillStyle=pat3; c.globalAlpha=0.38; c.fill(); c.restore(); }
+    body3.addColorStop(1, shade(baseHex,-40));
+    c.fillStyle=body3; c.fillRect(x,y,s,s);
+    var pat3=getSkinPattern('gem'); if(pat3){ c.save(); c.fillStyle=pat3; c.globalAlpha=0.5; c.fill(); c.restore(); }
+    glint(x+s*0.4, y+s*0.3, s*0.4, 0.4);
+    c.restore();
   } else if(styleNow==='satin'){
+    // Poboljšani Satin: mekši i svilenkastiji
     var body4=c.createLinearGradient(x,y,x,y+s);
-    body4.addColorStop(0, shade(baseHex,12));
+    body4.addColorStop(0, shade(baseHex,18));
     body4.addColorStop(0.5, baseHex);
-    body4.addColorStop(1, shade(baseHex,-12));
+    body4.addColorStop(1, shade(baseHex,-18));
     rrS(); c.fillStyle=body4; c.fill();
-    var pat4=getSkinPattern('satin'); if(pat4){ c.save(); rrS(); c.fillStyle=pat4; c.globalAlpha=0.26; c.fill(); c.restore(); }
+    var pat4=getSkinPattern('satin'); if(pat4){ c.save(); rrS(); c.fillStyle=pat4; c.globalAlpha=0.35; c.fill(); c.restore(); }
   } else if(styleNow==='chrome'){
+    // Poboljšani Chrome: više odsjaja, naglašeniji metalni sjaj
     var body5=c.createLinearGradient(x,y,x,y+s);
-    body5.addColorStop(0,'rgba(255,255,255,.65)');
-    body5.addColorStop(0.2, shade(baseHex,28));
-    body5.addColorStop(0.5, shade(baseHex,-22));
-    body5.addColorStop(0.8, shade(baseHex,24));
-    body5.addColorStop(1,'rgba(255,255,255,.48)');
+    body5.addColorStop(0,'rgba(255,255,255,.8)');
+    body5.addColorStop(0.15, shade(baseHex,35));
+    body5.addColorStop(0.5, shade(baseHex,-25));
+    body5.addColorStop(0.8, shade(baseHex,30));
+    body5.addColorStop(1,'rgba(255,255,255,.6)');
     rrS(); c.fillStyle=body5; c.fill();
-    var pat5=getSkinPattern('chrome'); if(pat5){ c.save(); rrS(); c.fillStyle=pat5; c.globalAlpha=0.38; c.fill(); c.restore(); }
-    glint(s*0.5, s*0.25, s*0.55, 0.24);
+    var pat5=getSkinPattern('chrome'); if(pat5){ c.save(); rrS(); c.fillStyle=pat5; c.globalAlpha=0.45; c.fill(); c.restore(); }
+    glint(x+s*0.5, y+s*0.25, s*0.6, 0.35);
   } else if(styleNow==='porcelain'){
+    // Poboljšani Porcelain: delikatna "pukotina" tekstura
     var body6=c.createLinearGradient(x,y,x,y+s);
-    body6.addColorStop(0, shade(baseHex,10));
-    body6.addColorStop(1, shade(baseHex,-10));
+    body6.addColorStop(0, shade(baseHex,15));
+    body6.addColorStop(1, shade(baseHex,-15));
     rrS(); c.fillStyle=body6; c.fill();
-    var pat6=getSkinPattern('porcelain'); if(pat6){ c.save(); rrS(); c.fillStyle=pat6; c.globalAlpha=0.24; c.fill(); c.restore(); }
+    var pat6=getSkinPattern('porcelain'); if(pat6){ c.save(); rrS(); c.fillStyle=pat6; c.globalAlpha=0.35; c.fill(); c.restore(); }
+    var patCrackle=getSkinPattern('frost'); if(patCrackle){ c.save(); rrS(); c.fillStyle=patCrackle; c.globalAlpha=0.15; c.fill(); c.restore(); }
   } else if(styleNow==='carbon'){
+    // Poboljšani Carbon: simulacija 3D tkanja
     var body7=c.createLinearGradient(x,y,x,y+s);
-    body7.addColorStop(0, shade(baseHex,8));
-    body7.addColorStop(1, shade(baseHex,-18));
+    body7.addColorStop(0, shade(baseHex,10));
+    body7.addColorStop(1, shade(baseHex,-22));
     rrS(); c.fillStyle=body7; c.fill();
-    var pat7=getSkinPattern('carbon'); if(pat7){ c.save(); rrS(); c.fillStyle=pat7; c.globalAlpha=0.42; c.fill(); c.restore(); }
+    var pat7=getSkinPattern('carbon'); if(pat7){ c.save(); rrS(); c.fillStyle=pat7; c.globalAlpha=0.6; c.fill(); c.restore(); }
+    glint(x+s*.2, y+s*.2, s*.3, 0.1);
   } else if(styleNow==='frost'){
+    // Poboljšani Frost: efekat "pucanja leda"
     var body8=c.createLinearGradient(x,y,x,y+s);
-    body8.addColorStop(0, shade(baseHex,18));
-    body8.addColorStop(1, shade(baseHex,-26));
+    body8.addColorStop(0, shade(baseHex,20));
+    body8.addColorStop(1, shade(baseHex,-30));
     rrS(); c.fillStyle=body8; c.fill();
-    var pat8=getSkinPattern('frost'); if(pat8){ c.save(); rrS(); c.fillStyle=pat8; c.globalAlpha=0.26; c.fill(); c.restore(); }
+    var pat8=getSkinPattern('frost'); if(pat8){ c.save(); rrS(); c.fillStyle=pat8; c.globalAlpha=0.45; c.fill(); c.restore(); }
   } else if(styleNow==='velvet'){
+    // Poboljšani Velvet: mekša tekstura sa blagim sjajem
     var body9=c.createLinearGradient(x,y,x,y+s);
-    body9.addColorStop(0, shade(baseHex,16));
-    body9.addColorStop(1, shade(baseHex,-16));
+    body9.addColorStop(0, shade(baseHex,20));
+    body9.addColorStop(1, shade(baseHex,-20));
     rrS(); c.fillStyle=body9; c.fill();
-    var pat9=getSkinPattern('velvet'); if(pat9){ c.save(); rrS(); c.fillStyle=pat9; c.globalAlpha=0.22; c.fill(); c.restore(); }
+    var pat9=getSkinPattern('velvet'); if(pat9){ c.save(); rrS(); c.fillStyle=pat9; c.globalAlpha=0.35; c.fill(); c.restore(); }
   } else if(styleNow==='marble'){
+    // Poboljšani Marble: realističnije "vene"
     var body10=c.createLinearGradient(x,y,x,y+s);
-    body10.addColorStop(0, shade(baseHex,8));
-    body10.addColorStop(1, shade(baseHex,-16));
+    body10.addColorStop(0, shade(baseHex,10));
+    body10.addColorStop(1, shade(baseHex,-18));
     rrS(); c.fillStyle=body10; c.fill();
-    var pat10=getSkinPattern('marble'); if(pat10){ c.save(); rrS(); c.fillStyle=pat10; c.globalAlpha=0.28; c.fill(); c.restore(); }
+    var pat10=getSkinPattern('marble'); if(pat10){ c.save(); rrS(); c.fillStyle=pat10; c.globalAlpha=0.4; c.fill(); c.restore(); }
   } else {
+    // Originalni default stil
     var body11=c.createLinearGradient(x,y,x,y+s);
     body11.addColorStop(0, baseHex);
     body11.addColorStop(1, shade(baseHex,-18));
@@ -650,10 +678,11 @@ function renderClearingFX(){
       var t = cell.life / cell.max;
       var alpha = t;
       var scale = 1 + (1 - t) * 0.1;
-      var offset = (1 - scale) * 0.5 * s;
-
+      
       fctx.save();
       fctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+      
+      // Transformacije se primenjuju na centar bloka
       fctx.translate((cell.x + 0.5) * s * d, (cell.y + 0.5) * s * d);
       fctx.scale(scale, scale);
       fctx.translate(-((cell.x + 0.5) * s * d), -((cell.y + 0.5) * s * d));
