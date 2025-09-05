@@ -340,207 +340,159 @@ function drawBlockStyle(c, x, y, s, baseHex, style, opt) {
     baseGradient.addColorStop(1, shade(baseHex, -20));
 
     if (styleNow === 'glass') {
-        // Glass: plavi, transparentni izgled
-        baseGradient = c.createLinearGradient(x, y, x, y + s);
-        baseGradient.addColorStop(0, 'rgba(150, 200, 255, 0.6)');
-        baseGradient.addColorStop(1, 'rgba(90, 160, 255, 0.6)');
-        rrS();
-        c.fillStyle = baseGradient;
-        c.fill();
-        let reflection = c.createLinearGradient(x, y, x + s, y + s);
-        reflection.addColorStop(0.1, 'rgba(255,255,255,0.7)');
-        reflection.addColorStop(0.5, 'rgba(255,255,255,0)');
-        reflection.addColorStop(0.9, 'rgba(255,255,255,0.2)');
-        c.fillStyle = reflection;
-        c.globalAlpha = 0.8;
-        rrS();
-        c.fill();
+        // Glass: plavi, transparentni izgled sa prelamanjem svetlosti
+        const glassColor = '#41a0ff';
+        rrS(); c.fillStyle = 'rgba(255,255,255,0.1)'; c.fill(); // Tamnija pozadina
+        let light = c.createLinearGradient(x, y, x+s, y+s);
+        light.addColorStop(0, 'rgba(255,255,255,0.8)');
+        light.addColorStop(0.5, 'rgba(255,255,255,0)');
+        light.addColorStop(1, 'rgba(255,255,255,0.3)');
+        c.fillStyle = light; c.globalAlpha = 0.6; rrS(); c.fill();
+        let body = c.createLinearGradient(x, y, x, y + s);
+        body.addColorStop(0, shade(glassColor, 30));
+        body.addColorStop(0.5, glassColor);
+        body.addColorStop(1, shade(glassColor, -30));
+        c.globalAlpha = 0.6; rrS(); c.fillStyle = body; c.fill();
         c.globalAlpha = 1;
-        glint(s * 0.2, s * 0.2, s * 0.5, 0.5);
+        glint(s*0.3, s*0.3, s*0.4, 0.6);
+        c.strokeStyle = 'rgba(255,255,255,0.2)'; c.lineWidth = 1; rrS(); c.stroke();
     } else if (styleNow === 'metal') {
-        // Metal: brušeni metalni izgled
-        baseGradient = c.createLinearGradient(x, y, x, y + s);
-        baseGradient.addColorStop(0, shade(baseHex, 25));
-        baseGradient.addColorStop(1, shade(baseHex, -35));
-        rrS();
-        c.fillStyle = baseGradient;
-        c.fill();
+        // Metallic Matte: Brušeni metal sa jasnim odsjajima
+        let metalColor = '#8c95a6';
+        let body = c.createLinearGradient(x, y, x + s, y + s);
+        body.addColorStop(0, shade(metalColor, 35));
+        body.addColorStop(0.5, shade(metalColor, 0));
+        body.addColorStop(1, shade(metalColor, -45));
+        rrS(); c.fillStyle = body; c.fill();
         let pat = getSkinPattern('metal');
         if (pat) {
-            c.save();
-            rrS();
-            c.fillStyle = pat;
-            c.globalAlpha = 0.5;
-            c.fill();
-            c.restore();
+            c.save(); rrS(); c.fillStyle = pat; c.globalAlpha = 0.5; c.fill(); c.restore();
         }
     } else if (styleNow === 'gem') {
-        // Gem Cut: simulacija fasetiranog dragulja
+        // Gem Cut: Fasetirani dragulj sa 3D dubinom
+        let gemColor = baseHex;
         c.save();
         rr(c, x + 1, y + 1, s - 2, s - 2, R);
         c.clip();
-        
-        // Centralna faseta
         let grad = c.createRadialGradient(x + s/2, y + s/2, 0, x + s/2, y + s/2, s * 0.7);
-        grad.addColorStop(0, shade(baseHex, 60));
-        grad.addColorStop(0.5, baseHex);
-        grad.addColorStop(1, shade(baseHex, -40));
-        c.fillStyle = grad;
-        c.fillRect(x,y,s,s);
-        
-        // Unutrašnje linije faseta
-        c.lineWidth = 1 * DPR;
-        c.strokeStyle = 'rgba(255,255,255,0.3)';
+        grad.addColorStop(0, shade(gemColor, 60));
+        grad.addColorStop(0.5, gemColor);
+        grad.addColorStop(1, shade(gemColor, -40));
+        c.fillStyle = grad; c.fillRect(x,y,s,s);
+        c.strokeStyle = 'rgba(255,255,255,0.4)';
+        c.lineWidth = 1.5;
         c.beginPath();
-        c.moveTo(x + s/2, y);
+        c.moveTo(x + s/2, y); c.lineTo(x, y + s/2); c.lineTo(x + s/2, y+s); c.lineTo(x + s, y + s/2); c.closePath();
+        c.stroke();
+        c.beginPath();
+        c.moveTo(x + s/2, y + s/2);
+        c.lineTo(x, y + s/2);
+        c.lineTo(x + s/2, y);
+        c.lineTo(x + s/2, y + s/2);
         c.lineTo(x + s, y + s/2);
         c.lineTo(x + s/2, y + s);
-        c.lineTo(x, y + s/2);
-        c.closePath();
+        c.lineTo(x + s/2, y + s/2);
         c.stroke();
-        
-        glint(s*0.3,s*0.3,s*0.4,0.4);
-        
         c.restore();
     } else if (styleNow === 'satin') {
         // Satin Candy: mekani, perlast sjaj
-        baseGradient = c.createLinearGradient(x, y, x, y + s);
-        baseGradient.addColorStop(0, shade(baseHex, 30));
-        baseGradient.addColorStop(0.5, baseHex);
-        baseGradient.addColorStop(1, shade(baseHex, -30));
-        rrS();
-        c.fillStyle = baseGradient;
-        c.fill();
-        let pat = getSkinPattern('satin');
-        if (pat) {
-            c.save();
-            rrS();
-            c.fillStyle = pat;
-            c.globalAlpha = 0.45;
-            c.fill();
-            c.restore();
-        }
-        let satinHighlight = c.createLinearGradient(x + s * 0.1, y, x + s * 0.9, y + s);
-        satinHighlight.addColorStop(0, 'rgba(255,255,255,0.2)');
-        satinHighlight.addColorStop(0.5, 'rgba(255,255,255,0)');
-        satinHighlight.addColorStop(1, 'rgba(255,255,255,0.2)');
-        c.fillStyle = satinHighlight;
-        c.fill();
+        let satinColor = baseHex;
+        let body = c.createLinearGradient(x, y, x, y + s);
+        body.addColorStop(0, shade(satinColor, 30));
+        body.addColorStop(0.5, satinColor);
+        body.addColorStop(1, shade(satinColor, -30));
+        rrS(); c.fillStyle = body; c.fill();
+        let satinHighlight = c.createLinearGradient(x, y + s*0.2, x, y + s*0.8);
+        satinHighlight.addColorStop(0, 'rgba(255,255,255,0.1)');
+        satinHighlight.addColorStop(0.5, 'rgba(255,255,255,0.4)');
+        satinHighlight.addColorStop(1, 'rgba(255,255,255,0.1)');
+        c.fillStyle = satinHighlight; c.fill();
     } else if (styleNow === 'chrome') {
         // Liquid Chrome: visoki odsjaj, tečni metal
-        rrS();
-        let chromeGradient = c.createLinearGradient(x, y, x, y + s);
-        chromeGradient.addColorStop(0, 'rgba(255,255,255,0.8)');
-        chromeGradient.addColorStop(0.2, shade(baseHex, 40));
-        chromeGradient.addColorStop(0.5, shade(baseHex, -40));
-        chromeGradient.addColorStop(0.8, shade(baseHex, 35));
-        chromeGradient.addColorStop(1, 'rgba(255,255,255,0.6)');
-        c.fillStyle = chromeGradient;
-        c.fill();
-        glint(s * 0.5, s * 0.3, s * 0.6, 0.4);
+        let chromeColor = baseHex;
+        let body = c.createLinearGradient(x, y, x, y+s);
+        body.addColorStop(0, 'rgba(255,255,255,0.9)');
+        body.addColorStop(0.25, shade(chromeColor, 40));
+        body.addColorStop(0.5, shade(chromeColor, -40));
+        body.addColorStop(0.75, shade(chromeColor, 30));
+        body.addColorStop(1, 'rgba(255,255,255,0.7)');
+        rrS(); c.fillStyle = body; c.fill();
+        glint(s * 0.5, s * 0.25, s * 0.6, 0.5);
     } else if (styleNow === 'porcelain') {
         // Porcelain: glatko, sa suptilnim varijacijama
-        let porcelainGradient = c.createLinearGradient(x, y, x, y + s);
-        porcelainGradient.addColorStop(0, shade(baseHex, 15));
-        porcelainGradient.addColorStop(1, shade(baseHex, -15));
-        rrS();
-        c.fillStyle = porcelainGradient;
-        c.fill();
-        let specklePattern = getSkinPattern(patSpeckle);
-        if (specklePattern) {
-            c.save();
-            c.globalAlpha = 0.2;
-            c.fillStyle = specklePattern;
-            c.fill();
-            c.restore();
-        }
+        let porcelainColor = baseHex;
+        let body = c.createLinearGradient(x, y, x, y + s);
+        body.addColorStop(0, shade(porcelainColor, 20));
+        body.addColorStop(1, shade(porcelainColor, -20));
+        rrS(); c.fillStyle = body; c.fill();
+        let specklePat = makePatternCanvas(g => {
+            g.fillStyle = 'rgba(255,255,255,0.1)';
+            for(let i=0; i<5; i++){ g.fillRect(Math.random()*24, Math.random()*24, 1, 1); }
+        }, 24);
+        c.save(); rrS(); c.fillStyle = specklePat; c.globalAlpha = 0.8; c.fill(); c.restore();
     } else if (styleNow === 'carbon') {
         // Carbon Weave: 3D efekat tkanja
-        let carbonColor = '#1a1a1a';
-        let darkShade = '#0a0a0a';
-        let lightShade = '#2d2d2d';
-        
-        let carbonGradient = c.createLinearGradient(x, y, x, y + s);
-        carbonGradient.addColorStop(0, lightShade);
-        carbonGradient.addColorStop(1, darkShade);
-        rrS(); c.fillStyle = carbonGradient; c.fill();
-        
-        c.save();
-        c.clip();
+        let carbonColor = '#1e1e1e';
+        let weaveColor1 = '#303030';
+        let weaveColor2 = '#101010';
+        rrS(); c.fillStyle = carbonColor; c.fill();
+        c.save(); c.clip();
         c.lineWidth = 1.5 * DPR;
-        c.strokeStyle = 'rgba(255,255,255,0.1)';
+        c.strokeStyle = weaveColor1;
         for (let i = 0; i < s * DPR; i += 6) {
-            c.beginPath();
-            c.moveTo(x, y + i / DPR);
-            c.lineTo(x + s, y + i / DPR);
-            c.stroke();
-            c.beginPath();
-            c.moveTo(x + i / DPR, y);
-            c.lineTo(x + i / DPR, y + s);
-            c.stroke();
+            c.beginPath(); c.moveTo(x, y + i / DPR); c.lineTo(x + s, y + i / DPR); c.stroke();
+            c.beginPath(); c.moveTo(x + i / DPR, y); c.lineTo(x + i / DPR, y + s); c.stroke();
         }
+        c.strokeStyle = 'rgba(255,255,255,0.08)';
+        c.lineWidth = 1;
+        for (let i = 0; i < s * DPR; i += 6) {
+            c.beginPath(); c.moveTo(x + i / DPR, y + s); c.lineTo(x + s, y); c.stroke();
+            c.beginPath(); c.moveTo(x, y + i / DPR); c.lineTo(x + i / DPR, y); c.stroke();
+        }
+        glint(s*0.3, s*0.3, s*0.4, 0.15);
         c.restore();
     } else if (styleNow === 'frost') {
         // Frosted Ice: zaleđeni, napukli izgled
-        let iceColor = '#b3e0ff';
-        let iceGradient = c.createLinearGradient(x, y, x, y + s);
-        iceGradient.addColorStop(0, shade(iceColor, 20));
-        iceGradient.addColorStop(1, shade(iceColor, -30));
-        rrS();
-        c.fillStyle = iceGradient;
-        c.fill();
-        let cracklePat = getSkinPattern('frost');
-        if (cracklePat) {
-            c.save();
-            c.globalAlpha = 0.6;
-            c.fillStyle = cracklePat;
-            c.fill();
-            c.restore();
-        }
+        let iceColor = '#d0f0ff';
+        let body = c.createLinearGradient(x, y, x, y + s);
+        body.addColorStop(0, shade(iceColor, 10));
+        body.addColorStop(1, shade(iceColor, -20));
+        rrS(); c.fillStyle = body; c.fill();
+        let cracklePat = makePatternCanvas(g => {
+            g.strokeStyle='rgba(255,255,255,0.25)'; g.lineWidth=1;
+            for(let i=0;i<5;i++){ g.beginPath(); g.moveTo(Math.random()*28, Math.random()*28); g.lineTo(Math.random()*28, Math.random()*28); g.stroke(); }
+        }, 28);
+        c.save(); rrS(); c.fillStyle = cracklePat; c.fill(); c.restore();
+        glint(s*0.2,s*0.2,s*0.5,0.5);
     } else if (styleNow === 'velvet') {
         // Velvet Glow: mekano, baršunasto
-        let velvetGradient = c.createLinearGradient(x, y, x, y + s);
-        velvetGradient.addColorStop(0, shade(baseHex, 25));
-        velvetGradient.addColorStop(1, shade(baseHex, -25));
-        rrS();
-        c.fillStyle = velvetGradient;
-        c.fill();
-        let glowGradient = c.createRadialGradient(x + s/2, y + s/2, 0, x + s/2, y + s/2, s);
-        glowGradient.addColorStop(0, 'rgba(255,255,255,0.3)');
+        let velvetColor = baseHex;
+        let body = c.createLinearGradient(x, y, x, y + s);
+        body.addColorStop(0, shade(velvetColor, 30));
+        body.addColorStop(1, shade(velvetColor, -30));
+        rrS(); c.fillStyle = body; c.fill();
+        let glowGradient = c.createRadialGradient(x + s/2, y + s/2, 0, x + s/2, y + s/2, s*0.8);
+        glowGradient.addColorStop(0, 'rgba(255,255,255,0.4)');
         glowGradient.addColorStop(1, 'rgba(255,255,255,0)');
-        c.fillStyle = glowGradient;
-        rrS();
-        c.fill();
+        c.fillStyle = glowGradient; c.fill();
     } else if (styleNow === 'marble') {
         // Stone Marble: realistične kamene "vene"
-        let marbleGradient = c.createLinearGradient(x, y, x, y + s);
-        marbleGradient.addColorStop(0, shade(baseHex, 15));
-        marbleGradient.addColorStop(1, shade(baseHex, -15));
-        rrS();
-        c.fillStyle = marbleGradient;
-        c.fill();
-        let veinPat = getSkinPattern('marble');
-        if (veinPat) {
-            c.save();
-            c.globalAlpha = 0.5;
-            c.fillStyle = veinPat;
-            c.fill();
-            c.restore();
-        }
+        let marbleColor = baseHex;
+        let body = c.createLinearGradient(x, y, x, y + s);
+        body.addColorStop(0, shade(marbleColor, 15));
+        body.addColorStop(1, shade(marbleColor, -15));
+        rrS(); c.fillStyle = body; c.fill();
+        let veinPat = makePatternCanvas(g => {
+            g.strokeStyle='rgba(255,255,255,0.25)'; g.lineWidth=1;
+            for(let i=0;i<3;i++){ g.beginPath(); g.moveTo(0, Math.random()*28); g.bezierCurveTo(28*0.3,Math.random()*28, 28*0.6,Math.random()*28, 28,Math.random()*28); g.stroke(); }
+        }, 28);
+        c.save(); rrS(); c.fillStyle = veinPat; c.globalAlpha = 0.7; c.fill(); c.restore();
     } else {
         // Fallback na originalni stil
         baseGradient = c.createLinearGradient(x, y, x, y + s);
         baseGradient.addColorStop(0, baseHex);
         baseGradient.addColorStop(1, shade(baseHex, -18));
-        rrS();
-        c.fillStyle = baseGradient;
-        c.fill();
-    }
-
-    if (placed) {
-        rr(c, x + 1.2, y + 1.2, s - 2.4, s - 2.4, Math.max(5, R - 1));
-        c.lineWidth = Math.max(1, s * .06);
-        c.strokeStyle = 'rgba(255,255,255,.12)';
+        rrS(); c.fillStyle = baseGradient; c.fill();
     }
 }
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
