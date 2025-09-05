@@ -16,6 +16,7 @@ var levelPill = document.getElementById('levelPill');
 var lvlEl  = document.getElementById('lvl');
 var resetBtn = document.getElementById('reset');
 var backBtn  = document.getElementById('backBtn');
+var gameContainer = document.getElementById('game-container');
 
 var settingsBtn   = document.getElementById('settingsBtn');
 var settingsModal = document.getElementById('settingsModal');
@@ -61,9 +62,36 @@ var goMenu   = document.getElementById('goMenu');
 var startClassic   = document.getElementById('startClassic');
 var startObstacles = document.getElementById('startObstacles');
 
-/* Drag overlay */
+/* Drag overlay da se blok uvek crta iznad svega */
 var dragLayer = document.getElementById('dragLayer');
 var dragCtx   = dragLayer ? dragLayer.getContext('2d') : null;
+
+/* ===== AUDIO ===== */
+var audio = (function(){
+  var sounds = {
+    // Generisani WAV fajlovi sa kraćim Base64 kodom
+    place: new Audio('data:audio/wav;base64,UklGRjIAAJX/yHlChzY4Qf8A7OQBAAAB304AAMmRygFqAgAAhAYAAI0DygE4BwAADv7/AAAAAAADQAEAGQAEAAAAdOQASg8AAA=='),
+    clearBase: new Audio('data:audio/wav;base64,UklGRgEAAABXQUYgZm10IBAAAAABAAEARKwAAEArAAABAAgAZmFjdAADAAAAoEAAFgAAACQBAAASAEFNAAEAAAACACsBAP8='),
+    gameOver: new Audio('data:audio/wav;base64,UklGRgEAANBXQUYgZm10IBAAAAABAAEARKwAAEArAAABAAgAZmFjdAADAAAAAgAAACQBAAASAEFNAAEAAAACACsBAP8='),
+  };
+  function play(name, lines){
+    if(!settings.sound) return;
+    if(name === 'clear' && lines > 0){
+      sounds.clearBase.pause();
+      sounds.clearBase.currentTime = 0;
+      for(let i=0; i<lines; i++){
+        setTimeout(function(){
+          sounds.clearBase.play();
+        }, i * 150); // delay između tonova za kaskadni efekat
+      }
+    } else if (sounds[name]){
+      sounds[name].pause();
+      sounds[name].currentTime = 0;
+      sounds[name].play();
+    }
+  }
+  return { play: play };
+})();
 
 /* ===== SAFETY ===== */
 if(ctx){ ctx.imageSmoothingEnabled=false; }
@@ -186,9 +214,8 @@ function drawAurora(c,w,h){
     case 'noirGold':      blob(w*.28,h*.36,Math.max(w,h)*.80,'220,180,80',0.36); blob(w*.70,h*.74,Math.max(w,h)*.85,'255,220,150',0.26); break;
     case 'neon':          blob(w*.30,h*.40,Math.max(w,h)*.90,'0,255,200',0.42); blob(w*.72,h*.68,Math.max(w,h)*.85,'0,180,255',0.30); break;
     case 'emerald':       blob(w*.30,h*.42,Math.max(w,h)*.90,'60,255,180',0.40); blob(w*.72,h*.70,Math.max(w,h)*.85,'30,220,150',0.32); break;
-    case 'ivory':         blob(w*.34,h*.44,Math.max(w,h)*.80,'255,240,200',0.32); blob(w*.70,h*.72,Math.max(w,h)*.80,'250,220,160',0.26); break;
     case 'ocean':         blob(w*.34,h*.42,Math.max(w,h)*.85,'80,180,255',0.40); blob(w*.72,h*.70,Math.max(w,h)*.90,'0,120,255',0.28); break;
-    case 'desert':        blob(w*.34,h*.42,Math.max(w,h)*.85,'255,200,120',0.38); blob(w*.72,h*.70,Math.max(w,h)*.90,'255,160,80',0.30); break;
+    case 'desert':        blob(w*.20,h*.32,Math.max(w,h)*.80,'255,200,120',0.38); blob(w*.78,h*.76,Math.max(w,h)*.85,'255,160,80',0.30); break;
     case 'crimson':       blob(w*.32,h*.40,Math.max(w,h)*.85,'255,80,100',0.46); blob(w*.74,h*.72,Math.max(w,h)*.90,'255,150,160',0.32); break;
     default:              blob(w*.30,h*.35,Math.max(w,h)*.80,'60,150,255',0.40); blob(w*.75,h*.72,Math.max(w,h)*.90,'0,220,255',0.32);
   }
@@ -431,7 +458,7 @@ function scoreForClear(lines){ if(lines<=0) return 0; var combo = 1 + (lines - 1
 var LEVELS_MAX = 100; var LEVEL_STEP_SCORE = 10000;
 function obstaclesForLevel(lvl){ var maxCells = BOARD*BOARD; return Math.min(Math.round(3 + lvl*1.2), Math.round(maxCells*0.15)); }
 function applyObstacles(n){ var p=0,g=0; while(p<n && g<400){ g++; var x=Math.floor(Math.random()*BOARD), y=Math.floor(Math.random()*BOARD); if(state.grid[y][x]===0){ state.grid[y][x]=2; p++; } } }
-function checkLevelUp(){ var need = state.level * LEVEL_STEP_SCORE; if(state.score >= need && state.level < LEVELS_MAX && state.mode==='obstacles'){ state.level++; state.maxLevel = Math.max(state.maxLevel, state.level); LS('bp8.level.max', String(state.maxLevel)); applyObstacles(Math.max(1, Math.floor(obstaclesForLevel(state.level)*0.6))); if(lvlEl) lvlEl.textContent = state.level; showToast('Level UP → '+state.level); requestDraw(); } }
+function checkLevelUp(){ var need = state.level * LEVEL_STEP_SCORE; if(state.score >= need && state.level < LEVELS_MAX && state.mode==='obstacles'){ state.level++; state.maxLevel = Math.max(state.maxLevel, state.level); LS('bp8.level.max', String(state.maxLevel)); applyObstacles(Math.max(1, Math.floor(obstaclesForLevel(state.level)*0.6))); if(lvlEl) lvlEl.textContent = state.level; showToast('Level UP → '+state.level); audio.play('clear', 1); requestDraw(); } }
 
 /* ===== Draw (grid) ===== */
 function draw(){
@@ -472,12 +499,25 @@ function draw(){
 /* ===== FX ===== */
 var particles=[];
 var fxWasCleared=true; // štednja: da ne čistimo stalno kada nema čestica
+var clearingCells=[];
 
 // === FX PREMIUM START: sweep + float text + combo badge ===
 var sweeps=[]; // {type:'row'|'col', pos:number(px*dpr), life:int, max:int}
 var floats=[]; // {x,y,vy,life,max,text}
 var comboBadge=null; // {n, life, max}
+var boardGlowActive = false;
 
+function setBoardGlow(active){
+    if(gameContainer){
+        if(active && !boardGlowActive){
+            gameContainer.classList.add('glow');
+            boardGlowActive = true;
+        } else if (!active && boardGlowActive) {
+            gameContainer.classList.remove('glow');
+            boardGlowActive = false;
+        }
+    }
+}
 function fxAccent(){ return (getCss('--accent')||'#2ec5ff').trim()||'#2ec5ff'; }
 function fxGold(){ return '#ffd85e'; }
 
@@ -592,6 +632,40 @@ function renderComboBadge(){
   fctx.globalAlpha=1;
   if(comboBadge.life>=comboBadge.max) comboBadge=null;
 }
+
+function renderClearingFX(){
+    if(!fctx || clearingCells.length===0) return;
+    var s=state.cell,d=DPR;
+    var cellsToRemove = [];
+
+    for(var i=clearingCells.length-1;i>=0;i--){
+      var cell = clearingCells[i];
+      cell.life--;
+
+      if(cell.life <= 0){
+        cellsToRemove.push(i);
+        continue;
+      }
+      
+      var t = cell.life / cell.max;
+      var alpha = t;
+      var scale = 1 + (1 - t) * 0.1;
+      var offset = (1 - scale) * 0.5 * s;
+
+      fctx.save();
+      fctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+      fctx.translate((cell.x + 0.5) * s * d, (cell.y + 0.5) * s * d);
+      fctx.scale(scale, scale);
+      fctx.translate(-((cell.x + 0.5) * s * d), -((cell.y + 0.5) * s * d));
+
+      drawBlockStyle(fctx, cell.x*s, cell.y*s, s, cell.color, currentSkinStyle());
+      
+      fctx.restore();
+    }
+    for(var j=cellsToRemove.length-1; j>=0; j--){
+        clearingCells.splice(cellsToRemove[j], 1);
+    }
+}
 // === FX PREMIUM END ===
 
 function spawnParticles(cells){
@@ -609,7 +683,7 @@ function spawnParticles(cells){
 function stepFX(){
   if(!fctx || !fxCnv){ requestAnimationFrame(stepFX); return; }
 
-  if(particles.length===0 && sweeps.length===0 && floats.length===0 && !comboBadge){
+  if(particles.length===0 && sweeps.length===0 && floats.length===0 && !comboBadge && clearingCells.length === 0){
     // Jednokratno očisti pa “idle” (štedi CPU/bateriju)
     if(!fxWasCleared){
       fctx.setTransform(1,0,0,1,0,0);
@@ -637,6 +711,7 @@ function stepFX(){
   renderSweeps();
   renderFloats();
   renderComboBadge();
+  renderClearingFX();
   // === FX PREMIUM END ===
 
   fxWasCleared=false;
@@ -650,15 +725,41 @@ requestAnimationFrame(stepFX);
 function place(piece,gx,gy){
   var placedBlocks = piece.blocks.length;
   for(var i=0;i<piece.blocks.length;i++){ var dx=piece.blocks[i][0], dy=piece.blocks[i][1]; state.grid[gy+dy][gx+dx]=1; }
+  audio.play('place');
 
   var fullRows=[], fullCols=[], x,y,ok;
   for(y=0;y<BOARD;y++){ ok=true; for(x=0;x<BOARD;x++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullRows.push(y); }
   for(x=0;x<BOARD;x++){ ok=true; for(y=0;y<BOARD;y++){ if(state.grid[y][x]!==1){ ok=false; break; } } if(ok) fullCols.push(x); }
 
   var cells=[];
-  for(var r=0;r<fullRows.length;r++){ var ry=fullRows[r]; for(x=0;x<BOARD;x++){ cells.push([x,ry]); } state.grid[ry]=[]; for(x=0;x<BOARD;x++) state.grid[ry][x]=0; }
-  for(var c=0;c<fullCols.length;c++){ var cx=fullCols[c]; for(y=0;y<BOARD;y++){ cells.push([cx,y]); state.grid[y][cx]=0; } }
-  if(cells.length) spawnParticles(cells);
+  if(fullRows.length || fullCols.length){
+    setBoardGlow(true);
+    setTimeout(() => setBoardGlow(false), 500);
+  }
+
+  // Animacija pre brisanja
+  var cellsToAnimate = [];
+  for(var r=0;r<fullRows.length;r++){
+    var ry=fullRows[r];
+    for(x=0;x<BOARD;x++){
+      cellsToAnimate.push({x:x, y:ry, color: getCss('--accent'), life: 15, max: 15});
+    }
+  }
+  for(var c=0;c<fullCols.length;c++){
+    var cx=fullCols[c];
+    for(y=0;y<BOARD;y++){
+      cellsToAnimate.push({x:cx, y:y, color: getCss('--accent'), life: 15, max: 15});
+    }
+  }
+  clearingCells = clearingCells.concat(cellsToAnimate);
+
+  // Brisanje posle animacije
+  setTimeout(function() {
+    for(var r=0;r<fullRows.length;r++){ var ry=fullRows[r]; for(x=0;x<BOARD;x++){ cells.push([x,ry]); } state.grid[ry]=[]; for(x=0;x<BOARD;x++) state.grid[ry][x]=0; }
+    for(var c=0;c<fullCols.length;c++){ var cx=fullCols[c]; for(y=0;y<BOARD;y++){ cells.push([cx,y]); state.grid[y][cx]=0; } }
+    if(cells.length) spawnParticles(cells);
+    requestDraw();
+  }, 200);
 
   var linesCleared = fullRows.length + fullCols.length;
   var gainedClear = scoreForClear(linesCleared);
@@ -666,6 +767,7 @@ function place(piece,gx,gy){
 
   // === FX PREMIUM START: sweep + float + combo hook ===
   if(linesCleared>0 && fctx && fxCnv){
+    audio.play('clear', linesCleared);
     var s = state.cell, d = DPR;
     // Sweep efekti po svakoj liniji
     for(var iR=0;iR<fullRows.length;iR++){
@@ -715,12 +817,14 @@ function place(piece,gx,gy){
     refillHand();
     // Uteg: odmah proveri da li nova ruka ima bar jedan validan potez (classic)
     if(state.mode!=='obstacles' && !anyFits()){
+      audio.play('gameOver');
       if(goStats) goStats.textContent='Score: '+state.score+' • Best: '+(state.best[state.mode]||0);
       if(gameOver) gameOver.style.display='flex';
     }
   }
 
   if(state.mode!=='obstacles' && !anyFits()){
+    audio.play('gameOver');
     if(goStats) goStats.textContent='Score: '+state.score+' • Best: '+(state.best[state.mode]||0);
     if(gameOver) gameOver.style.display='flex';
   }
@@ -842,27 +946,39 @@ function updateSoundLabel(){ if(setSound) setSound.textContent = (settings.sound
 function applyTheme(t){ if(document.body && document.body.classList){ if(t==='light'){ document.body.classList.add('light'); } else { document.body.classList.remove('light'); } } }
 function saveBest(b){ LS('bp8.best', JSON.stringify(b)); }
 function loadBest(){ var s=LS('bp8.best'); try{ return s? JSON.parse(s):null; }catch(e){ return null; } }
+function openModal(modal){
+    if(modal){
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('open'), 10);
+    }
+}
+function closeModal(modal){
+    if(modal){
+        modal.classList.remove('open');
+        setTimeout(() => modal.style.display = 'none', 300); // Wait for transition
+    }
+}
 
 /* ===== Buttons / Events ===== */
 if(resetBtn) resetBtn.addEventListener('click', function(){ newGame(state.mode); });
 if(backBtn)  backBtn.addEventListener('click', function(){ goHome(); });
 
-if(settingsBtn) settingsBtn.addEventListener('click', function(){ if(settingsModal) settingsModal.style.display='flex'; });
-if(settingsModal){ var bd = settingsModal.querySelector ? settingsModal.querySelector('.backdrop') : null; if(bd) bd.addEventListener('click', function(){ settingsModal.style.display='none'; }); }
-if(closeSettings) closeSettings.addEventListener('click', function(){ settingsModal.style.display='none'; });
+if(settingsBtn) settingsBtn.addEventListener('click', function(){ openModal(settingsModal); });
+if(settingsModal){ var bd = settingsModal.querySelector ? settingsModal.querySelector('.backdrop') : null; if(bd) bd.addEventListener('click', function(){ closeModal(settingsModal); }); }
+if(closeSettings) closeSettings.addEventListener('click', function(){ closeModal(settingsModal); });
 if(setThemeBtn) setThemeBtn.addEventListener('click', function(){ settings.theme=(settings.theme==='dark'?'light':'dark'); LS('bp8.theme',settings.theme); applyTheme(settings.theme); });
 if(setSound) setSound.addEventListener('click', function(){ settings.sound=!settings.sound; LS('bp8.sound', (settings.sound?'1':'0')); updateSoundLabel(); });
 if(resetBest) resetBest.addEventListener('click', function(){ SAFE.removeItem && SAFE.removeItem('bp8.best'); state.best={classic:0,obstacles:0}; if(bestEl) bestEl.textContent=0; showToast('Best resetovan'); });
 
-if(playAgain) playAgain.addEventListener('click', function(){ if(gameOver) gameOver.style.display='none'; newGame(state.mode); });
-if(goMenu)   goMenu.addEventListener('click', function(){ if(gameOver) gameOver.style.display='none'; goHome(); });
+if(playAgain) playAgain.addEventListener('click', function(){ closeModal(gameOver); newGame(state.mode); });
+if(goMenu)   goMenu.addEventListener('click', function(){ closeModal(gameOver); goHome(); });
 if(startClassic)   startClassic.addEventListener('click', function(){ startGame('classic'); });
 if(startObstacles) startObstacles.addEventListener('click', function(){ startGame('obstacles'); });
 
 if(achBtn){
   achBtn.addEventListener('click', function(){
     if(!achievementsModal) return;
-    achievementsModal.style.display='flex';
+    openModal(achievementsModal);
     var curIdx = getCurrentMilestoneIndex();
     var block = indexToBlock(curIdx>=0?curIdx:0);
     achPage = Math.max(1, Math.min(20, block));
@@ -870,8 +986,8 @@ if(achBtn){
     renderMilestoneBoxForBlock(block);
   });
 }
-if(achievementsModal){ var abd = achievementsModal.querySelector ? achievementsModal.querySelector('.backdrop') : null; if(abd) abd.addEventListener('click', function(){ achievementsModal.style.display='none'; }); }
-if(closeAch) closeAch.addEventListener('click', function(){ achievementsModal.style.display='none'; });
+if(achievementsModal){ var abd = achievementsModal.querySelector ? achievementsModal.querySelector('.backdrop') : null; if(abd) abd.addEventListener('click', function(){ closeModal(achievementsModal); }); }
+if(closeAch) closeAch.addEventListener('click', function(){ closeModal(achievementsModal); });
 if(achPrev) achPrev.addEventListener('click', function(){ achPage=Math.max(1, achPage-1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
 if(achNext) achNext.addEventListener('click', function(){ achPage=Math.min(20, achPage+1); renderAchievementsPage(); renderMilestoneBoxForBlock(achPage); });
 
@@ -885,13 +1001,13 @@ if(btnClaim)   btnClaim.addEventListener('click', function(){
 if(collectionBtn){
   collectionBtn.addEventListener('click', function(){
     if(!collectionModal) return;
-    collectionModal.style.display='flex';
+    openModal(collectionModal);
     renderCollection();
     setTab('themes'); // default
   });
 }
-if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; if(cbd) cbd.addEventListener('click', function(){ collectionModal.style.display='none'; }); }
-if(closeCollection) closeCollection.addEventListener('click', function(){ collectionModal.style.display='none'; });
+if(collectionModal){ var cbd = collectionModal.querySelector ? collectionModal.querySelector('.backdrop') : null; if(cbd) cbd.addEventListener('click', function(){ closeModal(collectionModal); }); }
+if(closeCollection) closeCollection.addEventListener('click', function(){ closeModal(collectionModal); });
 
 if(tabThemes) tabThemes.addEventListener('click', function(){ setTab('themes'); });
 if(tabSkins)  tabSkins.addEventListener('click', function(){ setTab('skins'); });
@@ -918,6 +1034,7 @@ function newGame(mode){
   // === FX PREMIUM START: reset combo i FX state ===
   state.comboCount = 0;
   sweeps.length = 0; floats.length = 0; particles.length = 0; comboBadge = null; fxWasCleared=false;
+  clearingCells.length = 0;
   if(fctx && fxCnv){ fctx.setTransform(1,0,0,1,0,0); fctx.clearRect(0,0,fxCnv.width,fxCnv.height); }
   // === FX PREMIUM END ===
 
