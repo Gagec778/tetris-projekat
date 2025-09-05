@@ -193,7 +193,7 @@ function drawAurora(c,w,h){
     case 'neon':          base.addColorStop(0,'rgba(6,16,18,0.92)');  base.addColorStop(1,'rgba(8,26,28,0.94)');  break;
     case 'ivory':         base.addColorStop(0,'rgba(22,22,20,0.90)'); base.addColorStop(1,'rgba(28,28,24,0.92)'); break;
     case 'emerald':       base.addColorStop(0,'rgba(8,20,14,0.92)');  base.addColorStop(1,'rgba(12,32,22,0.94)'); break;
-    case 'ocean':         base.addColorStop(0,'rgba(8,16,28,0.92)');  base.addColorStop(1,'rgba(10,26,44,0.94)'); break;
+    case 'ocean':         blob(w*.34,h*.42,Math.max(w,h)*.85,'80,180,255',0.40); blob(w*.72,h*.70,Math.max(w,h)*.90,'0,120,255',0.28); break;
     case 'desert':        base.addColorStop(0,'rgba(26,18,10,0.92)'); base.addColorStop(1,'rgba(34,24,12,0.94)'); break;
     case 'crimson':       base.addColorStop(0,'rgba(26,8,12,0.92)');  base.addColorStop(1,'rgba(40,10,14,0.94)'); break;
     default:              base.addColorStop(0,'rgba(8,12,20,0.92)');  base.addColorStop(1,'rgba(10,18,28,0.92)');
@@ -292,7 +292,7 @@ function drawPanelAndGridOverlay(c, W, H, s){
   }
   var accent = getCss('--accent') || '#2ec5ff';
   var outerColor = isAuroraPlus() ? '#d4af37' : (accent.trim() || '#2ec5ff');
-  c.lineWidth = isAuroraPlus() ? Math.max(2.2, s*0.10) : Math.max(2, s*0.08);
+  c.lineWidth = Math.max(2, s*0.08);
   c.strokeStyle = outerColor;
   rr(c, 1.0, 1.0, W-2.0, H-2.0, 14);
   c.stroke();
@@ -304,6 +304,7 @@ var SHOW_BLOCK_RIM=false;
 
 var patternCache=new Map();
 function makePatternCanvas(drawFn,size){ if(size==null) size=24; var key=(drawFn&&drawFn.name?drawFn.name:'p')+':'+size; if(patternCache.has(key)) return patternCache.get(key); var c=document.createElement('canvas'); c.width=c.height=size; var g=c.getContext('2d'); g.clearRect(0,0,size,size); drawFn(g,size); var pat=g.createPattern(c,'repeat'); patternCache.set(key,pat); return pat; }
+
 function patGlass(g,s){ g.strokeStyle='rgba(255,255,255,0.18)'; g.lineWidth=0.9; g.beginPath(); g.moveTo(0, s*0.22); g.lineTo(s, 0); g.stroke(); g.beginPath(); g.moveTo(0, s*0.62); g.lineTo(s, s*0.38); g.stroke(); }
 function patBrushed(g,s){ g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=0.9; for(var x=0;x<s;x+=3){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,s); g.stroke(); } }
 function patFacet(g,s){ g.strokeStyle='rgba(255,255,255,0.16)'; g.lineWidth=1.0; g.beginPath(); g.moveTo(0,0); g.lineTo(s,s); g.stroke(); g.beginPath(); g.moveTo(s*0.2,0); g.lineTo(s, s*0.8); g.stroke(); g.beginPath(); g.moveTo(0, s*0.3); g.lineTo(s*0.7, s); g.stroke(); }
@@ -317,149 +318,230 @@ function patVeins(g,s){ g.strokeStyle='rgba(255,255,255,0.16)'; g.lineWidth=1.0;
 function getSkinPattern(style){ switch(style){ case 'glass':return makePatternCanvas(patGlass,28); case 'metal':return makePatternCanvas(patBrushed,24); case 'gem':return makePatternCanvas(patFacet,24); case 'satin':return makePatternCanvas(patSatin,28); case 'chrome':return makePatternCanvas(patChrome,24); case 'porcelain':return makePatternCanvas(patSpeckle,24); case 'carbon':return makePatternCanvas(patWeave,24); case 'frost':return makePatternCanvas(patCrackle,28); case 'velvet':return makePatternCanvas(patBubbles,28); case 'marble':return makePatternCanvas(patVeins,28); default:return null; } }
 function shade(hex,amt){ var m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); if(!m) return hex; var r=parseInt(m[1],16),g=parseInt(m[2],16),b=parseInt(m[3],16); r=Math.max(0,Math.min(255,r+amt)); g=Math.max(0,Math.min(255,g+amt)); b=Math.max(0,Math.min(255,b+amt)); return 'rgb('+r+','+g+','+b+')'; }
 function currentSkinStyle(){ for(var i=0;i<SKINS.length;i++){ if(SKINS[i].id===applied.skin) return SKINS[i].style; } return 'metal'; }
-function drawBlockStyle(c,x,y,s,baseHex,style,opt){
-  var placed = opt && opt.placed;
-  var R=Math.max(6, s*.22);
-  function rrS(){ rr(c,x+1,y+1,s-2,s-2,R); }
-  function glint(ox,oy,rad,a){ if(a==null)a=0.35; var g=c.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad); g.addColorStop(0,'rgba(255,255,255,'+a+')'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; rrS(); c.fill(); }
-
-  var styleNow = style||'metal';
-
-  if(styleNow==='glass'){
-    // Poboljšani Glass: Plavi ton, više prozirnosti, naglašeni odsjaj
-    const glassColor = '#5cb3ff';
-    var body = c.createLinearGradient(x, y, x, y + s);
-    body.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
-    body.addColorStop(0.35, glassColor);
-    body.addColorStop(0.65, shade(glassColor, -20));
-    body.addColorStop(1, shade(glassColor, -50));
-    rrS(); c.fillStyle = body; c.fill();
-    var pat = getSkinPattern('glass');
-    if (pat) {
-        c.save();
+function drawBlockStyle(c, x, y, s, baseHex, style, opt) {
+    var placed = opt && opt.placed;
+    var R = Math.max(6, s * .22);
+    function rrS() { rr(c, x + 1, y + 1, s - 2, s - 2, R); }
+    function glint(ox, oy, rad, a) {
+        if (a == null) a = 0.35;
+        var g = c.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, rad);
+        g.addColorStop(0, 'rgba(255,255,255,' + a + ')');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        c.fillStyle = g;
         rrS();
-        c.fillStyle = pat;
-        c.globalAlpha = 0.55;
         c.fill();
+    }
+
+    var styleNow = style || 'metal';
+
+    // Osnovni gradijent za pozadinu bloka
+    let baseGradient = c.createLinearGradient(x, y, x + s, y + s);
+    baseGradient.addColorStop(0, shade(baseHex, 20));
+    baseGradient.addColorStop(1, shade(baseHex, -20));
+
+    if (styleNow === 'glass') {
+        // Glass: plavi, transparentni izgled
+        baseGradient = c.createLinearGradient(x, y, x, y + s);
+        baseGradient.addColorStop(0, 'rgba(150, 200, 255, 0.6)');
+        baseGradient.addColorStop(1, 'rgba(90, 160, 255, 0.6)');
+        rrS();
+        c.fillStyle = baseGradient;
+        c.fill();
+        let reflection = c.createLinearGradient(x, y, x + s, y + s);
+        reflection.addColorStop(0.1, 'rgba(255,255,255,0.7)');
+        reflection.addColorStop(0.5, 'rgba(255,255,255,0)');
+        reflection.addColorStop(0.9, 'rgba(255,255,255,0.2)');
+        c.fillStyle = reflection;
+        c.globalAlpha = 0.8;
+        rrS();
+        c.fill();
+        c.globalAlpha = 1;
+        glint(s * 0.2, s * 0.2, s * 0.5, 0.5);
+    } else if (styleNow === 'metal') {
+        // Metal: brušeni metalni izgled
+        baseGradient = c.createLinearGradient(x, y, x, y + s);
+        baseGradient.addColorStop(0, shade(baseHex, 25));
+        baseGradient.addColorStop(1, shade(baseHex, -35));
+        rrS();
+        c.fillStyle = baseGradient;
+        c.fill();
+        let pat = getSkinPattern('metal');
+        if (pat) {
+            c.save();
+            rrS();
+            c.fillStyle = pat;
+            c.globalAlpha = 0.5;
+            c.fill();
+            c.restore();
+        }
+    } else if (styleNow === 'gem') {
+        // Gem Cut: simulacija fasetiranog dragulja
+        c.save();
+        rr(c, x + 1, y + 1, s - 2, s - 2, R);
+        c.clip();
+        
+        // Centralna faseta
+        let grad = c.createRadialGradient(x + s/2, y + s/2, 0, x + s/2, y + s/2, s * 0.7);
+        grad.addColorStop(0, shade(baseHex, 60));
+        grad.addColorStop(0.5, baseHex);
+        grad.addColorStop(1, shade(baseHex, -40));
+        c.fillStyle = grad;
+        c.fillRect(x,y,s,s);
+        
+        // Unutrašnje linije faseta
+        c.lineWidth = 1 * DPR;
+        c.strokeStyle = 'rgba(255,255,255,0.3)';
+        c.beginPath();
+        c.moveTo(x + s/2, y);
+        c.lineTo(x + s, y + s/2);
+        c.lineTo(x + s/2, y + s);
+        c.lineTo(x, y + s/2);
+        c.closePath();
+        c.stroke();
+        
+        glint(s*0.3,s*0.3,s*0.4,0.4);
+        
         c.restore();
+    } else if (styleNow === 'satin') {
+        // Satin Candy: mekani, perlast sjaj
+        baseGradient = c.createLinearGradient(x, y, x, y + s);
+        baseGradient.addColorStop(0, shade(baseHex, 30));
+        baseGradient.addColorStop(0.5, baseHex);
+        baseGradient.addColorStop(1, shade(baseHex, -30));
+        rrS();
+        c.fillStyle = baseGradient;
+        c.fill();
+        let pat = getSkinPattern('satin');
+        if (pat) {
+            c.save();
+            rrS();
+            c.fillStyle = pat;
+            c.globalAlpha = 0.45;
+            c.fill();
+            c.restore();
+        }
+        let satinHighlight = c.createLinearGradient(x + s * 0.1, y, x + s * 0.9, y + s);
+        satinHighlight.addColorStop(0, 'rgba(255,255,255,0.2)');
+        satinHighlight.addColorStop(0.5, 'rgba(255,255,255,0)');
+        satinHighlight.addColorStop(1, 'rgba(255,255,255,0.2)');
+        c.fillStyle = satinHighlight;
+        c.fill();
+    } else if (styleNow === 'chrome') {
+        // Liquid Chrome: visoki odsjaj, tečni metal
+        rrS();
+        let chromeGradient = c.createLinearGradient(x, y, x, y + s);
+        chromeGradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+        chromeGradient.addColorStop(0.2, shade(baseHex, 40));
+        chromeGradient.addColorStop(0.5, shade(baseHex, -40));
+        chromeGradient.addColorStop(0.8, shade(baseHex, 35));
+        chromeGradient.addColorStop(1, 'rgba(255,255,255,0.6)');
+        c.fillStyle = chromeGradient;
+        c.fill();
+        glint(s * 0.5, s * 0.3, s * 0.6, 0.4);
+    } else if (styleNow === 'porcelain') {
+        // Porcelain: glatko, sa suptilnim varijacijama
+        let porcelainGradient = c.createLinearGradient(x, y, x, y + s);
+        porcelainGradient.addColorStop(0, shade(baseHex, 15));
+        porcelainGradient.addColorStop(1, shade(baseHex, -15));
+        rrS();
+        c.fillStyle = porcelainGradient;
+        c.fill();
+        let specklePattern = getSkinPattern(patSpeckle);
+        if (specklePattern) {
+            c.save();
+            c.globalAlpha = 0.2;
+            c.fillStyle = specklePattern;
+            c.fill();
+            c.restore();
+        }
+    } else if (styleNow === 'carbon') {
+        // Carbon Weave: 3D efekat tkanja
+        let carbonColor = '#1a1a1a';
+        let darkShade = '#0a0a0a';
+        let lightShade = '#2d2d2d';
+        
+        let carbonGradient = c.createLinearGradient(x, y, x, y + s);
+        carbonGradient.addColorStop(0, lightShade);
+        carbonGradient.addColorStop(1, darkShade);
+        rrS(); c.fillStyle = carbonGradient; c.fill();
+        
+        c.save();
+        c.clip();
+        c.lineWidth = 1.5 * DPR;
+        c.strokeStyle = 'rgba(255,255,255,0.1)';
+        for (let i = 0; i < s * DPR; i += 6) {
+            c.beginPath();
+            c.moveTo(x, y + i / DPR);
+            c.lineTo(x + s, y + i / DPR);
+            c.stroke();
+            c.beginPath();
+            c.moveTo(x + i / DPR, y);
+            c.lineTo(x + i / DPR, y + s);
+            c.stroke();
+        }
+        c.restore();
+    } else if (styleNow === 'frost') {
+        // Frosted Ice: zaleđeni, napukli izgled
+        let iceColor = '#b3e0ff';
+        let iceGradient = c.createLinearGradient(x, y, x, y + s);
+        iceGradient.addColorStop(0, shade(iceColor, 20));
+        iceGradient.addColorStop(1, shade(iceColor, -30));
+        rrS();
+        c.fillStyle = iceGradient;
+        c.fill();
+        let cracklePat = getSkinPattern('frost');
+        if (cracklePat) {
+            c.save();
+            c.globalAlpha = 0.6;
+            c.fillStyle = cracklePat;
+            c.fill();
+            c.restore();
+        }
+    } else if (styleNow === 'velvet') {
+        // Velvet Glow: mekano, baršunasto
+        let velvetGradient = c.createLinearGradient(x, y, x, y + s);
+        velvetGradient.addColorStop(0, shade(baseHex, 25));
+        velvetGradient.addColorStop(1, shade(baseHex, -25));
+        rrS();
+        c.fillStyle = velvetGradient;
+        c.fill();
+        let glowGradient = c.createRadialGradient(x + s/2, y + s/2, 0, x + s/2, y + s/2, s);
+        glowGradient.addColorStop(0, 'rgba(255,255,255,0.3)');
+        glowGradient.addColorStop(1, 'rgba(255,255,255,0)');
+        c.fillStyle = glowGradient;
+        rrS();
+        c.fill();
+    } else if (styleNow === 'marble') {
+        // Stone Marble: realistične kamene "vene"
+        let marbleGradient = c.createLinearGradient(x, y, x, y + s);
+        marbleGradient.addColorStop(0, shade(baseHex, 15));
+        marbleGradient.addColorStop(1, shade(baseHex, -15));
+        rrS();
+        c.fillStyle = marbleGradient;
+        c.fill();
+        let veinPat = getSkinPattern('marble');
+        if (veinPat) {
+            c.save();
+            c.globalAlpha = 0.5;
+            c.fillStyle = veinPat;
+            c.fill();
+            c.restore();
+        }
+    } else {
+        // Fallback na originalni stil
+        baseGradient = c.createLinearGradient(x, y, x, y + s);
+        baseGradient.addColorStop(0, baseHex);
+        baseGradient.addColorStop(1, shade(baseHex, -18));
+        rrS();
+        c.fillStyle = baseGradient;
+        c.fill();
     }
-    glint(x + s * 0.25, y + s * 0.22, s * 0.46, 0.4);
-    glint(x + s * 0.8, y + s * 0.85, s * 0.3, 0.2);
-} else if(styleNow==='metal'){
-    // Poboljšani Metal: više dubine i "brušene" teksture
-    var body2=c.createLinearGradient(x,y,x,y+s);
-    body2.addColorStop(0, shade(baseHex,20));
-    body2.addColorStop(0.4, baseHex);
-    body2.addColorStop(1, shade(baseHex,-40));
-    rrS(); c.fillStyle=body2; c.fill();
-    var pat2=getSkinPattern('metal'); if(pat2){ c.save(); rrS(); c.fillStyle=pat2; c.globalAlpha=0.65; c.fill(); c.restore(); }
-  } else if(styleNow==='gem'){
-    // Poboljšani Gem: fasetirani, 3D izgled
-    c.save();
-    c.beginPath();
-    c.moveTo(x+s*.5, y);
-    c.lineTo(x+s, y+s*.5);
-    c.lineTo(x+s*.5, y+s);
-    c.lineTo(x, y+s*.5);
-    c.closePath();
-    c.clip();
-    var body3=c.createLinearGradient(x,y,x+s,y+s);
-    body3.addColorStop(0, shade(baseHex,40));
-    body3.addColorStop(0.5, baseHex);
-    body3.addColorStop(1, shade(baseHex,-40));
-    c.fillStyle=body3; c.fillRect(x,y,s,s);
-    var pat3=getSkinPattern('gem'); if(pat3){ c.save(); c.fillStyle=pat3; c.globalAlpha=0.5; c.fill(); c.restore(); }
-    glint(x+s*0.4, y+s*0.3, s*0.4, 0.4);
-    c.restore();
-  } else if(styleNow==='satin'){
-    // Poboljšani Satin: mekši i svilenkastiji
-    var body4=c.createLinearGradient(x,y,x,y+s);
-    body4.addColorStop(0, shade(baseHex,18));
-    body4.addColorStop(0.5, baseHex);
-    body4.addColorStop(1, shade(baseHex,-18));
-    rrS(); c.fillStyle=body4; c.fill();
-    var pat4=getSkinPattern('satin'); if(pat4){ c.save(); rrS(); c.fillStyle=pat4; c.globalAlpha=0.35; c.fill(); c.restore(); }
-  } else if(styleNow==='chrome'){
-    // Poboljšani Chrome: više odsjaja, naglašeniji metalni sjaj
-    var body5=c.createLinearGradient(x,y,x,y+s);
-    body5.addColorStop(0,'rgba(255,255,255,.8)');
-    body5.addColorStop(0.15, shade(baseHex,35));
-    body5.addColorStop(0.5, shade(baseHex,-25));
-    body5.addColorStop(0.8, shade(baseHex,30));
-    body5.addColorStop(1,'rgba(255,255,255,.6)');
-    rrS(); c.fillStyle=body5; c.fill();
-    var pat5=getSkinPattern('chrome'); if(pat5){ c.save(); rrS(); c.fillStyle=pat5; c.globalAlpha=0.45; c.fill(); c.restore(); }
-    glint(x+s*0.5, y+s*0.25, s*0.6, 0.35);
-  } else if(styleNow==='porcelain'){
-    // Poboljšani Porcelain: delikatna "pukotina" tekstura
-    var body6=c.createLinearGradient(x,y,x,y+s);
-    body6.addColorStop(0, shade(baseHex,15));
-    body6.addColorStop(1, shade(baseHex,-15));
-    rrS(); c.fillStyle=body6; c.fill();
-    var pat6=getSkinPattern('porcelain'); if(pat6){ c.save(); rrS(); c.fillStyle=pat6; c.globalAlpha=0.35; c.fill(); c.restore(); }
-    var patCrackle=getSkinPattern('frost'); if(patCrackle){ c.save(); rrS(); c.fillStyle=patCrackle; c.globalAlpha=0.15; c.fill(); c.restore(); }
-  } else if(styleNow==='carbon'){
-    // Poboljšani Carbon: simulacija 3D tkanja, tamne boje
-    const carbonDark = '#222222';
-    const carbonLight = '#333333';
-    var body7 = c.createLinearGradient(x, y, x, y + s);
-    body7.addColorStop(0, carbonLight);
-    body7.addColorStop(1, carbonDark);
-    rrS(); c.fillStyle = body7; c.fill();
-    
-    c.save();
-    c.clip();
-    c.lineWidth = 1.2 * DPR;
-    var weaveGradient = c.createLinearGradient(x, y, x + s, y + s);
-    weaveGradient.addColorStop(0, 'rgba(255,255,255,0.05)');
-    weaveGradient.addColorStop(0.5, 'rgba(255,255,255,0.15)');
-    weaveGradient.addColorStop(1, 'rgba(255,255,255,0.05)');
-    c.strokeStyle = weaveGradient;
-    for (let i = 0; i < s * DPR; i += 8) {
-        c.beginPath();
-        c.moveTo(x, y + i / DPR);
-        c.lineTo(x + s, y + i / DPR);
-        c.stroke();
-        c.beginPath();
-        c.moveTo(x + i / DPR, y);
-        c.lineTo(x + i / DPR, y + s);
-        c.stroke();
+
+    if (placed) {
+        rr(c, x + 1.2, y + 1.2, s - 2.4, s - 2.4, Math.max(5, R - 1));
+        c.lineWidth = Math.max(1, s * .06);
+        c.strokeStyle = 'rgba(255,255,255,.12)';
     }
-    c.restore();
-    glint(x + s * 0.2, y + s * 0.2, s * 0.3, 0.1);
-} else if(styleNow==='frost'){
-    // Poboljšani Frost: efekat "pucanja leda"
-    var body8=c.createLinearGradient(x,y,x,y+s);
-    body8.addColorStop(0, shade(baseHex,20));
-    body8.addColorStop(1, shade(baseHex,-30));
-    rrS(); c.fillStyle=body8; c.fill();
-    var pat8=getSkinPattern('frost'); if(pat8){ c.save(); rrS(); c.fillStyle=pat8; c.globalAlpha=0.45; c.fill(); c.restore(); }
-  } else if(styleNow==='velvet'){
-    // Poboljšani Velvet: mekša tekstura sa blagim sjajem
-    var body9=c.createLinearGradient(x,y,x,y+s);
-    body9.addColorStop(0, shade(baseHex,20));
-    body9.addColorStop(1, shade(baseHex,-20));
-    rrS(); c.fillStyle=body9; c.fill();
-    var pat9=getSkinPattern('velvet'); if(pat9){ c.save(); rrS(); c.fillStyle=pat9; c.globalAlpha=0.35; c.fill(); c.restore(); }
-  } else if(styleNow==='marble'){
-    // Poboljšani Marble: realističnije "vene"
-    var body10=c.createLinearGradient(x,y,x,y+s);
-    body10.addColorStop(0, shade(baseHex,10));
-    body10.addColorStop(1, shade(baseHex,-18));
-    rrS(); c.fillStyle=body10; c.fill();
-    var pat10=getSkinPattern('marble'); if(pat10){ c.save(); rrS(); c.fillStyle=pat10; c.globalAlpha=0.4; c.fill(); c.restore(); }
-  } else {
-    // Originalni default stil
-    var body11=c.createLinearGradient(x,y,x,y+s);
-    body11.addColorStop(0, baseHex);
-    body11.addColorStop(1, shade(baseHex,-18));
-    rrS(); c.fillStyle=body11; c.fill();
-  }
-  if(placed){
-    rr(c,x+1.2,y+1.2,s-2.4,s-2.4,Math.max(5, R-1));
-    c.lineWidth=Math.max(1, s*.06);
-    c.strokeStyle='rgba(255,255,255,.12)'; // ne crta se jer je SHOW_BLOCK_RIM=false
-  }
 }
 function drawPlaced(c,x,y,s){ drawBlockStyle(c,x,y,s,getCss('--accent')||'#2ec5ff', currentSkinStyle(), {placed:true}); }
 function drawPreview(c,x,y,s,col,ok){ drawBlockStyle(c,x,y,s, ok?col:'#ff5a5a', currentSkinStyle()); }
