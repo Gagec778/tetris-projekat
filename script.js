@@ -326,17 +326,26 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
   var styleNow = style||'metal';
 
   if(styleNow==='glass'){
-    // Poboljšani Glass: više prozirnosti, naglašeni odsjaj
-    var body=c.createLinearGradient(x,y,x,y+s);
-    body.addColorStop(0,'rgba(255,255,255,0.45)');
-    body.addColorStop(0.35, baseHex);
-    body.addColorStop(0.65, shade(baseHex, -15));
-    body.addColorStop(1, shade(baseHex, -45));
-    rrS(); c.fillStyle=body; c.fill();
-    var pat=getSkinPattern('glass'); if(pat){ c.save(); rrS(); c.fillStyle=pat; c.globalAlpha=0.45; c.fill(); c.restore(); }
-    glint(x+s*0.25, y+s*0.22, s*0.46, 0.4);
-    glint(x+s*0.8, y+s*0.85, s*0.3, 0.2);
-  } else if(styleNow==='metal'){
+    // Poboljšani Glass: Plavi ton, više prozirnosti, naglašeni odsjaj
+    const glassColor = '#5cb3ff';
+    var body = c.createLinearGradient(x, y, x, y + s);
+    body.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+    body.addColorStop(0.35, glassColor);
+    body.addColorStop(0.65, shade(glassColor, -20));
+    body.addColorStop(1, shade(glassColor, -50));
+    rrS(); c.fillStyle = body; c.fill();
+    var pat = getSkinPattern('glass');
+    if (pat) {
+        c.save();
+        rrS();
+        c.fillStyle = pat;
+        c.globalAlpha = 0.55;
+        c.fill();
+        c.restore();
+    }
+    glint(x + s * 0.25, y + s * 0.22, s * 0.46, 0.4);
+    glint(x + s * 0.8, y + s * 0.85, s * 0.3, 0.2);
+} else if(styleNow==='metal'){
     // Poboljšani Metal: više dubine i "brušene" teksture
     var body2=c.createLinearGradient(x,y,x,y+s);
     body2.addColorStop(0, shade(baseHex,20));
@@ -348,12 +357,10 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
     // Poboljšani Gem: fasetirani, 3D izgled
     c.save();
     c.beginPath();
-    c.moveTo(x+s*.5, y+s*.1);
-    c.lineTo(x+s*.9, y+s*.3);
-    c.lineTo(x+s*.9, y+s*.7);
-    c.lineTo(x+s*.5, y+s*.9);
-    c.lineTo(x+s*.1, y+s*.7);
-    c.lineTo(x+s*.1, y+s*.3);
+    c.moveTo(x+s*.5, y);
+    c.lineTo(x+s, y+s*.5);
+    c.lineTo(x+s*.5, y+s);
+    c.lineTo(x, y+s*.5);
     c.closePath();
     c.clip();
     var body3=c.createLinearGradient(x,y,x+s,y+s);
@@ -392,14 +399,35 @@ function drawBlockStyle(c,x,y,s,baseHex,style,opt){
     var pat6=getSkinPattern('porcelain'); if(pat6){ c.save(); rrS(); c.fillStyle=pat6; c.globalAlpha=0.35; c.fill(); c.restore(); }
     var patCrackle=getSkinPattern('frost'); if(patCrackle){ c.save(); rrS(); c.fillStyle=patCrackle; c.globalAlpha=0.15; c.fill(); c.restore(); }
   } else if(styleNow==='carbon'){
-    // Poboljšani Carbon: simulacija 3D tkanja
-    var body7=c.createLinearGradient(x,y,x,y+s);
-    body7.addColorStop(0, shade(baseHex,10));
-    body7.addColorStop(1, shade(baseHex,-22));
-    rrS(); c.fillStyle=body7; c.fill();
-    var pat7=getSkinPattern('carbon'); if(pat7){ c.save(); rrS(); c.fillStyle=pat7; c.globalAlpha=0.6; c.fill(); c.restore(); }
-    glint(x+s*.2, y+s*.2, s*.3, 0.1);
-  } else if(styleNow==='frost'){
+    // Poboljšani Carbon: simulacija 3D tkanja, tamne boje
+    const carbonDark = '#222222';
+    const carbonLight = '#333333';
+    var body7 = c.createLinearGradient(x, y, x, y + s);
+    body7.addColorStop(0, carbonLight);
+    body7.addColorStop(1, carbonDark);
+    rrS(); c.fillStyle = body7; c.fill();
+    
+    c.save();
+    c.clip();
+    c.lineWidth = 1.2 * DPR;
+    var weaveGradient = c.createLinearGradient(x, y, x + s, y + s);
+    weaveGradient.addColorStop(0, 'rgba(255,255,255,0.05)');
+    weaveGradient.addColorStop(0.5, 'rgba(255,255,255,0.15)');
+    weaveGradient.addColorStop(1, 'rgba(255,255,255,0.05)');
+    c.strokeStyle = weaveGradient;
+    for (let i = 0; i < s * DPR; i += 8) {
+        c.beginPath();
+        c.moveTo(x, y + i / DPR);
+        c.lineTo(x + s, y + i / DPR);
+        c.stroke();
+        c.beginPath();
+        c.moveTo(x + i / DPR, y);
+        c.lineTo(x + i / DPR, y + s);
+        c.stroke();
+    }
+    c.restore();
+    glint(x + s * 0.2, y + s * 0.2, s * 0.3, 0.1);
+} else if(styleNow==='frost'){
     // Poboljšani Frost: efekat "pucanja leda"
     var body8=c.createLinearGradient(x,y,x,y+s);
     body8.addColorStop(0, shade(baseHex,20));
